@@ -795,9 +795,6 @@ bool cmpLength(const std::pair<int,Candidate>& l, const std::pair<int,Candidate>
 }
 
 void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
-    //l is length limit
-    std::chrono::steady_clock::time_point totalbegin = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point ysbegin = std::chrono::steady_clock::now();
     std::cout << "Identifying Important Ys";
 
 //#pragma parallel for
