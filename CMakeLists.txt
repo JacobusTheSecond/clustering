@@ -63,6 +63,8 @@ if(OpenCV_FOUND)
 	target_link_libraries(clustering ${OpenCV_LIBS} )
 else()
 	set(CMAKE_CXX_FLAGS "-Wall")
+	set(CMAKE_CXX_FLAGS "-lstdc++")
+
 	add_executable(clustering
 			src/main.cpp
 			#src/center_algs.cpp
