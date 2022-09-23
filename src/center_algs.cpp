@@ -136,7 +136,7 @@ bool calcFSACenters(Curves const& curves, Clustering& clustering, int l, C2CDist
 		auto const& center_curve = cluster.center_curve;
 		Curve new_center_curve;
 
-		for (auto curve_id: cluster.curve_ids) {
+		for (auto curve_id : cluster.curve_ids) {
 			auto const& curve = curves[curve_id];
 			auto matching = calcMatching(cluster.center_curve, curve);
 			matchings.push_back(std::move(matching));
@@ -144,7 +144,7 @@ bool calcFSACenters(Curves const& curves, Clustering& clustering, int l, C2CDist
 
 		for (PointID point_id = 0; point_id < center_curve.size(); ++point_id) {
 			Points matching_points;
-			for (auto const& matching: matchings) {
+			for (auto const& matching : matchings) {
 				matching_points.push_back(matching[point_id]);
 			}
 			auto min_enclosing_circle = calcMinEnclosingCircle(matching_points);

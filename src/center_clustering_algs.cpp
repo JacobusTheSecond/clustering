@@ -1,8 +1,8 @@
 #include "center_clustering_algs.h"
 #include "candidate.h"
-#include <gmpxx.h>
+//#include <gmpxx.h>
 #include "io.h"
-
+/*
 namespace
 {
 
@@ -56,6 +56,7 @@ Clustering computeCenterClustering(
 
 	return min_clustering;
 }
+ */
 /*
 std::vector<std::pair<int,int>> kApproxCover(Curves& curves, CandidateSet& cs, double delta,int r, int kL,int kU, int imax){
     //1. iterate up to k

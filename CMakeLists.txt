@@ -41,7 +41,7 @@ if(OpenCV_FOUND)
 
 	add_executable(clustering
 			src/main.cpp
-			src/center_algs.cpp
+			#src/center_algs.cpp
 			src/center_clustering_algs.cpp
 			src/clustering_algs.cpp
 			src/curve.cpp
@@ -64,7 +64,7 @@ if(OpenCV_FOUND)
 else()
 	add_executable(clustering
 			src/main.cpp
-			src/center_algs.cpp
+			#src/center_algs.cpp
 			src/center_clustering_algs.cpp
 			src/clustering_algs.cpp
 			src/curve.cpp
