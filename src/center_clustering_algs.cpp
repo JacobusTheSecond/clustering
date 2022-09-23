@@ -2,6 +2,8 @@
 #include "candidate.h"
 //#include <gmpxx.h>
 #include "io.h"
+#include <algorithm>
+
 /*
 namespace
 {

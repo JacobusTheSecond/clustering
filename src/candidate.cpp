@@ -9,6 +9,7 @@
 #ifdef HASVISUAL
 #include "free_space_visualizer.h"
 #endif
+#include <algorithm>
 
 //TODO: improve zoop
 int Candidate::computeCovering(FreeSpace &fs, int curveIndex, Curves& curves) {
