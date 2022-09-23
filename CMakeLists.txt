@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.13)
 project(clustering)
 
 set(CMAKE_CXX_STANDARD 20)
