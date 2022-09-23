@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
 {
 #ifdef HASVISUAL
     std::cout << "COMPILED WITH OPENCV\n";
-#elif
+#else
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
     //std::cout << "Hello world!\n";
