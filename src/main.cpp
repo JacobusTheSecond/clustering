@@ -49,8 +49,8 @@ int main(int argc, char* argv[])
     //normalize direction DONE
     std::vector<int> times;
 
-    Curve c1 = Curve("/Users/styx/data/curveclustering/cmu_fixedseq3d/86_1.txt",93);
-    Curve c2 = Curve("/Users/styx/data/curveclustering/cmu_fixedseq3d/86_6.txt",93);
+    Curve c1 = Curve("../data/86_1.txt",93);
+    Curve c2 = Curve("../data/86_6.txt",93);
 
     std::cout << "Input complexities: " << c1.size() << " " << c2.size() << std::endl;
 
@@ -62,8 +62,8 @@ int main(int argc, char* argv[])
 
 
     Curve unsimpC = Curve(simpC1,times);
-    io::exportCurve("/Users/styx/data/curveclustering/results/testcurve.txt",unsimpC);
-    io::exportCurve("/Users/styx/data/curveclustering/results/testcurveorigin.txt",c1);
+    //io::exportCurve("/Users/styx/data/curveclustering/results/testcurve.txt",unsimpC);
+    //io::exportCurve("/Users/styx/data/curveclustering/results/testcurveorigin.txt",c1);
     Curves curvesCMU = {simpC1,simpC2};
     double guaranteeCMU = 1.0+1.0+2*(7.0/3.0);
     int length = 0;
