@@ -30,7 +30,6 @@ FreeSpace::FreeSpace(const Curve& B, const Curve& T, double delta, int threadcou
     ny = B.size()-1;
 #pragma omp parallel for default(none) shared(reseterList)
     for(auto& list : reseterList) {
-#pragma omp critical
         list.reserve(10000);
     }
 
