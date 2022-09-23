@@ -1683,7 +1683,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
 #pragma omp parallel for shared(startsAndLimits,idx1,baseCurveIdx,upcandidatecount,std::cout,upignores,compressedCandidates) default(none)
             for(auto sal : startsAndLimits){
                 if((upcandidatecount+1)%100==0 || upcandidatecount == startsAndLimits.size()-1){
-#pragma omp critical
+#pragma omp critical (block1)
                     {
                         std::cout << "\33[2K\rGenerating candidates... " << upcandidatecount + 1 << "/" << startsAndLimits.size()
                                   << " pairs processed";
@@ -1771,7 +1771,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
                     //ignore perfectly straight candidates, as these should be covered by other direction
                     localEnds.erase(localEnds.begin());
                 }
-#pragma omp critical
+#pragma omp critical (block2)
                 {
                     if(!localEnds.empty())
                         compressedCandidates.emplace_back(baseCurveIdx,start,localEnds);
@@ -1834,7 +1834,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
 #pragma omp parallel for shared(startsAndLimits,idx1,baseCurveIdx,downcandidatecount,std::cout,downignores,compressedCandidates) default(none)
             for(auto sal : startsAndLimits) {
                 if((downcandidatecount+1)%100==0 || downcandidatecount == startsAndLimits.size()-1){
-#pragma omp critical
+#pragma omp critical (block3)
                     {
                         std::cout << "\33[2K\rGenerating candidates... " << downcandidatecount + 1 << "/" << startsAndLimits.size()
                                   << " pairs processed";
@@ -1924,7 +1924,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
                     //ignore perfectly straight candidates, as these should be covered by other direction
                     localEnds.erase(localEnds.begin());
                 }
-#pragma omp critical
+#pragma omp critical (block4)
                 {
                     if(!localEnds.empty())
                         compressedCandidates.emplace_back(baseCurveIdx,start,localEnds);
@@ -1951,7 +1951,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
             if(std::abs(std::get<2>(cC)[i].id - std::get<1>(cC).id) < minL){
                 std::get<2>(cC).erase(std::get<2>(cC).begin() + i);
                 i--;
-#pragma omp critical
+#pragma omp critical (block5)
                 {
                     removes++;
                 }
@@ -1965,7 +1965,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
                 result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves, omp_get_thread_num());
                 assert(false);
             }
-#pragma omp critical
+#pragma omp critical (block6)
             {
                 push({std::get<0>(cC), c});
             }
