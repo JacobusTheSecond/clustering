@@ -399,8 +399,7 @@ void CandidateSet::showCovering(std::vector<std::pair<int, int>> indices) {
 
 }
 
-CandidateSetPQ::CandidateSetPQ(Curves &c, double d) : std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>(), curves(c), delta(d) {
-    comp = cmpPQ;
+CandidateSetPQ::CandidateSetPQ(Curves &c, double d) : Parent(cmpPQ), curves(c), delta(d) {
     for(auto & curve_i : curves) {
         freespaces.emplace_back();
         freespaces.back().reserve(curves.size());

@@ -85,6 +85,7 @@ public:
 auto cmpPQ = [](const std::pair<int,Candidate>& left, const std::pair<int,Candidate>& right) { return (left.second.semiUpdatedCoverLength) < (right.second.semiUpdatedCoverLength); };
 class CandidateSetPQ : std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>{
 private:
+    using Parent = std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>;
     Curves curves;
     double delta;
     std::vector<std::vector<FreeSpace>> freespaces;
