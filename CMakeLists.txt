@@ -32,8 +32,7 @@ endif()
 link_libraries(OpenMP::OpenMP_CXX)
 
 set(OpenCV_DIR /Users/styx/GitPulls/opencv/install/lib/cmake/opencv4)
-
-find_package( OpenCV )
+find_package(OpenCV)
 if(OpenCV_FOUND)
 
 	set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")

@@ -6,10 +6,6 @@
 
 #include <iostream>
 
-#include <string>
-
-#include <gmpxx.h>
-
 void printUsage()
 {
 	std::cout << "USAGE: ./main <dataset_file> <k> <l> [<header_size>]\n"
