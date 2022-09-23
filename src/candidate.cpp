@@ -1139,10 +1139,6 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
             continue;
         std::vector<Candidate> result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves, omp_get_thread_num());
         for(auto& c: result){
-            if(c.matchings.empty()){
-                result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves, omp_get_thread_num());
-                assert(false);
-            }
 #pragma omp critical (block6)
             {
                 push({std::get<0>(cC), c});
