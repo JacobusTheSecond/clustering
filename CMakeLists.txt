@@ -4,7 +4,7 @@ project(clustering)
 set(CMAKE_CXX_STANDARD 20)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-#set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
@@ -33,28 +33,51 @@ link_libraries(OpenMP::OpenMP_CXX)
 
 set(OpenCV_DIR /Users/styx/GitPulls/opencv/install/lib/cmake/opencv4)
 
-find_package( OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS} )
+find_package( OpenCV )
+if(OpenCV_FOUND)
 
-add_executable(clustering
-		src/main.cpp
-		src/center_algs.cpp
-		src/center_clustering_algs.cpp
-		src/clustering_algs.cpp
-		src/curve.cpp
-		src/curve_simplification.cpp
-		src/geometric_algs.cpp
-		src/filter.cpp
-		src/frechet_light.cpp
-		src/frechet_matching.cpp
-		src/geometry_basics.cpp
-		src/io.cpp
-		src/random.cpp
-		src/freespace.cpp
-		src/free_space_visualizer.cpp
-		src/candidate.cpp
-		)
+	set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
 
-target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmp.a")
-target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmpxx.a")
-target_link_libraries(clustering ${OpenCV_LIBS} )
+	include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+	add_executable(clustering
+			src/main.cpp
+			src/center_algs.cpp
+			src/center_clustering_algs.cpp
+			src/clustering_algs.cpp
+			src/curve.cpp
+			src/curve_simplification.cpp
+			src/geometric_algs.cpp
+			src/filter.cpp
+			src/frechet_light.cpp
+			src/frechet_matching.cpp
+			src/geometry_basics.cpp
+			src/io.cpp
+			src/random.cpp
+			src/freespace.cpp
+			src/free_space_visualizer.cpp
+			src/candidate.cpp
+			)
+
+	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmp.a")
+	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmpxx.a")
+	target_link_libraries(clustering ${OpenCV_LIBS} )
+else()
+	add_executable(clustering
+			src/main.cpp
+			src/center_algs.cpp
+			src/center_clustering_algs.cpp
+			src/clustering_algs.cpp
+			src/curve.cpp
+			src/curve_simplification.cpp
+			src/geometric_algs.cpp
+			src/filter.cpp
+			src/frechet_light.cpp
+			src/frechet_matching.cpp
+			src/geometry_basics.cpp
+			src/io.cpp
+			src/random.cpp
+			src/freespace.cpp
+			src/candidate.cpp
+			)
+endif()

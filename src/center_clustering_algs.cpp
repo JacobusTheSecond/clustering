@@ -56,7 +56,7 @@ Clustering computeCenterClustering(
 
 	return min_clustering;
 }
-
+/*
 std::vector<std::pair<int,int>> kApproxCover(Curves& curves, CandidateSet& cs, double delta,int r, int kL,int kU, int imax){
     //1. iterate up to k
     //sample k'
@@ -129,7 +129,7 @@ Clustering approxCoverRound(Curves& curves,CandidateSet& cs, double delta) {
 
     //return indices;
 }
-
+*/
 Clustering approxCover(Curves& curves, double delta,int l,int max_rounds){
     //something about rounds
     //double const guarantee = 1.0+1.0+2*(7.0/3.0);
@@ -328,7 +328,9 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
         cs.resetWeights();
         std::cout << "Done";
     }
+#ifdef HASVISUAL
     if(show)
         cs.showCovering(bestResultVisualizer);
+#endif
     return bestresult;
 }

@@ -7,7 +7,6 @@
 
 #include "geometry_basics.h"
 #include "curve.h"
-//#include "stdio.h"
 
 struct CellPoint{
     CellPoint();

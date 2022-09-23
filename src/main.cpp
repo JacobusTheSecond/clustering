@@ -1,10 +1,7 @@
 #include "center_clustering_algs.h"
-#include "defs.h"
 #include "io.h"
 #include "curve_simplification.h"
 #include "frechet_light.h"
-#include "candidate.h"
-#include "free_space_visualizer.h"
 #include <random>
 
 #include <iostream>
@@ -22,6 +19,9 @@ void printUsage()
 
 int main(int argc, char* argv[])
 {
+#ifdef HASVISUAL
+    std::cout << "test";
+#endif
     //std::cout << "Hello world!\n";
     FrechetLight fl;
 /*

@@ -1,8 +1,6 @@
 #include <fstream>
 #include "curve.h"
-#include "freespace.h"
 #include "geometry_basics.h"
-#include "free_space_visualizer.h"
 
 Curve::Curve(const Points& points)
 	: points(points), prefix_length(points.size())

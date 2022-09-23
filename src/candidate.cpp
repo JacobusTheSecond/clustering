@@ -6,7 +6,9 @@
 
 #include <utility>
 #include "candidate.h"
+#ifdef HASVISUAL
 #include "free_space_visualizer.h"
+#endif
 
 //TODO: improve zoop
 int Candidate::computeCovering(FreeSpace &fs, int curveIndex, Curves& curves) {
@@ -591,7 +593,7 @@ void CandidateSet::computeCandidates() {
 */
 CandidateSet::CandidateSet(Curves &c, double d) : curves(c), delta(d) {
 
-        mpz_init(tW);
+        //mpz_init(tW);
 
     for(auto & curve_i : curves) {
         freespaces.emplace_back();
@@ -610,7 +612,7 @@ CandidateSet::CandidateSet(Curves &c, double d) : curves(c), delta(d) {
     }
     std::cout << " Done\n";
 }
-
+/*
 void CandidateSet::showCandidates() {
     for (int baseCurveId=0;baseCurveId < freespaces.size();baseCurveId++){
         std::vector<FreeSpaceVisualizer> fsvs;
@@ -623,7 +625,7 @@ void CandidateSet::showCandidates() {
             }
         }
     }
-}
+}*/
 
 //mimic a<b at first coordinate
 bool comp2(std::pair<int,Subcurve> a, std::pair<int,Subcurve> b){
@@ -688,7 +690,7 @@ std::pair<int,ParamPoint> CandidateSet::findNonCovered(std::vector<std::pair<int
     }
     return {-1,{-1,-1.0}};
 }
-
+/*
 void CandidateSet::reweight(std::pair<int,ParamPoint> t) {
     mpz_t preTotalWeight;
     mpz_init_set(preTotalWeight,tW);
@@ -729,7 +731,7 @@ void CandidateSet::updateConcurrentWeights() {
         }
     }
 }
-
+*/
 /*bool comp3(std::vector<Candidate>& v, long long rand){
     return v.back().concurrentWeight < rand;
 }
@@ -763,9 +765,10 @@ bool comp5(std::pair<int,int> a, std::pair<int,int> b){
     return a.first < b.first;
 }
 void CandidateSet::showCovering(std::vector<std::pair<int, int>> indices) {
-
+#ifdef HASVISUAL
     FreeSpacesVisualizer fsv = FreeSpacesVisualizer(freespaces);
     fsv.showCandidates(*this,indices);
+#endif
     /*
     std::sort(indices.begin(), indices.end(),comp5);
     std::vector<Candidate> candidates;
@@ -789,7 +792,7 @@ void CandidateSet::showCovering(std::vector<std::pair<int, int>> indices) {
     }
      */
 }
-
+/*
 void CandidateSet::resetWeights() {
     //totalWeight = 0;
     mpz_set_ui(tW,0);
@@ -802,6 +805,7 @@ void CandidateSet::resetWeights() {
         }
     }
 }
+ */
 /*
 void CandidateSet::computeCandidates(int l) {
         //l is length limit
@@ -1169,7 +1173,7 @@ void CandidateSet::computeCandidates(int l) {
     totalCount = totalcount;
 }
 */
-
+/*
 bool mpz_comp3(std::vector<Candidate>& v, mpz_t rand){
     return mpz_cmp(rand,v.back().cW)>0;
 }
@@ -1221,7 +1225,7 @@ std::pair<int, int> CandidateSet::drawWithoutRedraw(__mpz_struct *rand) {
     updateConcurrentWeightsForRedraw();
     return {idx,it2-this->operator[](idx).begin()};
 }
-
+*/
 CandidateSetPQ::CandidateSetPQ(Curves &c, double d): curves(c), delta(d) {
     comp = cmpPQ;
     for(auto & curve_i : curves) {
@@ -1605,8 +1609,10 @@ void CandidateSetPQ::computeCandidates(int l) {
 }
 */
 void CandidateSetPQ::showCovering(std::vector<std::pair<int, Candidate>> candidates) {
+#ifdef HASVISUAL
     FreeSpacesVisualizer fsv = FreeSpacesVisualizer(freespaces);
     fsv.showCandidates(std::move(candidates));
+#endif
 }
 
 bool cmpLength(const std::pair<int,Candidate>& l, const std::pair<int,Candidate>& r){

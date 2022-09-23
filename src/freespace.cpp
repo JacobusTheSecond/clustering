@@ -3,7 +3,6 @@
 //
 
 #include "freespace.h"
-#include "free_space_visualizer.h"
 
 // Cell:
 // d +-----+

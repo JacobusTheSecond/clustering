@@ -6,8 +6,8 @@
 #define CLUSTERING_CANDIDATE_H
 
 #include "freespace.h"
-#include <gmp.h>
-#include <gmpxx.h>
+//#include <gmp.h>
+//#include <gmpxx.h>
 #include <queue>
 struct Subcurve{
 
@@ -28,10 +28,10 @@ struct Subcurve{
 class Candidate : Subcurve{
 public:
     int ID;
-    mpz_t wback;
-    mpz_t w;
-    mpz_t cW;
-    Candidate(ParamPoint s, ParamPoint t) : Subcurve(s, t) {mpz_init_set_ui(w,1);mpz_init_set_ui(wback,1);mpz_init(cW);};
+    //mpz_t wback;
+    //mpz_t w;
+    //mpz_t cW;
+    Candidate(ParamPoint s, ParamPoint t) : Subcurve(s, t){};// {mpz_init_set_ui(w,1);mpz_init_set_ui(wback,1);mpz_init(cW);};
     int computeCovering(FreeSpace& fs, int curveindex, Curves& curves);
     void resetCoverLength();
     std::vector<std::pair<int,Subcurve>> matchings;
@@ -63,7 +63,7 @@ private:
 public:
     //TODO: multithread
     //int totalWeight;
-    mpz_t tW;
+    //mpz_t tW;
     int totalCount = 0;
     CandidateSet(Curves& c,double d);
     //void computeCandidates();
@@ -76,8 +76,8 @@ public:
     void updateConcurrentWeightsForRedraw();
     void freshenWeights();
     void reweight(std::pair<int,ParamPoint> t);
-    std::pair<int,int> draw(mpz_t rand);
-    std::pair<int,int> drawWithoutRedraw(mpz_t rand);
+    //std::pair<int,int> draw(mpz_t rand);
+    //std::pair<int,int> drawWithoutRedraw(mpz_t rand);
     void showCovering(std::vector<std::pair<int,int>> indices);
     void resetWeights();
 };
