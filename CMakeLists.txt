@@ -62,6 +62,7 @@ if(OpenCV_FOUND)
 	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmpxx.a")
 	target_link_libraries(clustering ${OpenCV_LIBS} )
 else()
+	set(CMAKE_CXX_FLAGS "-Wall")
 	add_executable(clustering
 			src/main.cpp
 			#src/center_algs.cpp
