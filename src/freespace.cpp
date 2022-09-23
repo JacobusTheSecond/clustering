@@ -28,8 +28,11 @@ FreeSpace::FreeSpace(const Curve& B, const Curve& T, double delta, int threadcou
     this->delta = delta;
     nx = T.size()-1;
     ny = B.size()-1;
-    for(auto& list : reseterList)
+#pragma omp parallel for default(none) shared(reseterList)
+    for(auto& list : reseterList) {
+#pragma omp critical
         list.reserve(10000);
+    }
 
     Interval clipper(0,1);
 //#pragma omp parallel for default(none) shared(B,T,delta,nx,ny, clipper)
