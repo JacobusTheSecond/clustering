@@ -1681,7 +1681,9 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
             int upignores = 0;
             int upcandidatecount = 0;
 #pragma omp parallel for shared(startsAndLimits,idx1,baseCurveIdx,upcandidatecount,std::cout,upignores,compressedCandidates) default(none)
-            for(auto sal : startsAndLimits){
+            //for(auto sal : startsAndLimits){
+            for(int sali=0;sali<startsAndLimits.size();++sali){
+                auto sal = startsAndLimits[sali];
                 if((upcandidatecount+1)%100==0 || upcandidatecount == startsAndLimits.size()-1){
 #pragma omp critical (block1)
                     {
@@ -1832,7 +1834,9 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
             int downignores;
             int downcandidatecount = 0;
 #pragma omp parallel for shared(startsAndLimits,idx1,baseCurveIdx,downcandidatecount,std::cout,downignores,compressedCandidates) default(none)
-            for(auto sal : startsAndLimits) {
+            //for(auto sal : startsAndLimits){
+            for(int sali=0;sali<startsAndLimits.size();++sali){
+                auto sal = startsAndLimits[sali];
                 if((downcandidatecount+1)%100==0 || downcandidatecount == startsAndLimits.size()-1){
 #pragma omp critical (block3)
                     {
@@ -1942,7 +1946,9 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
     int removes = 0;
     //TODO: fix race condicitions as one thread may reset another threads freespace
 #pragma omp parallel for shared(compressedCandidates,freespaces,progress,std::cout, prepruned, minL, removes) default(none)
-    for(auto& cC : compressedCandidates){
+    //for(auto& cC : compressedCandidates){
+    for(int cCi=0;cCi<compressedCandidates.size();++cCi){
+        auto cC = compressedCandidates[cCi];
         progress++;
         if(progress % 100==0)
             std::cout << "\33[2K\rUncompressing candidates and augmenting with covering data... " << progress << "/" << compressedCandidates.size() << ", resulting in " << size() << " candidates so far. Removes "<< removes << " short candidates so far... ";
