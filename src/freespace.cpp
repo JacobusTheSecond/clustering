@@ -3,6 +3,7 @@
 //
 
 #include "freespace.h"
+#include <algorithm>
 
 // Cell:
 // d +-----+
