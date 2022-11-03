@@ -56,7 +56,7 @@ if(OpenCV_FOUND)
 			src/freespace.cpp
 			src/free_space_visualizer.cpp
 			src/candidate.cpp
-			)
+			src/SWatch.h)
 
 	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmp.a")
 	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmpxx.a")
@@ -81,5 +81,5 @@ else()
 			src/random.cpp
 			src/freespace.cpp
 			src/candidate.cpp
-			)
+			src/SWatch.h)
 endif()

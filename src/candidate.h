@@ -42,6 +42,7 @@ public:
     //priority queue stuff
     distance_t optimisticCoverLength;
     distance_t semiUpdatedCoverLength;
+    distance_t importance;
     int roundOfUpdate = 0;
     int debugID = -1;
 

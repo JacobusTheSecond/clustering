@@ -49,6 +49,7 @@ struct ParamPoint{
     bool sameEdgeAs(ParamPoint const& other) const{
         return id == other.id;
     }
+    ParamPoint interpol(ParamPoint end, int numerator, int denominator);
 
 };
 

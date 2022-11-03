@@ -3,6 +3,7 @@
 //#include <gmpxx.h>
 #include "io.h"
 #include <algorithm>
+#include "SWatch.h"
 
 /*
 namespace
@@ -210,8 +211,58 @@ void printFirst50(CandidateSetPQ& cs){
         cs.push(c);
 }
 
+double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> candidateSet){
+    //step 1: merge
+    std::vector<std::pair<int,Subcurve>> presorted;
+    for(auto c:candidateSet){
+        presorted.insert(presorted.end(),c.second.matchings.begin(),c.second.matchings.end());
+    }
+    std::sort(presorted.begin(), presorted.end(), cmpLeftLower);
+
+
+    double uncovered = 0;
+    std::pair<int, ParamPoint> pcur = {0, {0, 0}};
+
+    std::vector<std::pair<int,Subcurve>> covering;
+
+
+    if(!presorted.empty()) {
+        std::pair<int, Subcurve> cur = presorted[0];
+        for (int covI = 1; covI < presorted.size(); covI++) {
+            std::pair<int, Subcurve> next = presorted[covI];
+            if ((next.first == cur.first) && (next.second.start < cur.second.end)) {
+                cur.second.end = std::max(next.second.end, cur.second.end);
+            } else {
+                covering.push_back(cur);
+                cur = next;
+            }
+        }
+        covering.push_back(cur);
+
+        //now covering is a disjoint set of intervals
+        for (auto cov: covering) {
+            while (pcur.first < cov.first) {
+                uncovered += curves[pcur.first].subcurve_length(pcur.second,
+                                                                {(int) (curves[pcur.first].size()) - 2, 1.0});
+                pcur = {pcur.first + 1, {0, 0}};
+            }
+            if (cov.first == pcur.first) {
+                uncovered += curves[cov.first].subcurve_length(pcur.second, cov.second.start);
+                pcur = {pcur.first, cov.second.end};
+            }
+        }
+    }
+    while(pcur.first < curves.size()){
+        uncovered += curves[pcur.first].subcurve_length(pcur.second,{(int)(curves[pcur.first].size())-2,1.0});
+        pcur = {pcur.first+1,{0,0}};
+    }
+    return uncovered;
+}
+
 Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool show){
     Curves bestresult;
+    stdc::SWatch swatchinsert;
+    stdc::SWatch swatchupdate;
     std::vector<std::pair<int,Candidate>> bestResultVisualizer;
     double const guarantee = 1.0+1.0+2*(7.0/3.0);
     CandidateSetPQ cs = CandidateSetPQ(curves,guarantee*delta);
@@ -223,6 +274,9 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
 
     for(int r = 0;r<max_rounds;++r) {
 
+        //swatchinsert.reset();
+        //swatchupdate.reset();
+
         std::vector<std::pair<int,Candidate>> result;
         std::vector<std::pair<int,Subcurve>> covering;
         std::vector<double> suffixLengths;
@@ -232,17 +286,50 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
         for (int i = 0; i < 501; ++i) {
             auto ID = 0;
             auto roundID = i;
-            //std::cout << "Round " << roundID;
+            std::cout << ".";
             //update top, until the roundID matches
             while (cs.top().second.roundOfUpdate != roundID) {
                 ID++;
                 std::pair<int, Candidate> c = cs.top();
                 cs.pop();
+                swatchupdate.start();
                 updateCandidate(curves, c.second, covering, suffixLengths, roundID);
+                swatchupdate.stop();
+                swatchinsert.start();
                 cs.push(c);
+                swatchinsert.stop();
             }
-
-            if (cs.top().second.semiUpdatedCoverLength <= EPSILON) {
+            if (lengthOfUncovered(curves,result) <= EPSILON || cs.top().second.semiUpdatedCoverLength <= EPSILON) {
+                std::cout << "\nTrying to refine... ";
+                for(int igni=result.size()-1;igni>=0;--igni){
+                    //i is the index to be ignored
+                    std::vector<std::pair<int,Candidate>> temp;
+                    for(int j=0;j<result.size();++j){
+                        if(igni != j){
+                            temp.push_back(result[j]);
+                        }
+                    }
+                    double importance = lengthOfUncovered(curves,temp);
+                    if(importance <= EPSILON) {
+                        std::cout << " ( " << igni << " , " << importance << " )";
+                        result.erase(result.begin() + igni);
+                    }else{
+                        result[igni].second.importance = importance;
+                    }
+                }
+                std::cout << " greedely deleted\n";
+                for(int igni=result.size()-1;igni>=0;--igni){
+                    //i is the index to be ignored
+                    std::vector<std::pair<int,Candidate>> temp;
+                    for(int j=0;j<result.size();++j){
+                        if(igni != j){
+                            temp.push_back(result[j]);
+                        }
+                    }
+                    double importance = lengthOfUncovered(curves,temp);
+                    result[igni].second.importance = importance;
+                }
+                //std::sort(result.begin(), result.end(), [](auto& a, auto& b){return a.second.importance > b.second.importance;});
                 std::cout << " Solution of size " << result.size() << " found. ";
                 if (bestresult.empty() || bestresult.size() > result.size()) {
                     if(!bestresult.empty()){
@@ -263,8 +350,9 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
 
             double addedweight;
             //cs.showCovering(result);
+            //std::cout << cs.top().second.semiUpdatedCoverLength << " ";
             //std::pair<int,Candidate> ctemp = cs.top();
-            //std::cout << << cs.top().second.matchings.size();
+            //std::cout << cs.top().second.matchings.size();
             //updateCandidate(curves, ctemp.second, covering, suffixLengths, roundID);
 
 
@@ -327,13 +415,32 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
             //if((i+1)%100==0)
             //cs.showCovering(result);
         }
+        std::cout << std::endl;
+        std::cout << " " << std::chrono::duration_cast<std::chrono::milliseconds>(swatchinsert.elapsed()).count() << std::endl;
+        std::cout << " " << std::chrono::duration_cast<std::chrono::milliseconds>(swatchupdate.elapsed()).count() << std::endl;
         std::cout << "Cleaning up for next round ... ";
         cs.resetWeights();
         std::cout << "Done";
     }
+    if(show) {
 #ifdef HASVISUAL
-    if(show)
         cs.showCovering(bestResultVisualizer);
 #endif
+        std::cout << "\nImportances: ";
+        for(auto c : bestResultVisualizer){
+            std::cout << c.second.importance << " ";
+        }
+        std::cout << "\n";
+        for(int count = 0;count < ((20<bestResultVisualizer.size())?20:bestResultVisualizer.size());count++) {
+            std::pair<int, Candidate> bestCandidate = bestResultVisualizer[count];
+            Candidate bC = bestCandidate.second;
+            for (int i = 0; i < bC.visualMatchings.size(); ++i) {
+                auto matching = bC.visualMatchings[i];
+                io::exportSubcurve(
+                        "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(count) +"/interval" + std::to_string(i) + ".txt",
+                        curves[matching.first], matching.second.start, matching.second.end, 100);
+            }
+        }
+    }
     return bestresult;
 }

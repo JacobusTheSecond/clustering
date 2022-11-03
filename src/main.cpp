@@ -32,16 +32,15 @@ int main(int argc, char* argv[])
     Curve c7 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S8_directions_1.txt",96);
     Curve c8 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S8_directions_2.txt",96);
     */
-/*
+
     Curve c1 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_directions_1.txt",96);
     Curve c2 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_directions_2.txt",96);
-    Curve c3 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_discussion_1.txt",96);
+    //Curve c3 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_discussion_1.txt",96);
     Curve c4 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_discussion_2.txt",96);
-    Curve c5 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_eating_1.txt",96);
+    //Curve c5 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_eating_1.txt",96);
     Curve c6 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_eating_2.txt",96);
-    Curve c7 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_greeting_1.txt",96);
-    Curve c8 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_greeting_2.txt",96);
-*/
+    //Curve c7 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_greeting_1.txt",96);
+    //Curve c8 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_greeting_2.txt",96);
 
 
     //andreas weber heuristik
@@ -49,35 +48,38 @@ int main(int argc, char* argv[])
     //normalize direction DONE
     std::vector<int> times;
 
-    Curve c1 = Curve("../data/86_1.txt",93);
-    Curve c2 = Curve("../data/86_6.txt",93);
+    //Curve c1 = Curve("../data/86_1.txt",93);
+    //Curve c2 = Curve("../data/86_2.txt",93);
+    //Curve c4 = Curve("../data/86_4.txt",93);
+    //Curve c6 = Curve("../data/86_6.txt",93);
 
     std::cout << "Input complexities: " << c1.size() << " " << c2.size() << std::endl;
 
-    double delta = 1.0;
-    double deltaprime = 1.5;
+    double delta = 0.1;//1.0;
+    double deltaprime = 0.1;//1.25;
 
     Curve simpC1 = good_simplification(c1,delta,&times);
     Curve simpC2 = good_simplification(c2,delta);
+    Curve simpC4 = good_simplification(c4,delta);
+    Curve simpC6 = good_simplification(c6,delta);
 
 
     Curve unsimpC = Curve(simpC1,times);
     //io::exportCurve("/Users/styx/data/curveclustering/results/testcurve.txt",unsimpC);
     //io::exportCurve("/Users/styx/data/curveclustering/results/testcurveorigin.txt",c1);
-    Curves curvesCMU = {simpC1,simpC2};
+    Curves curvesCMU = {simpC1,simpC2,simpC4,simpC6};
     double guaranteeCMU = 1.0+1.0+2*(7.0/3.0);
     int length = 0;
     for(const Curve& c : curvesCMU){
         length += c.size();
     }
-/*
-    Curves result = greedyCover(curvesCMU,deltaprime, (int) ((length) / (25 * curvesCMU.size())), 25,true);
-
+    Curves result = greedyCover(curvesCMU,deltaprime, (int) ((length) / (25 * curvesCMU.size())), 100, true);
+    /*
     for(int i=0;i<result.size();++i){
         io::exportCurve("/Users/styx/data/curveclustering/results/resultcurve" + std::to_string(i) + ".txt",result[i]);
-    }
-*/
+    }*/
 
+    /*
     std::vector<std::vector<int>> sizes;
 
     for(double sd=0.25;sd<5;sd+=0.25) {
@@ -89,7 +91,7 @@ int main(int argc, char* argv[])
         for(const Curve& c : scs){
             l += c.size();
         }
-        for (double d = 0.25; d <= 5; d += 0.25) {
+        for (double d = 2.25; d <= 5; d += 0.25) {
             std::cout << "\nSIMPLIFICATION DELTA = " << sd << " FREESPACE DELTA = " << d << "\n";
             Curves result = greedyCover(scs, d, (int) ((l) / (25 * scs.size())), 25);
             sizes.back().push_back(result.size());
@@ -105,7 +107,7 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
         sd += 0.25;
     }
-
+*/
     /**
      *
 Resuls:

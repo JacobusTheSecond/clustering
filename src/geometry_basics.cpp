@@ -487,3 +487,20 @@ Point Point::min(const Point &other) const  {
     return result;
 }
 
+ParamPoint ParamPoint::interpol(ParamPoint _end, int numerator, int denominator) {
+    double start = (double)(this->id) + this->t;
+    double end = (double)(_end.id) + _end.t;
+    double length = end - start;
+    double interpoler = (length * numerator)/denominator;
+    ParamPoint returner = *this;
+    returner.t += interpoler;
+    while(returner.t <= -EPSILON){
+        returner.id -= 1;
+        returner.t += 1.0;
+    }
+    while(returner.t >= 1.0+EPSILON){
+        returner.id += 1;
+        returner.t -= 1.0;
+    }
+    return returner;
+}

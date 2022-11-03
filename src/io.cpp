@@ -102,6 +102,20 @@ void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, Para
     file << "\n";
 }
 
+void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, ParamPoint t, int interpol){
+
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        ERROR("Couldn't open clustering file: " << filename);
+    }
+    for(int i=0;i<=interpol;++i){
+        for(auto coord:curve.eval(s.interpol(t,i,interpol))){
+            file << coord << " ";
+        }
+        file << "\n";
+    }
+}
+
 void exportCurve(std::string const& curve_data_file,Curve c){
 
     std::ofstream file(curve_data_file);
