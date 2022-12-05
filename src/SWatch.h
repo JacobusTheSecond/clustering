@@ -9,20 +9,20 @@ namespace stdc {
     private:
         std::chrono::time_point<std::chrono::high_resolution_clock> old_now{};
         std::chrono::nanoseconds elap{};
-        bool running_DEBUG;
+        //bool running_DEBUG;
 
     public:
         void start() noexcept {
-            assert(!running_DEBUG);
-            assert((running_DEBUG = true, true));
+            //assert(!running_DEBUG);
+            //assert((running_DEBUG = true, true));
             old_now = std::chrono::high_resolution_clock::now();
         }
 
         void stop() noexcept {
             auto now = std::chrono::high_resolution_clock::now();
             elap += now - old_now;
-            assert(running_DEBUG);
-            assert((running_DEBUG = false, true));
+            //assert(running_DEBUG);
+            //assert((running_DEBUG = false, true));
         }
 
         // template<typename Duration>
@@ -39,12 +39,12 @@ namespace stdc {
         // }
 
         [[nodiscard]] auto elapsed() const noexcept {
-            assert(!running_DEBUG);
+            //assert(!running_DEBUG);
             return elap;
         }
 
         void reset() noexcept {
-            assert(!running_DEBUG);
+            //assert(!running_DEBUG);
             elap = std::chrono::nanoseconds{};
         }
     };
