@@ -101,3 +101,43 @@ Curve good_simplification(const Curve &c, const distance_t delta, std::vector<in
     std::cout << "Complexity: " << simplification.size() << "\n";
     return simplification;
 }
+
+Curve good_simplification(const Curve &c, const distance_t delta, std::vector<std::pair<Label,int>>& groundthruth, std::vector<std::pair<Label,ParamPoint>>* simplifiedLabels) {
+    assert(groundthruth[groundthruth.size()-1].second == c.size());
+    std::vector<int> I;
+    I.push_back(0);
+    int length = 0;
+    for (int i=1;i<c.size();++i){
+        while(length > 0 && _less_than_or_equal_edge(2*delta,c[I[length-1]],c[i],c,I[length-1],i)){
+            I.pop_back();
+            length -= 1;
+        }
+        if(c[I[length]].dist_sqr(c[i])>=delta*delta/9.0){
+            I.push_back(i);
+            length += 1;
+        }
+    }
+    Curve simplification;
+    int gt_counter = 0;
+    std::pair<Label,int>& cur = groundthruth[gt_counter];
+    for (int i=0;i<=length;++i){
+        simplification.push_back(c[I[i]]);
+        simplification.prefix_length.pop_back();
+        //simplification.prefix_length.push_back(i);
+        //simplification.prefix_length.push_back(I[i]);
+        simplification.prefix_length.push_back(c.prefix_length[I[i]]);
+        while(i > 0 && cur.second-1 > I[i-1] && cur.second-1 <= I[i]){
+            simplifiedLabels->push_back({cur.first,{i-1,(((double)(cur.second-1-I[i-1]))/(I[i]-I[i-1]))}});
+            gt_counter++;
+            if(gt_counter < groundthruth.size())
+                cur = groundthruth[gt_counter];
+            else {
+                assert(i == length);
+                break;
+            }
+        }
+    }
+
+    std::cout << "Complexity: " << simplification.size() << "\n";
+    return simplification;
+}

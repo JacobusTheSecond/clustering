@@ -1,5 +1,4 @@
 #include "center_clustering_algs.h"
-#include "candidate.h"
 //#include <gmpxx.h>
 #include "io.h"
 #include <algorithm>
@@ -260,6 +259,34 @@ double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> ca
 }
 
 Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool show){
+    std::vector<std::pair<int,Candidate>> bestResultVisualizer = greedyCoverUnsanitizedOutput(curves,delta,l,max_rounds,show);
+    Curves bestresult;
+
+    for (const auto &sub: bestResultVisualizer) {
+        bestresult.push_back(
+                curves[sub.first].constructSubcurve(sub.second.getStart(), sub.second.getEnd()));
+    }
+
+    std::cout << "\nImportances: ";
+    for(auto c : bestResultVisualizer){
+        std::cout << c.second.importance << " ";
+    }
+    std::cout << "\n";
+    for(int count = 0;count < ((20<bestResultVisualizer.size())?20:bestResultVisualizer.size());count++) {
+        std::pair<int, Candidate> bestCandidate = bestResultVisualizer[count];
+        Candidate bC = bestCandidate.second;
+        for (int i = 0; i < bC.visualMatchings.size(); ++i) {
+            auto matching = bC.visualMatchings[i];
+            io::exportSubcurve(
+                    "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(count) +"/interval" + std::to_string(i) + ".txt",
+                    curves[matching.first], matching.second.start, matching.second.end, 100);
+        }
+    }
+    return bestresult;
+}
+
+
+std::vector<std::pair<int,Candidate>> greedyCoverUnsanitizedOutput(Curves& curves, double delta, int l, int max_rounds, bool show){
     Curves bestresult;
     stdc::SWatch swatchinsert;
     stdc::SWatch swatchupdate;
@@ -301,6 +328,7 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
             }
             if (lengthOfUncovered(curves,result) <= EPSILON || cs.top().second.semiUpdatedCoverLength <= EPSILON) {
                 std::cout << "\nTrying to refine... ";
+                int deletecount = 0;
                 for(int igni=result.size()-1;igni>=0;--igni){
                     //i is the index to be ignored
                     std::vector<std::pair<int,Candidate>> temp;
@@ -313,10 +341,13 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
                     if(importance <= EPSILON) {
                         std::cout << " ( " << igni << " , " << importance << " )";
                         result.erase(result.begin() + igni);
+                        deletecount += 1;
                     }else{
                         result[igni].second.importance = importance;
                     }
                 }
+                if (deletecount == 0)
+                    std::cout << "nothing";
                 std::cout << " greedely deleted\n";
                 for(int igni=result.size()-1;igni>=0;--igni){
                     //i is the index to be ignored
@@ -426,21 +457,6 @@ Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool sho
 #ifdef HASVISUAL
         cs.showCovering(bestResultVisualizer);
 #endif
-        std::cout << "\nImportances: ";
-        for(auto c : bestResultVisualizer){
-            std::cout << c.second.importance << " ";
-        }
-        std::cout << "\n";
-        for(int count = 0;count < ((20<bestResultVisualizer.size())?20:bestResultVisualizer.size());count++) {
-            std::pair<int, Candidate> bestCandidate = bestResultVisualizer[count];
-            Candidate bC = bestCandidate.second;
-            for (int i = 0; i < bC.visualMatchings.size(); ++i) {
-                auto matching = bC.visualMatchings[i];
-                io::exportSubcurve(
-                        "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(count) +"/interval" + std::to_string(i) + ".txt",
-                        curves[matching.first], matching.second.start, matching.second.end, 100);
-            }
-        }
     }
-    return bestresult;
+    return bestResultVisualizer;
 }

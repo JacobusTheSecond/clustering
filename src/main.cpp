@@ -4,6 +4,8 @@
 #include "frechet_light.h"
 #include <random>
 #include "SWatch.h"
+#include <map>
+#include "free_space_visualizer.h"
 
 #include <iostream>
 
@@ -43,7 +45,6 @@ int main(int argc, char* argv[])
     //Curve c7 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_greeting_1.txt",96);
     //Curve c8 = Curve("/Users/styx/data/curveclustering/fixedseq3d/fixedseq3d_S11_greeting_2.txt",96);
 
-
     //andreas weber heuristik
     //visualize candidates DONE
     //normalize direction DONE
@@ -54,33 +55,75 @@ int main(int argc, char* argv[])
     Curve c4 = Curve("../data/86_4.txt",93);
     Curve c6 = Curve("../data/86_6.txt",93);
 
-    std::cout << "Input complexities: " << c1.size() << " " << c2.size() << std::endl;
 
-    double delta = 0.1;//1.0;
-    double deltaprime = 0.1;//1.25;
+    /**
+     * GROUND TRUTHS
+     * */
+    //groundtruths are 1-indexed, as they are from a mathlab file
+    std::vector<std::pair<Label,int>> gt86_01 = {{walk,500},{transition,600},
+                                                 {jump,1100},{transition,1200},
+                                                 {walk,1930},{transition,2030},
+                                                 {punch,2450},{transition,2550},
+                                                 {walk,3150},{transition,3250},
+                                                 {leg_kick,4015},{transition,4115},
+                                                 {punch,4579}};
+    std::vector<std::pair<Label,int>> gt86_02 = {{walk,980},{transition,1100},
+                                                 {squat,1850},{transition,1950},
+                                                 {run,2580},{transition,2780},
+                                                 {stand,3080},{transition,3180},
+                                                 {arm_up,4670},{transition,4750},
+                                                 {walk,5800},{transition,6000},
+                                                 {jump,7250},{transition,7420},
+                                                 {drink,8725},{transition,8880},
+                                                 {punch,9570},{transition,9660},
+                                                 {walk,10617}};
+    std::vector<std::pair<Label,int>> gt86_04 = {{walk,970},{transition,1100},
+                                                 {stretch,2180},{transition,2295},
+                                                 {punch,3368},{transition,3500},
+                                                 {stand,4000},{transition,4130},
+                                                 {walk,5050},{transition,5090},
+                                                 {slap,5830},{transition,5930},
+                                                 {turn,6600},{transition,6750},
+                                                 {drink,8000},{transition,8150},
+                                                 {punch,9080},{transition,9200},
+                                                 {walk,10078}};
 
-    Curve simpC1 = good_simplification(c1,delta,&times);
-    Curve simpC2 = good_simplification(c2,delta);
-    Curve simpC4 = good_simplification(c4,delta);
+    //std::cout << "Input complexities: " << c1.size() << " " << c2.size() << std::endl;
+
+    double delta = 0.5;//1.0;
+    double deltaprime = 1.5;//1.25;
+
+    std::vector<std::pair<Label,ParamPoint>> simplifiedGT86_01,simplifiedGT86_02,simplifiedGT86_04;
+
+    Curve simpC1 = good_simplification(c1,delta,gt86_01,&simplifiedGT86_01);
+    Curve simpC2 = good_simplification(c2,delta,gt86_02,&simplifiedGT86_02);
+    Curve simpC4 = good_simplification(c4,delta,gt86_04,&simplifiedGT86_04);
     Curve simpC6 = good_simplification(c6,delta);
 
 
-    Curve unsimpC = Curve(simpC1,times);
+
+    //Curve unsimpC = Curve(simpC1,times);
     //io::exportCurve("/Users/styx/data/curveclustering/results/testcurve.txt",unsimpC);
     //io::exportCurve("/Users/styx/data/curveclustering/results/testcurveorigin.txt",c1);
-    //Curves curvesCMU = {simpC2};//{simpC1,simpC2,simpC4,simpC6};
-    //double guaranteeCMU = 1.0+1.0+2*(7.0/3.0);
-    //int length = 0;
-    //for(const Curve& c : curvesCMU){
-    //    length += c.size();
-   // }
-    //Curves result = greedyCover(curvesCMU,deltaprime, (int) ((length) / (25 * curvesCMU.size())), 100, true);
+    Curves curvesCMU = {simpC1,simpC2,simpC4};//,simpC6};
+    std::vector<std::vector<std::pair<Label,ParamPoint>>> simplifiedGTs = {simplifiedGT86_01,simplifiedGT86_02,simplifiedGT86_04};
+
+    double guaranteeCMU = 1.0+1.0+2*(7.0/3.0);
+    int length = 0;
+    for(const Curve& c : curvesCMU){
+        length += c.size();
+    }
+    auto result = greedyCoverUnsanitizedOutput(curvesCMU,deltaprime, (int) ((length) / (25 * curvesCMU.size())), 100, false);
+
+    ClusteringVisulaizer cv;
+    cv.showClustering(curvesCMU,simplifiedGTs,result);
+
     /*
     for(int i=0;i<result.size();++i){
         io::exportCurve("/Users/styx/data/curveclustering/results/resultcurve" + std::to_string(i) + ".txt",result[i]);
     }*/
 
-
+/*
     std::vector<std::vector<int>> sizes;
 
 
@@ -118,7 +161,7 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
         sd += 0.25;
     }
-
+*/
     /**
      *
 Resuls:

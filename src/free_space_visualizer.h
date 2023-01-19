@@ -7,7 +7,7 @@
 
 #include "freespace.h"
 #include "candidate.h"
-
+#include "io.h"
 
 
 class FreeSpaceVisualizer{
@@ -30,6 +30,13 @@ public:
     void show();
     void showCandidates(CandidateSet& candidates, std::vector<std::pair<int,int>> & indices);
     void showCandidates(std::vector<std::pair<int,Candidate>> candidates);
+};
+
+
+
+class ClusteringVisulaizer{
+public:
+    void showClustering(Curves c, std::vector<std::vector<std::pair<Label,ParamPoint>>> groundthruth, std::vector<std::pair<int,Candidate>> candidates);
 };
 
 #endif //CLUSTERING_FREE_SPACE_VISUALIZER_H

@@ -1256,3 +1256,193 @@ void FreeSpacesVisualizer::show() {
 
     cv::waitKey(1);
 }
+
+Scalar _labelColor(Label l){
+    switch (l) {
+
+        case transition:
+            return Scalar(0,0,0);
+        case walk:
+            return Scalar(0,255,255);
+        case jump:
+            return Scalar(64,190,255);
+        case punch:
+            return Scalar(128,128,255);
+        case leg_kick:
+            return Scalar(190,64,255);
+        case squat:
+            return Scalar(255,0,255);
+        case run:
+            return Scalar(255,64,190);
+        case stand:
+            return Scalar(255,128,128);
+        case arm_up:
+            return Scalar(255,190,64);
+        case drink:
+            return Scalar(255,255,0);
+        case stretch:
+            return Scalar(190,255,64);
+        case slap:
+            return Scalar(128,255,128);
+        case turn:
+            return Scalar(64,255,190);
+        default:
+            return Scalar(0,0,0);
+    }
+}
+
+void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std::pair<Label, ParamPoint>>> groundthruth,
+                                          std::vector<std::pair<int, Candidate>> candidates) {
+
+    int scale = 8;
+
+    int scrolHight = 0;
+    int scrolWidth = 0;
+
+    std::vector<Label> labeling(candidates.size());
+    int labelingIdx = 0;
+
+    std::vector<int> partialLengths;
+    partialLengths.push_back(1);
+    for (auto curve: c) {
+        partialLengths.push_back(partialLengths[partialLengths.size() - 1] + 1 + curve.size());
+    }
+    int xSize = (partialLengths[partialLengths.size() - 1]);
+    int ySize = 1 + (_labelend - _labelstart - 1) + 5 + candidates.size();
+
+    std::cout << xSize << " x " << ySize << std::endl;
+
+    namedWindow("winImage", WINDOW_NORMAL);
+    namedWindow("controlWin", WINDOW_AUTOSIZE);
+
+    createTrackbar("Hscroll", "controlWin", &scrolHight, 1000);
+    createTrackbar("Wscroll", "controlWin", &scrolWidth, 1000);
+
+
+    bool redraw = true;
+    while(redraw) {
+        redraw = false;
+
+        Mat img(scale * ySize, scale * xSize, CV_8UC3, Scalar(255, 255, 255));
+
+        for (int i = 0; i < c.size(); i++) {
+            line(img, Point2d(partialLengths[i], 1) * scale, Point2d(partialLengths[i + 1]-1, 1) * scale, Scalar(0, 0, 0),
+                 5);
+            circle(img, Point2d(partialLengths[i], 1) * scale, 5, Scalar(0, 0, 0), -1);
+            circle(img, Point2d(partialLengths[i + 1]-1, 1) * scale, 5, Scalar(0, 0, 0), -1);
+        }
+
+        for(Label label = (Label)(_labelstart+1);label!=_labelend;label = (Label)(label+1)){
+            int y = 1+label;
+            line(img, Point2d(partialLengths[0], y) * scale, Point2d(partialLengths[partialLengths.size()-1], y) * scale, Scalar(0, 0, 0),
+                 1);
+        }
+
+        for (int curveindex = 0; curveindex < c.size(); curveindex++) {
+            ParamPoint start = {0, 0};
+            for (auto assignment: groundthruth[curveindex]) {
+                int y = 1 + assignment.first;
+
+                double intxs = partialLengths[curveindex] + start.id + start.t;
+                double intxt = partialLengths[curveindex] + assignment.second.id + assignment.second.t;
+
+                line(img, Point2d(intxs, y) * scale, Point2d(intxt, y) * scale, _labelColor(assignment.first), 5);
+                circle(img, Point2d(intxs, y) * scale, 5, _labelColor(assignment.first), -1);
+                circle(img, Point2d(intxt, y) * scale, 5, _labelColor(assignment.first), -1);
+
+                start = assignment.second;
+            }
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            auto wrappercandidate = candidates[i];
+            Candidate candidate = wrappercandidate.second;
+            int y = 1 + (_labelend - _labelstart - 1) + 5 + i;
+            line(img, Point2d(partialLengths[0], y) * scale, Point2d(partialLengths[partialLengths.size()-1], y) * scale, Scalar(0, 0, 0),
+                 1);
+            for (auto matching: candidate.matchings) {
+                double intxs = partialLengths[matching.first] + matching.second.start.id + matching.second.start.t;
+                double intxt = partialLengths[matching.first] + matching.second.end.id + matching.second.end.t;
+
+                line(img, Point2d(intxs, y) * scale, Point2d(intxt, y) * scale, _labelColor(labeling[i]), 5);
+                circle(img, Point2d(intxs, y) * scale, 5, _labelColor(labeling[i]), -1);
+                circle(img, Point2d(intxt, y) * scale, 5, _labelColor(labeling[i]), -1);
+            }
+        }
+        int winH = 1800;
+        int winW = 3200;
+        if (winH >= img.rows)winH = img.rows - 1;
+        if (winW >= img.cols)winW = img.cols - 1;
+        while (true) {
+            int truescrolHight = (img.rows - winH)*scrolHight/1000;
+            int truescrolWidth = (img.cols - winW)*scrolWidth/1000;
+            Mat winImage = img(Rect(truescrolWidth, img.rows - winH - truescrolHight, winW, winH));
+            imshow("winImage", winImage);
+            int input = waitKey(0);
+            if (input == 'q')
+                break;
+            if(input == '+'){
+                scale = std::min(scale*2,128);
+                redraw = true;
+                break;
+            }
+            if(input == '-'){
+                scale = std::max(scale/2,1);
+                redraw = true;
+                break;
+            }
+            if(input == 'w'){
+                scrolHight = std::min(scrolHight+25,1000);
+            }
+            if(input == 'd'){
+                scrolWidth = std::min(scrolWidth+25,1000);
+            }
+            if(input == 's'){
+                scrolHight = std::max(scrolHight-25,0);
+            }
+            if(input == 'a'){
+                scrolWidth = std::max(scrolWidth-25,0);
+            }
+            if(input == 'j'){
+                if(labeling[labelingIdx] != _labelstart) {
+                    labeling[labelingIdx] = (Label) (labeling[labelingIdx] - 1);
+
+                    for(auto l : labeling){
+                        std::cout << l << " ";
+                    }
+                    std::cout << std::endl;
+
+                    redraw = true;
+                    break;
+                }
+            }
+            if(input == 'l'){
+                if(labeling[labelingIdx] != _labelend) {
+                    labeling[labelingIdx] = (Label) (labeling[labelingIdx] + 1);
+
+                    for(auto l : labeling){
+                        std::cout << l << " ";
+                    }
+                    std::cout << std::endl;
+
+                    redraw = true;
+                    break;
+                }
+            }
+            if(input == 'i'){
+                if(labelingIdx > 0){
+                    labelingIdx -= 1;
+                }
+            }
+            if(input == 'k'){
+                if(labelingIdx < labeling.size()-1){
+                    labelingIdx += 1;
+                }
+            }
+        }
+    }
+
+    cv::destroyAllWindows();
+
+    cv::waitKey(1);
+}

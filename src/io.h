@@ -3,6 +3,10 @@
 #include "basic_types.h"
 #include "curve.h"
 
+
+//labelset for 86_1,86_2 and 86_4
+enum Label {_labelstart,transition,walk,jump,punch,leg_kick,squat,run,stand,arm_up,drink,stretch,slap,turn,_labelend};
+
 namespace io
 {
 
