@@ -1333,7 +1333,7 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
         }
 
         for(Label label = (Label)(_labelstart+1);label!=_labelend;label = (Label)(label+1)){
-            int y = 1+label;
+            double y = 1+label;
             line(img, Point2d(partialLengths[0], y) * scale, Point2d(partialLengths[partialLengths.size()-1], y) * scale, Scalar(0, 0, 0),
                  1);
         }
@@ -1341,7 +1341,7 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
         for (int curveindex = 0; curveindex < c.size(); curveindex++) {
             ParamPoint start = {0, 0};
             for (auto assignment: groundthruth[curveindex]) {
-                int y = 1 + assignment.first;
+                double y = 1 + assignment.first;
 
                 double intxs = partialLengths[curveindex] + start.id + start.t;
                 double intxt = partialLengths[curveindex] + assignment.second.id + assignment.second.t;
@@ -1357,16 +1357,16 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
         for (int i = 0; i < candidates.size(); i++) {
             auto wrappercandidate = candidates[i];
             Candidate candidate = wrappercandidate.second;
-            int y = 1 + (_labelend - _labelstart - 1) + 5 + i;
+            double y = 1 + (_labelend - _labelstart - 1) + 5 + i;
             line(img, Point2d(partialLengths[0], y) * scale, Point2d(partialLengths[partialLengths.size()-1], y) * scale, Scalar(0, 0, 0),
                  1);
-            for (auto matching: candidate.matchings) {
+            for (auto matching: candidate.visualMatchings) {
                 double intxs = partialLengths[matching.first] + matching.second.start.id + matching.second.start.t;
                 double intxt = partialLengths[matching.first] + matching.second.end.id + matching.second.end.t;
 
-                line(img, Point2d(intxs, y) * scale, Point2d(intxt, y) * scale, _labelColor(labeling[i]), 5);
-                circle(img, Point2d(intxs, y) * scale, 5, _labelColor(labeling[i]), -1);
-                circle(img, Point2d(intxt, y) * scale, 5, _labelColor(labeling[i]), -1);
+                line(img, Point2d(intxs, y+0.1) * scale, Point2d(intxt, y-0.1) * scale, _labelColor(labeling[i]), 5);
+                circle(img, Point2d(intxs, y+0.1) * scale, 5, _labelColor(labeling[i]), -1);
+                circle(img, Point2d(intxt, y-0.1) * scale, 5, _labelColor(labeling[i]), -1);
             }
         }
         int winH = 1800;

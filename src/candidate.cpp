@@ -2,7 +2,7 @@
 // Created by Jacobus Conradi on 04.02.22.
 //
 
-#include <omp.h>
+
 
 #include <utility>
 #include "candidate.h"

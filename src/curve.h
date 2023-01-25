@@ -47,11 +47,14 @@ public:
 
     distance_t subcurve_length(ParamPoint s, ParamPoint t) const{
         if(s.id == t.id){
-            return ((t.t - s.t)*curve_length(s.id,s.id+1));
+            distance_t length = ((t.t - s.t)*curve_length(s.id,s.id+1));
+            return length;
         }else{
-            return  ( (1-s.t)*curve_length(s.id, s.id+1)+
-                     curve_length(s.id + 1, t.id) +
-                     (t.t-0)*curve_length(t.id,t.id+1));
+            distance_t length = ( (1-s.t)*curve_length(s.id, s.id+1)+
+                                  curve_length(s.id + 1, t.id) +
+                                  (t.t-0)*curve_length(t.id,t.id+1));
+            distance_t l = length;
+            return length;
         }
     }
 

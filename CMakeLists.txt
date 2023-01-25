@@ -27,9 +27,8 @@ if(NOT TARGET OpenMP::OpenMP_CXX)
 			PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
 	set_property(TARGET OpenMP::OpenMP_CXX
 			PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
-
+	link_libraries(OpenMP::OpenMP_CXX)
 endif()
-link_libraries(OpenMP::OpenMP_CXX)
 
 set(OpenCV_DIR /Users/styx/GitPulls/opencv/install/lib/cmake/opencv4)
 find_package(OpenCV)

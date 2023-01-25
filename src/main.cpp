@@ -90,8 +90,8 @@ int main(int argc, char* argv[])
 
     //std::cout << "Input complexities: " << c1.size() << " " << c2.size() << std::endl;
 
-    double delta = 0.5;//1.0;
-    double deltaprime = 1.5;//1.25;
+    double delta = 1.0;//1.0;
+    double deltaprime = 1.25;//1.25;
 
     std::vector<std::pair<Label,ParamPoint>> simplifiedGT86_01,simplifiedGT86_02,simplifiedGT86_04;
 
@@ -113,7 +113,15 @@ int main(int argc, char* argv[])
     for(const Curve& c : curvesCMU){
         length += c.size();
     }
-    auto result = greedyCoverUnsanitizedOutput(curvesCMU,deltaprime, (int) ((length) / (25 * curvesCMU.size())), 100, false);
+    int complexity = (int) ((length) / (25 * curvesCMU.size()));
+    auto filter = [=](const std::pair<int,Candidate>& a){return curvesCMU[a.first].subcurve_length(a.second.getStart(),a.second.getEnd())>2*guaranteeCMU*deltaprime && a.second.getEnd().id - a.second.getStart().id > complexity/3;};
+    //auto filter2 = [](const std::pair<int,Candidate>&){return true;};
+    auto result = greedyCoverUnsanitizedOutput(curvesCMU,deltaprime, complexity, 1, false, filter);
+
+    std::cout << "Cutoff length: " << 2*guaranteeCMU*deltaprime  << " & " << complexity/3 << std::endl;
+    for (auto r : result){
+        std::cout << "(" << r.second.getEnd().id - r.second.getStart().id << "," << curvesCMU[r.first].subcurve_length(r.second.getStart(),r.second.getEnd()) << ")"<<std::endl;
+    }
 
     ClusteringVisulaizer cv;
     cv.showClustering(curvesCMU,simplifiedGTs,result);
