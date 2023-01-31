@@ -29,14 +29,14 @@ public:
     explicit FreeSpacesVisualizer(std::vector<std::vector<FreeSpace>> & fs) : freespaces(fs){};
     void show();
     void showCandidates(CandidateSet& candidates, std::vector<std::pair<int,int>> & indices);
-    void showCandidates(std::vector<std::pair<int,Candidate>> candidates);
+    void showCandidates(std::vector<Candidate> candidates);
 };
 
 
 
 class ClusteringVisulaizer{
 public:
-    void showClustering(Curves c, std::vector<std::vector<std::pair<Label,ParamPoint>>> groundthruth, std::vector<std::pair<int,Candidate>> candidates);
+    void showClustering(Curves c, std::vector<std::vector<std::pair<Label,ParamPoint>>> groundthruth, std::vector<Candidate> candidates);
 };
 
 #endif //CLUSTERING_FREE_SPACE_VISUALIZER_H

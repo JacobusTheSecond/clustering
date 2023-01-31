@@ -139,19 +139,19 @@ Clustering approxCover(Curves& curves, double delta,int l,int max_rounds){
     //return approxCoverRound(curves,cs,delta);
 }
 
-bool cmpLeftLower(std::pair<int,Subcurve> l, std::pair<int,Subcurve> r){
-    return (l.first < r.first) || (l.first == r.first && (l.second.start < r.second.start));
+bool cmpLeftLower(Subcurve l, Subcurve r){
+    return (l.curveIdx < r.curveIdx) || (l.curveIdx == r.curveIdx && (l.start < r.start));
 }
 
-bool cmpLeftUpper(std::pair<int,Subcurve> l, std::pair<int,Subcurve> r){
-    return (l.first < r.first) || (l.first == r.first && (l.second.start < r.second.end));
+bool cmpLeftUpper(Subcurve l, Subcurve r){
+    return (l.curveIdx < r.curveIdx) || (l.curveIdx == r.curveIdx && (l.start < r.end));
 }
 
-bool cmpRightUpper(std::pair<int,Subcurve> l, std::pair<int,Subcurve> r){
-    return (l.first < r.first) || (l.first == r.first && (l.second.end < r.second.end));
+bool cmpRightUpper(Subcurve l, Subcurve r){
+    return (l.curveIdx < r.curveIdx) || (l.curveIdx == r.curveIdx && (l.end < r.end));
 }
 //TODO: something here is fucked.
-void updateCandidate(Curves& curves, Candidate& c, std::vector<std::pair<int,Subcurve>> covering, std::vector<double> suffixLengths, int roundID){
+void updateCandidate(Curves& curves, Candidate& c, std::vector<Subcurve> covering, std::vector<double> suffixLengths, int roundID){
     double newLength = 0;
 
     for(auto matching : c.matchings){
@@ -164,22 +164,22 @@ void updateCandidate(Curves& curves, Candidate& c, std::vector<std::pair<int,Sub
         int rIdx = r - covering.begin();
         //rIdx points to the first interval that can lie right of t
 
-        bool leftContains = (l!=covering.end()) && (l->first == matching.first) && (l->second.contains(matching.second.start));
-        bool rightContains = (r!=covering.end()) && (r->first == matching.first) && (r->second.contains(matching.second.end));
+        bool leftContains = (l!=covering.end()) && (l->curveIdx == matching.curveIdx) && (l->contains(matching.start));
+        bool rightContains = (r!=covering.end()) && (r->curveIdx == matching.curveIdx) && (r->contains(matching.end));
 
         if(leftContains && rightContains && lIdx == rIdx)
             continue;
 
-        newLength += curves[matching.first].subcurve_length(matching.second.start,matching.second.end);
+        newLength += curves[matching.curveIdx].subcurve_length(matching.start,matching.end);
 
         if(leftContains){
-            newLength -= curves[matching.first].subcurve_length(matching.second.start,l->second.end);
+            newLength -= curves[matching.curveIdx].subcurve_length(matching.start,l->end);
             lIdx ++;
         }
         //now lIdx points to the first interval that lies strictly to the right of s
 
         if(rightContains){
-            newLength -= curves[matching.first].subcurve_length(r->second.start,matching.second.end);
+            newLength -= curves[matching.curveIdx].subcurve_length(r->start,matching.end);
             //rIdx --;
         }
         //now rIdx points to the last inerval that lies strictly to the left of t
@@ -195,23 +195,23 @@ void updateCandidate(Curves& curves, Candidate& c, std::vector<std::pair<int,Sub
 }
 
 void printFirst50(CandidateSetPQ& cs){
-    std::vector<std::pair<int,Candidate>> temp;
+    std::vector<Candidate> temp;
     for(int i=0;i<5;++i){
-        std::pair<int,Candidate> c = cs.top();
+        Candidate c = cs.top();
         cs.pop();
         temp.push_back(c);
-        std::cout << "(" << c.second.roundOfUpdate << ";" << c.second.semiUpdatedCoverLength << ") ";
+        std::cout << "(" << c.roundOfUpdate << ";" << c.semiUpdatedCoverLength << ") ";
     }
     std::cout << "\n";
-    for(std::pair<int,Candidate> c : temp)
+    for(Candidate c : temp)
         cs.push(c);
 }
 
-double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> candidateSet){
+double lengthOfUncovered(Curves curves, std::vector<Candidate> candidateSet){
     //step 1: merge
-    std::vector<std::pair<int,Subcurve>> presorted;
+    std::vector<Subcurve> presorted;
     for(auto c:candidateSet){
-        presorted.insert(presorted.end(),c.second.matchings.begin(),c.second.matchings.end());
+        presorted.insert(presorted.end(),c.matchings.begin(),c.matchings.end());
     }
     std::sort(presorted.begin(), presorted.end(), cmpLeftLower);
 
@@ -219,15 +219,14 @@ double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> ca
     double uncovered = 0;
     std::pair<int, ParamPoint> pcur = {0, {0, 0}};
 
-    std::vector<std::pair<int,Subcurve>> covering;
-
+    std::vector<Subcurve> covering;
 
     if(!presorted.empty()) {
-        std::pair<int, Subcurve> cur = presorted[0];
+        Subcurve cur = presorted[0];
         for (int covI = 1; covI < presorted.size(); covI++) {
-            std::pair<int, Subcurve> next = presorted[covI];
-            if ((next.first == cur.first) && (next.second.start < cur.second.end)) {
-                cur.second.end = std::max(next.second.end, cur.second.end);
+            Subcurve next = presorted[covI];
+            if ((next.curveIdx == cur.curveIdx) && (next.start < cur.end)) {
+                cur.end = std::max(next.end, cur.end);
             } else {
                 covering.push_back(cur);
                 cur = next;
@@ -237,14 +236,14 @@ double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> ca
 
         //now covering is a disjoint set of intervals
         for (auto cov: covering) {
-            while (pcur.first < cov.first) {
+            while (pcur.first < cov.curveIdx) {
                 uncovered += curves[pcur.first].subcurve_length(pcur.second,
                                                                 {(int) (curves[pcur.first].size()) - 2, 1.0});
                 pcur = {pcur.first + 1, {0, 0}};
             }
-            if (cov.first == pcur.first) {
-                uncovered += std::max(0.0,curves[cov.first].subcurve_length(pcur.second, cov.second.start));
-                pcur = {pcur.first, cov.second.end};
+            if (cov.curveIdx == pcur.first) {
+                uncovered += std::max(0.0,curves[cov.curveIdx].subcurve_length(pcur.second, cov.start));
+                pcur = {pcur.first, cov.end};
                 if((ParamPoint){(int)(curves[pcur.first].size()-2),1.0} <= pcur.second ){
                     pcur = {pcur.first + 1, {0, 0}};
                 }
@@ -259,27 +258,27 @@ double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> ca
 }
 
 Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool show){
-    std::vector<std::pair<int,Candidate>> bestResultVisualizer = greedyCoverUnsanitizedOutput(curves,delta,l,max_rounds,show,[=](const std::pair<int,Candidate>& a){return a.second.getEnd().id - a.second.getStart().id > l/4;});
+    std::vector<Candidate> bestResultVisualizer = greedyCoverUnsanitizedOutput(curves,delta,l,max_rounds,show,[=](const Candidate& a){return a.getEnd().id - a.getStart().id > l/4;});
     Curves bestresult;
 
-    for (const auto &sub: bestResultVisualizer) {
+    for (auto &sub: bestResultVisualizer) {
         bestresult.push_back(
-                curves[sub.first].constructSubcurve(sub.second.getStart(), sub.second.getEnd()));
+                curves[sub.getIndex()].constructSubcurve(sub.getStart(), sub.getEnd()));
     }
 
     std::cout << "\nImportances: ";
     for(auto c : bestResultVisualizer){
-        std::cout << c.second.importance << " ";
+        std::cout << c.importance << " ";
     }
     std::cout << "\n";
     for(int count = 0;count < ((20<bestResultVisualizer.size())?20:bestResultVisualizer.size());count++) {
-        std::pair<int, Candidate> bestCandidate = bestResultVisualizer[count];
-        Candidate bC = bestCandidate.second;
+        Candidate bestCandidate = bestResultVisualizer[count];
+        Candidate bC = bestCandidate;
         for (int i = 0; i < bC.visualMatchings.size(); ++i) {
             auto matching = bC.visualMatchings[i];
             io::exportSubcurve(
                     "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(count) +"/interval" + std::to_string(i) + ".txt",
-                    curves[matching.first], matching.second.start, matching.second.end, 100);
+                    curves[matching.curveIdx], matching.start, matching.end, 100);
         }
     }
     return bestresult;

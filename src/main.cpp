@@ -114,13 +114,13 @@ int main(int argc, char* argv[])
         length += c.size();
     }
     int complexity = (int) ((length) / (25 * curvesCMU.size()));
-    auto filter = [=](const std::pair<int,Candidate>& a){return curvesCMU[a.first].subcurve_length(a.second.getStart(),a.second.getEnd())>2*guaranteeCMU*deltaprime && a.second.getEnd().id - a.second.getStart().id > complexity/3;};
+    auto filter = [=](const Candidate& a){return curvesCMU[a.getIndex()].subcurve_length(a.getStart(),a.getEnd())>2*guaranteeCMU*deltaprime && a.getEnd().id - a.getStart().id > complexity/3;};
     //auto filter2 = [](const std::pair<int,Candidate>&){return true;};
     auto result = greedyCoverUnsanitizedOutput(curvesCMU,deltaprime, complexity, 1, false, filter);
 
     std::cout << "Cutoff length: " << 2*guaranteeCMU*deltaprime  << " & " << complexity/3 << std::endl;
     for (auto r : result){
-        std::cout << "(" << r.second.getEnd().id - r.second.getStart().id << "," << curvesCMU[r.first].subcurve_length(r.second.getStart(),r.second.getEnd()) << ")"<<std::endl;
+        std::cout << "(" << r.getEnd().id - r.getStart().id << "," << curvesCMU[r.getIndex()].subcurve_length(r.getStart(),r.getEnd()) << ")"<<std::endl;
     }
 
     ClusteringVisulaizer cv;

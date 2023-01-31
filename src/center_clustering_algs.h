@@ -15,15 +15,15 @@ Clustering computeCenterClustering(
 Clustering approxCover(Curves& curves, double delta,int l,int max_rounds = 10);
 */
 Curves greedyCover(Curves& curves, double delta, int l, int max_rounds = 10, bool show = false);
-void updateCandidate(Curves& curves, Candidate& c, std::vector<std::pair<int,Subcurve>> covering, std::vector<double> suffixLengths, int roundID);
-double lengthOfUncovered(Curves curves, std::vector<std::pair<int,Candidate>> candidateSet);
-bool cmpLeftLower(std::pair<int,Subcurve> l, std::pair<int,Subcurve> r);
+void updateCandidate(Curves& curves, Candidate& c, std::vector<Subcurve> covering, std::vector<double> suffixLengths, int roundID);
+double lengthOfUncovered(Curves curves, std::vector<Candidate> candidateSet);
+bool cmpLeftLower(Subcurve l, Subcurve r);
 
-template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanitizedOutput(Curves& curves, double delta, int l, int max_rounds, bool show, func filter){
+template<typename func> std::vector<Candidate> greedyCoverUnsanitizedOutput(Curves& curves, double delta, int l, int max_rounds, bool show, func filter){
     Curves bestresult;
     stdc::SWatch swatchinsert;
     stdc::SWatch swatchupdate;
-    std::vector<std::pair<int,Candidate>> bestResultVisualizer;
+    std::vector<Candidate> bestResultVisualizer;
     double const guarantee = 1.0+1.0+2*(7.0/3.0);
     CandidateSetPQ cs = CandidateSetPQ(curves,guarantee*delta);
     //cs.computeCandidates(l);
@@ -37,8 +37,8 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
         //swatchinsert.reset();
         //swatchupdate.reset();
 
-        std::vector<std::pair<int,Candidate>> result;
-        std::vector<std::pair<int,Subcurve>> covering;
+        std::vector<Candidate> result;
+        std::vector<Subcurve> covering;
         std::vector<double> suffixLengths;
 
         std::cout << "\nRound " << r;
@@ -48,23 +48,23 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
             auto roundID = i;
             std::cout << ".";
             //update top, until the roundID matches
-            while (cs.top().second.roundOfUpdate != roundID) {
+            while (cs.top().roundOfUpdate != roundID) {
                 ID++;
-                std::pair<int, Candidate> c = cs.top();
+                Candidate c = cs.top();
                 cs.pop();
                 swatchupdate.start();
-                updateCandidate(curves, c.second, covering, suffixLengths, roundID);
+                updateCandidate(curves, c, covering, suffixLengths, roundID);
                 swatchupdate.stop();
                 swatchinsert.start();
                 cs.push(c);
                 swatchinsert.stop();
             }
-            if (lengthOfUncovered(curves,result) <= EPSILON || cs.top().second.semiUpdatedCoverLength <= EPSILON) {
+            if (lengthOfUncovered(curves,result) <= EPSILON || cs.top().semiUpdatedCoverLength <= EPSILON) {
                 std::cout << "\nTrying to refine... ";
                 int deletecount = 0;
                 for(int igni=result.size()-1;igni>=0;--igni){
                     //i is the index to be ignored
-                    std::vector<std::pair<int,Candidate>> temp;
+                    std::vector<Candidate> temp;
                     for(int j=0;j<result.size();++j){
                         if(igni != j){
                             temp.push_back(result[j]);
@@ -76,7 +76,7 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
                         result.erase(result.begin() + igni);
                         deletecount += 1;
                     }else{
-                        result[igni].second.importance = importance;
+                        result[igni].importance = importance;
                     }
                 }
                 if (deletecount == 0)
@@ -84,14 +84,14 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
                 std::cout << " greedely deleted\n";
                 for(int igni=result.size()-1;igni>=0;--igni){
                     //i is the index to be ignored
-                    std::vector<std::pair<int,Candidate>> temp;
+                    std::vector<Candidate> temp;
                     for(int j=0;j<result.size();++j){
                         if(igni != j){
                             temp.push_back(result[j]);
                         }
                     }
                     double importance = lengthOfUncovered(curves,temp);
-                    result[igni].second.importance = importance;
+                    result[igni].importance = importance;
                 }
                 //std::sort(result.begin(), result.end(), [](auto& a, auto& b){return a.second.importance > b.second.importance;});
                 std::cout << " Solution of size " << result.size() << " found. ";
@@ -103,7 +103,7 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
                     bestResultVisualizer.clear();
                     for (const auto &sub: result) {
                         bestresult.push_back(
-                                curves[sub.first].constructSubcurve(sub.second.getStart(), sub.second.getEnd()));
+                                curves[sub.getIndex()].constructSubcurve(sub.getStart(), sub.getEnd()));
                         bestResultVisualizer.push_back(sub);
                     }
                 }
@@ -123,60 +123,60 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
 
             //cs.top() will be added to c
             if (i == 0) {
-                std::vector<std::pair<int, Candidate>> temp;
+                std::vector<Candidate> temp;
                 for (int j = 0; j < r; ++j) {
                     temp.push_back(cs.top());
                     cs.pop();
                 }
-                std::pair<int, Candidate> c = cs.top();
+                Candidate c = cs.top();
                 result.push_back(c);
 
                 cs.pop();
-                addedweight = c.second.semiUpdatedCoverLength;
-                c.second.semiUpdatedCoverLength = 0;
+                addedweight = c.semiUpdatedCoverLength;
+                c.semiUpdatedCoverLength = 0;
                 cs.push(c);
                 for (const auto &ctemp: temp)
                     cs.push(ctemp);
             } else {
-                std::pair<int, Candidate> c = cs.top();
+                Candidate c = cs.top();
                 result.push_back(c);
 
-                //io::exportSubcurve("/Users/styx/data/curveclustering/results/bestcandidate.txt",curves[0],cs.top().second.getStart(),cs.top().second.getEnd());
+                //io::exportSubcurve("/Users/styx/data/curveclustering/results/bestcandidate.txt",curves[0],cs.top().getStart(),cs.top().second.getEnd());
                 //cs.showCovering(result);
 
                 cs.pop();
-                addedweight = c.second.semiUpdatedCoverLength;
-                c.second.semiUpdatedCoverLength = 0;
+                addedweight = c.semiUpdatedCoverLength;
+                c.semiUpdatedCoverLength = 0;
                 cs.push(c);
             }
 
             //std::cout << " added weight: " << addedweight << ". Updated " << ID << " lengths\n";
 
 
-            std::pair<int, Candidate> c = result.back();
+            Candidate c = result.back();
 
             //update covering
-            std::vector<std::pair<int, Subcurve>> temp(covering);
-            temp.insert(temp.end(), c.second.matchings.begin(), c.second.matchings.end());
+            std::vector<Subcurve> temp(covering);
+            temp.insert(temp.end(), c.matchings.begin(), c.matchings.end());
             std::sort(temp.begin(), temp.end(), cmpLeftLower);
             covering.clear();
             suffixLengths.clear();
             suffixLengths.push_back(0);
-            std::pair<int, Subcurve> cur = temp[0];
+            Subcurve cur = temp[0];
             for (int covI = 1; covI < temp.size(); covI++) {
-                std::pair<int, Subcurve> next = temp[covI];
-                if ((next.first == cur.first) && (next.second.start < cur.second.end)) {
-                    cur.second.end = std::max(next.second.end, cur.second.end);
+                Subcurve next = temp[covI];
+                if ((next.curveIdx == cur.curveIdx) && (next.start < cur.end)) {
+                    cur.end = std::max(next.end, cur.end);
                 } else {
                     covering.push_back(cur);
                     suffixLengths.push_back(
-                            suffixLengths.back() + curves[cur.first].subcurve_length(cur.second.start, cur.second.end));
+                            suffixLengths.back() + curves[cur.curveIdx].subcurve_length(cur.start, cur.end));
                     cur = next;
                 }
             }
             covering.push_back(cur);
             suffixLengths.push_back(
-                    suffixLengths.back() + curves[cur.first].subcurve_length(cur.second.start, cur.second.end));
+                    suffixLengths.back() + curves[cur.curveIdx].subcurve_length(cur.start, cur.end));
             //if((i+1)%100==0)
             //cs.showCovering(result);
         }
@@ -188,9 +188,9 @@ template<typename func> std::vector<std::pair<int,Candidate>> greedyCoverUnsanit
         std::cout << "Done";
     }
     std::sort(bestResultVisualizer.begin(),bestResultVisualizer.end(),
-              [](const std::pair<int,Candidate>& a,const std::pair<int,Candidate>& b){
-                  return (a.second.matchings[0].first < b.second.matchings[0].first) ||
-                         ( (a.second.matchings[0].first == b.second.matchings[0].first) && (a.second.matchings[0].second.start < b.second.matchings[0].second.start));
+              [](const Candidate& a,const Candidate& b){
+                  return (a.matchings[0].curveIdx < b.matchings[0].curveIdx) ||
+                         ( (a.matchings[0].curveIdx == b.matchings[0].curveIdx) && (a.matchings[0].start < b.matchings[0].start));
               });
     if(show) {
 #ifdef HASVISUAL

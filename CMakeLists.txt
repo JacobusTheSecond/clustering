@@ -16,7 +16,6 @@ find_package(OpenMP REQUIRED)
 
 add_definitions(-D_GLIBCXX_PARALLEL)
 
-find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
 	link_libraries(OpenMP::OpenMP_CXX)
 endif()
@@ -30,7 +29,6 @@ if(NOT TARGET OpenMP::OpenMP_CXX)
 	link_libraries(OpenMP::OpenMP_CXX)
 endif()
 
-set(OpenCV_DIR /Users/styx/GitPulls/opencv/install/lib/cmake/opencv4)
 find_package(OpenCV)
 if(OpenCV_FOUND)
 
@@ -57,8 +55,6 @@ if(OpenCV_FOUND)
 			src/candidate.cpp
 			src/SWatch.h)
 
-	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmp.a")
-	#target_link_options(clustering PRIVATE "/opt/homebrew/Cellar/gmp/6.2.1_1/lib/libgmpxx.a")
 	target_link_libraries(clustering ${OpenCV_LIBS} )
 else()
 	set(CMAKE_CXX_FLAGS "-Wall")

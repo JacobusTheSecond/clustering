@@ -545,10 +545,10 @@ void FreeSpaceVisualizer::showCandidate(Candidate & c, int curveId){
 
 
         for(auto cov : c.visualMatchings) {
-            if(cov.first != curveId)
+            if(cov.curveIdx != curveId)
                 continue;
-            ParamPoint xStart = cov.second.getStart();
-            ParamPoint xEnd = cov.second.getEnd();
+            ParamPoint xStart = cov.getStart();
+            ParamPoint xEnd = cov.getEnd();
 
             FreeSpacePoint a = {xStart,yStart};
             FreeSpacePoint b = {xEnd,yEnd};
@@ -713,10 +713,10 @@ void FreeSpaceVisualizer::showCandidates(std::vector<Candidate> candidates, int 
             line(img, x21, x22, Scalar(255, 0, 0), 2);
 
             for (auto cov: c.visualMatchings) {
-                if (cov.first != curveId)
+                if (cov.curveIdx != curveId)
                     continue;
-                ParamPoint xStart = cov.second.getStart();
-                ParamPoint xEnd = cov.second.getEnd();
+                ParamPoint xStart = cov.getStart();
+                ParamPoint xEnd = cov.getEnd();
 
                 FreeSpacePoint a = {xStart, yStart};
                 FreeSpacePoint b = {xEnd, yEnd};
@@ -893,9 +893,9 @@ void FreeSpacesVisualizer::showCandidates(CandidateSet &candidates, std::vector<
             line(img, Point2d(0,y2), Point2d(xSize*CS,y2), Scalar(255, 0, 0), 1);
 
             for(auto cov : candidate.visualMatchings){
-                int targetCurveIdx = cov.first;
-                double x1 = (cov.second.getStart().t + cov.second.getStart().id + partialXSums[targetCurveIdx]+1)*CS;
-                double x2 = (cov.second.getEnd().t + cov.second.getEnd().id + partialXSums[targetCurveIdx]+1)*CS;
+                int targetCurveIdx = cov.curveIdx;
+                double x1 = (cov.getStart().t + cov.getStart().id + partialXSums[targetCurveIdx]+1)*CS;
+                double x2 = (cov.getEnd().t + cov.getEnd().id + partialXSums[targetCurveIdx]+1)*CS;
 
                 line(img, Point2d(x1,y1), Point2d(x2,y2), Scalar(0, 255, 0), 3);
                 
@@ -947,7 +947,7 @@ void FreeSpacesVisualizer::showCandidates(CandidateSet &candidates, std::vector<
     cv::waitKey(1);
 }
 
-void FreeSpacesVisualizer::showCandidates(std::vector<std::pair<int, Candidate>> candidates) {
+void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
     //this will be awful
     int CS = 8;
 
@@ -1052,18 +1052,18 @@ void FreeSpacesVisualizer::showCandidates(std::vector<std::pair<int, Candidate>>
         for(int i=0;i<candidates.size();++i){
             auto candidatepair = candidates[i];
             bool last = i == candidates.size()-1;
-            int baseCurveIdx = candidatepair.first;
+            int baseCurveIdx = candidatepair.getIndex();
             //first draw horizontal lines
-            Candidate candidate = candidatepair.second;
+            Candidate candidate = candidatepair;
             double y1 = ySize*CS - (candidate.getStart().t + candidate.getStart().id + partialYSums[baseCurveIdx]+1)*CS;
             double y2 = ySize*CS - (candidate.getEnd().t + candidate.getEnd().id + partialYSums[baseCurveIdx]+1)*CS;
             line(img, Point2d(0,y1), Point2d(xSize*CS,y1), Scalar(255, 0, 0), 1);
             line(img, Point2d(0,y2), Point2d(xSize*CS,y2), Scalar(255, 0, 0), 1);
 
             for(auto cov : candidate.visualMatchings){
-                int targetCurveIdx = cov.first;
-                double x1 = (cov.second.getStart().t + cov.second.getStart().id + partialXSums[targetCurveIdx]+1)*CS;
-                double x2 = (cov.second.getEnd().t + cov.second.getEnd().id + partialXSums[targetCurveIdx]+1)*CS;
+                int targetCurveIdx = cov.getIndex();
+                double x1 = (cov.getStart().t + cov.getStart().id + partialXSums[targetCurveIdx]+1)*CS;
+                double x2 = (cov.getEnd().t + cov.getEnd().id + partialXSums[targetCurveIdx]+1)*CS;
 
                 line(img, Point2d(x1,y1), Point2d(x2,y2), Scalar(last?255:0, last?0:255, 0), 3);
 
@@ -1292,7 +1292,7 @@ Scalar _labelColor(Label l){
 }
 
 void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std::pair<Label, ParamPoint>>> groundthruth,
-                                          std::vector<std::pair<int, Candidate>> candidates) {
+                                          std::vector<Candidate> candidates) {
 
     int scale = 8;
 
@@ -1356,13 +1356,13 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
 
         for (int i = 0; i < candidates.size(); i++) {
             auto wrappercandidate = candidates[i];
-            Candidate candidate = wrappercandidate.second;
+            Candidate candidate = wrappercandidate;
             double y = 1 + (_labelend - _labelstart - 1) + 5 + i;
             line(img, Point2d(partialLengths[0], y) * scale, Point2d(partialLengths[partialLengths.size()-1], y) * scale, Scalar(0, 0, 0),
                  1);
             for (auto matching: candidate.visualMatchings) {
-                double intxs = partialLengths[matching.first] + matching.second.start.id + matching.second.start.t;
-                double intxt = partialLengths[matching.first] + matching.second.end.id + matching.second.end.t;
+                double intxs = partialLengths[matching.curveIdx] + matching.start.id + matching.start.t;
+                double intxt = partialLengths[matching.curveIdx] + matching.end.id + matching.end.t;
 
                 line(img, Point2d(intxs, y+0.1) * scale, Point2d(intxt, y-0.1) * scale, _labelColor(labeling[i]), 5);
                 circle(img, Point2d(intxs, y+0.1) * scale, 5, _labelColor(labeling[i]), -1);

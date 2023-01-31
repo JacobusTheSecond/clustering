@@ -13,7 +13,7 @@
 
 struct Subcurve{
 
-    Subcurve(ParamPoint s, ParamPoint t) : start(s), end(t){};
+    Subcurve(ParamPoint s, ParamPoint t, int idx) : start(s), end(t), curveIdx(idx){};
 
     bool isTrueSubcurve() const{return start < end;};
 
@@ -22,22 +22,22 @@ struct Subcurve{
     ParamPoint start;
     ParamPoint end;
 
+    int curveIdx;
+
     ParamPoint getStart() const{return start;}
 
     ParamPoint getEnd() const{return end;}
+
+    int getIndex() const{return curveIdx;}
 };
 
 class Candidate : Subcurve{
 public:
-    //int ID;
-    //mpz_t wback;
-    //mpz_t w;
-    //mpz_t cW;
-    Candidate(ParamPoint s, ParamPoint t) : Subcurve(s, t){};// {mpz_init_set_ui(w,1);mpz_init_set_ui(wback,1);mpz_init(cW);};
+    Candidate(ParamPoint s, ParamPoint t, int idx) : Subcurve(s, t, idx){};
     int computeCovering(FreeSpace& fs, int curveindex, Curves& curves);
     void resetCoverLength();
-    std::vector<std::pair<int,Subcurve>> matchings;
-    std::vector<std::pair<int,Subcurve>> visualMatchings;
+    std::vector<Subcurve> matchings;
+    std::vector<Subcurve> visualMatchings;
 
     bool isDominatedBy(Candidate& other);
 
@@ -45,6 +45,8 @@ public:
     ParamPoint getStart() const{return start;}
 
     ParamPoint getEnd() const{return end;}
+
+    int getIndex() const{return curveIdx;}
 
     //priority queue stuff
     distance_t optimisticCoverLength;
@@ -57,8 +59,7 @@ public:
     bool inline operator==(Candidate& other){
         return other.start == start && other.end == end;
     };
-    bool covers(int curveId, ParamPoint t);
-    static std::vector<Candidate> uncompressAndComputeCovering(std::vector<FreeSpace>& freespaces,ParamPoint start, std::vector<ParamPoint> ends, Curves& curves, int threadID=0);
+    static std::vector<Candidate> uncompressAndComputeCovering(std::vector<FreeSpace>& freespaces,ParamPoint start, std::vector<ParamPoint> ends, Curves& curves, int curveIdx, int threadID);
 };
 
 class CandidateSet : std::vector<std::vector<Candidate>>{
@@ -88,21 +89,21 @@ public:
     void resetWeights();
 };
 
-auto cmpPQ = [](const std::pair<int,Candidate>& left, const std::pair<int,Candidate>& right) { return (left.second.semiUpdatedCoverLength) < (right.second.semiUpdatedCoverLength); };
-class CandidateSetPQ : std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>{
+auto cmpPQ = [](const Candidate& left, const Candidate& right) { return (left.semiUpdatedCoverLength) < (right.semiUpdatedCoverLength); };
+class CandidateSetPQ : std::priority_queue<Candidate,std::vector<Candidate>,decltype(cmpPQ)>{
 private:
-    using Parent = std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>;
+    using Parent = std::priority_queue<Candidate,std::vector<Candidate>,decltype(cmpPQ)>;
     Curves curves;
     double delta;
     std::vector<std::vector<FreeSpace>> freespaces;
 public:
-    using std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>::top;
-    using std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>::pop;
-    using std::priority_queue<std::pair<int,Candidate>,std::vector<std::pair<int,Candidate>>,decltype(cmpPQ)>::push;
+    using Parent::top;
+    using Parent::pop;
+    using Parent::push;
     CandidateSetPQ(Curves& c,double d);
     void computeCandidates(int l);
     void ultrafastComputeCandidates(int l, int minL = 0);
-    void showCovering(std::vector<std::pair<int,Candidate>> candidates);
+    void showCovering(std::vector<Candidate> candidates);
     void resetWeights();
     template<typename func> void ultrafastComputeCandidates(int l, func filter) {
         std::cout << "Identifying Important Ys";
@@ -423,7 +424,7 @@ public:
         }
         std::cout << "Generated " << compressedCandidates.size() << " many compressed candidates."<< std::endl << "Augmenting candidates with covering data...";
         int progress = 0;
-        std::vector<std::pair<int,Candidate>> prepruned;
+        std::vector<Candidate> prepruned;
         //alternative:
         int removes = 0;
         //TODO: fix race condicitions as one thread may reset another threads freespace
@@ -436,12 +437,12 @@ public:
                 std::cout << "\33[2K\rUncompressing candidates and augmenting with covering data... " << progress << "/" << compressedCandidates.size() << ", resulting in " << size() << " candidates so far. Removed "<< removes << " filtered candidates so far... ";
             if(std::get<2>(cC).empty())
                 continue;
-            std::vector<Candidate> result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves, omp_get_thread_num());
+            std::vector<Candidate> result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves, std::get<0>(cC), omp_get_thread_num());
             for(auto& c: result){
-                if(filter({std::get<0>(cC),c})) {
+                if(filter(c)) {
 #pragma omp critical (block6)
                     {
-                        push({std::get<0>(cC), c});
+                        push(c);
                     }
                 }else{
 #pragma omp critical (block7)

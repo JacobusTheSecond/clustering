@@ -81,10 +81,10 @@ int Candidate::computeCovering(FreeSpace &fs, int curveIndex, Curves& curves) {
         /*if(!matchings.empty() && matchings.back().first == curveIndex && matchings.back().second.end >= leftMostInCellFSP.x && matchings.back().second.end <= localExtremes.back().x)
             matchings.back().second.end = localExtremes.back().x;
         else {*/
-        if(!matchings.empty() && matchings.back().first == curveIndex && matchings.back().second.end >= localExtremes.back().x){
+        if(!matchings.empty() && matchings.back().curveIdx == curveIndex && matchings.back().end >= localExtremes.back().x){
             //pass
         }else{
-            matchings.push_back({curveIndex, {leftMostInCellFSP.x, localExtremes.back().x}});
+            matchings.push_back({leftMostInCellFSP.x, localExtremes.back().x, curveIndex});
             count++;
             //fsv.show(leftMostInCellFSP,localExtremes.back(),start,end);
         }
@@ -94,21 +94,17 @@ int Candidate::computeCovering(FreeSpace &fs, int curveIndex, Curves& curves) {
     //compute optimisticCoverLength
     optimisticCoverLength = 0;
     for (auto matching : matchings){
-        auto s = matching.second.start;
-        auto t = matching.second.end;
-        optimisticCoverLength += curves[matching.first].subcurve_length(s,t);
+        auto s = matching.start;
+        auto t = matching.end;
+        optimisticCoverLength += curves[matching.curveIdx].subcurve_length(s,t);
         }
     semiUpdatedCoverLength = optimisticCoverLength;
     return count;
 }
 
 //mimic a<b
-bool comp(const std::pair<int,Subcurve>& a,const std::pair<int,Subcurve> & b){
-    return (a.first < b.first) || (a.first == b.first && a.second.end < b.second.start);
-}
-bool Candidate::covers(int curveId, ParamPoint t) {
-    std::pair<int,Subcurve> val = {curveId,{t,t}};
-    return std::binary_search(matchings.begin(), matchings.end(),val,comp);
+bool comp(const Subcurve& a,const Subcurve & b){
+    return (a.curveIdx < b.curveIdx) || (a.curveIdx == b.curveIdx && a.end < b.start);
 }
 
 void Candidate::resetCoverLength() {
@@ -117,11 +113,11 @@ void Candidate::resetCoverLength() {
 }
 
 std::vector<Candidate> Candidate::uncompressAndComputeCovering(std::vector<FreeSpace> &freespaces, ParamPoint start,
-                                                               std::vector<ParamPoint> ends, Curves& curves, int threadID) {
+                                                               std::vector<ParamPoint> ends, Curves& curves, int curveIdx, int threadID) {
     std::vector<Candidate> result;
     result.reserve(ends.size());
     for(auto& end : ends){
-        result.emplace_back(start,end);
+        result.emplace_back(start,end, curveIdx);
     }
     assert(!ends.empty());
 
@@ -193,12 +189,12 @@ std::vector<Candidate> Candidate::uncompressAndComputeCovering(std::vector<FreeS
                     continue;
                 }else{
                     //for visualization we push regardless. This possibly infers errors in the weight computation...
-                    c.visualMatchings.push_back({tidx,{leftMostInCellFSP.x,end.x}});
+                    c.visualMatchings.push_back({leftMostInCellFSP.x,end.x, tidx});
 
-                    if(c.matchings.empty() || c.matchings.back().first != tidx || c.matchings.back().second.end < leftMostInCellFSP.x){
-                        c.matchings.push_back({tidx,{leftMostInCellFSP.x,end.x}});
+                    if(c.matchings.empty() || c.matchings.back().curveIdx != tidx || c.matchings.back().end < leftMostInCellFSP.x){
+                        c.matchings.push_back({leftMostInCellFSP.x,end.x, tidx});
                     }else{
-                        c.matchings.back().second.end = std::max(c.matchings.back().second.end,end.x);
+                        c.matchings.back().end = std::max(c.matchings.back().end,end.x);
                     }
                 }
             }
@@ -209,9 +205,9 @@ std::vector<Candidate> Candidate::uncompressAndComputeCovering(std::vector<FreeS
     for(auto& r : result) {
         r.optimisticCoverLength = 0;
         for (auto matching: r.matchings) {
-            auto s = matching.second.start;
-            auto t = matching.second.end;
-            r.optimisticCoverLength += curves[matching.first].subcurve_length(s, t);
+            auto s = matching.start;
+            auto t = matching.end;
+            r.optimisticCoverLength += curves[matching.curveIdx].subcurve_length(s, t);
         }
         r.semiUpdatedCoverLength = r.optimisticCoverLength;
     }
@@ -222,12 +218,12 @@ bool Candidate::isDominatedBy(Candidate &other) {
     int oMI = 0;
     for(auto& m : matchings){
         //go to first maching of other, whose end is further right
-        while(oMI < other.matchings.size() && (other.matchings[oMI].first < m.first || (other.matchings[oMI].first == m.first && other.matchings[oMI].second.end < m.second.end)))
+        while(oMI < other.matchings.size() && (other.matchings[oMI].curveIdx < m.curveIdx || (other.matchings[oMI].curveIdx == m.curveIdx && other.matchings[oMI].end < m.end)))
             oMI++;
         if(oMI >= other.matchings.size())
             return false;
         //now other.end lies right of this.end
-        if( !(m.first == other.matchings[oMI].first && other.matchings[oMI].second.start <= m.second.start))
+        if( !(m.curveIdx == other.matchings[oMI].curveIdx && other.matchings[oMI].start <= m.start))
             return false;
     }
     return true;
@@ -256,8 +252,8 @@ CandidateSet::CandidateSet(Curves &c, double d) : curves(c) {
 }
 
 //mimic a<b at first coordinate
-bool comp2(std::pair<int,Subcurve> a, std::pair<int,Subcurve> b){
-    return (a.first < b.first) || (a.first == b.first && a.second.start < b.second.start);
+bool comp2(Subcurve a, Subcurve b){
+    return (a.curveIdx < b.curveIdx) || (a.curveIdx == b.curveIdx && a.start < b.start);
 }
 
 ParamPoint halfPointInbetween(ParamPoint a, ParamPoint b){
@@ -275,7 +271,7 @@ ParamPoint halfPointInbetween(ParamPoint a, ParamPoint b){
 }
 
 std::pair<int,ParamPoint> CandidateSet::findNonCovered(std::vector<std::pair<int,int>> indices) {
-    std::vector<std::pair<int,Subcurve>> matchings;
+    std::vector<Subcurve> matchings;
     int count = 0;
     for(auto index : indices){
         count += getCandidate(index).matchings.size();
@@ -292,7 +288,7 @@ std::pair<int,ParamPoint> CandidateSet::findNonCovered(std::vector<std::pair<int
     ParamPoint currentT = {0,0.0};
     for(auto & matching:matchings){
         //go to next curve
-        if(currentId != matching.first){
+        if(currentId != matching.curveIdx){
             if(currentT.id == curves[currentId].size()-2 && currentT.t >= 1.0){
                 currentId++;
                 currentT = {0,0.0};
@@ -302,10 +298,10 @@ std::pair<int,ParamPoint> CandidateSet::findNonCovered(std::vector<std::pair<int
                 return {currentId, halfPointInbetween(currentT, max)};
             }
         }
-        if(currentT < matching.second.start){
-            return {currentId, halfPointInbetween(currentT, matching.second.start)};
+        if(currentT < matching.start){
+            return {currentId, halfPointInbetween(currentT, matching.start)};
         }
-        currentT = std::max(matching.second.end,currentT);
+        currentT = std::max(matching.end,currentT);
     }
     if(currentT.t < 1.0){
         return {currentId, halfPointInbetween(currentT,{currentT.id,1.0})};
@@ -781,15 +777,15 @@ void CandidateSetPQ::computeCandidates(int l) {
     std::cout << "Total amount of candidates: " << totalcount << ". Time difference = "<< std::chrono::duration_cast<std::chrono::milliseconds>(totalend - totalbegin).count() << "[µs]" << std::endl;
 }
 */
-void CandidateSetPQ::showCovering(std::vector<std::pair<int, Candidate>> candidates) {
+void CandidateSetPQ::showCovering(std::vector<Candidate> candidates) {
 #ifdef HASVISUAL
     FreeSpacesVisualizer fsv = FreeSpacesVisualizer(freespaces);
     fsv.showCandidates(std::move(candidates));
 #endif
 }
 
-bool cmpLength(const std::pair<int,Candidate>& l, const std::pair<int,Candidate>& r){
-    return l.second.semiUpdatedCoverLength < r.second.semiUpdatedCoverLength;
+bool cmpLength(const Candidate& l, const Candidate& r){
+    return l.semiUpdatedCoverLength < r.semiUpdatedCoverLength;
 }
 
 void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
@@ -1111,7 +1107,7 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
     }
     std::cout << "Generated " << compressedCandidates.size() << " many compressed candidates."<< std::endl << "Augmenting candidates with covering data...";
     int progress = 0;
-    std::vector<std::pair<int,Candidate>> prepruned;
+    std::vector<Candidate> prepruned;
     //alternative:
     int removes = 0;
     //TODO: fix race condicitions as one thread may reset another threads freespace
@@ -1135,11 +1131,11 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
         }
         if(std::get<2>(cC).empty())
             continue;
-        std::vector<Candidate> result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves, omp_get_thread_num());
+        std::vector<Candidate> result = Candidate::uncompressAndComputeCovering(freespaces[std::get<0>(cC)],std::get<1>(cC),std::get<2>(cC),curves,std::get<0>(cC), omp_get_thread_num());
         for(auto& c: result){
 #pragma omp critical (block6)
             {
-                push({std::get<0>(cC), c});
+                push(c);
             }
         }
     }
@@ -1179,13 +1175,13 @@ void CandidateSetPQ::ultrafastComputeCandidates(int l, int minL) {
 }
 
 void CandidateSetPQ::resetWeights() {
-    std::vector<std::pair<int,Candidate>> temp;
+    std::vector<Candidate> temp;
     while(!empty()) {
         temp.push_back(top());
         pop();
     }
     for(auto& c : temp){
-        c.second.resetCoverLength();
+        c.resetCoverLength();
         push(c);
     }
 }
