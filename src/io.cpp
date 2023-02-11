@@ -252,4 +252,35 @@ void exportCurvesGPX(std::string const& filename, Curves const& curves)
 	file << "</gpx>\n";
 }
 
+
+std::vector<std::pair<Label, int>> readHM36GroundTruth(const std::string &ground_truth_data_file, int labels){
+        // Read everything into a stringstream.
+        std::ifstream file(ground_truth_data_file);
+
+        std::vector<std::pair<Label,int>> gt;
+        int framecount = 0;
+
+        while(file){
+            int nextlabel = -1;
+            for(int i=0;i<labels;++i){
+                double l;
+                file >> l;
+                if (l!=0){
+                    nextlabel = i;
+                }
+            }
+            Label nextLabel = (Label)(2+nextlabel);
+            if(file){
+                if(gt.empty() || gt.back().first != nextLabel){
+                    gt.push_back({nextLabel,framecount});
+                }else{
+                    assert(gt.back().second+1 == framecount);
+                    gt.back().second = framecount;
+                }
+            }
+            framecount ++;
+        }
+        return gt;
+    }
+
 } // end namespace io

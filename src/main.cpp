@@ -23,6 +23,9 @@ int main(int argc, char* argv[])
 #else
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
+
+    io::readHM36GroundTruth("/Users/styx/data/curveclustering/label8/label8_S11_directions_1.txt",8);
+
     //std::cout << "Hello world!\n";
     FrechetLight fl;
 /*
@@ -54,7 +57,6 @@ int main(int argc, char* argv[])
     Curve c2 = Curve("../data/86_2.txt",93);
     Curve c4 = Curve("../data/86_4.txt",93);
     Curve c6 = Curve("../data/86_6.txt",93);
-
 
     /**
      * GROUND TRUTHS

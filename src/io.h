@@ -18,5 +18,6 @@ void exportCentersGPX(std::string const& filename, Clustering const& clustering)
 void exportCurvesGPX(std::string const& filename, Curves const& curves);
 void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, ParamPoint t);
 void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, ParamPoint t, int interpol);
+std::vector<std::pair<Label, int>> readHM36GroundTruth(const std::string &ground_truth_data_file, int labels);
 
 } // end namespace io
