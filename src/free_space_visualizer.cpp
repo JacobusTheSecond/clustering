@@ -1308,7 +1308,12 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
         partialLengths.push_back(partialLengths[partialLengths.size() - 1] + 1 + curve.size());
     }
     int xSize = (partialLengths[partialLengths.size() - 1]);
-    int ySize = 1 + (_labelend - _labelstart - 1) + 5 + candidates.size();
+    int ySize = 1 + (_labelend - _labelstart - 1) + 5 + candidates.size() + 20 + 20 + 10;
+
+    std::vector<std::vector<Label>> combinator;
+    for(auto curve : c){
+        combinator.emplace_back(curve.size()-1,Label::_labelstart);
+    }
 
     std::cout << xSize << " x " << ySize << std::endl;
 
@@ -1346,6 +1351,8 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
                 double intxs = partialLengths[curveindex] + start.id + start.t;
                 double intxt = partialLengths[curveindex] + assignment.second.id + assignment.second.t;
 
+                rectangle(img,Point2d(intxs, ySize-32)*scale,Point2d(intxt, ySize-48)*scale, _labelColor(assignment.first),-1);
+                rectangle(img,Point2d(intxs, ySize-32)*scale,Point2d(intxt, ySize-48)*scale, _labelColor(transition),2);
                 line(img, Point2d(intxs, y) * scale, Point2d(intxt, y) * scale, _labelColor(assignment.first), 5);
                 circle(img, Point2d(intxs, y) * scale, 5, _labelColor(assignment.first), -1);
                 circle(img, Point2d(intxt, y) * scale, 5, _labelColor(assignment.first), -1);
@@ -1354,6 +1361,13 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
             }
         }
 
+        //clear combinator
+        combinator.clear();
+        for(auto curve : c){
+            combinator.emplace_back(curve.size()-1,Label::_labelstart);
+        }
+
+
         for (int i = 0; i < candidates.size(); i++) {
             auto wrappercandidate = candidates[i];
             Candidate candidate = wrappercandidate;
@@ -1361,6 +1375,15 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
             line(img, Point2d(partialLengths[0], y) * scale, Point2d(partialLengths[partialLengths.size()-1], y) * scale, Scalar(0, 0, 0),
                  1);
             for (auto matching: candidate.visualMatchings) {
+
+                for(int idx = matching.start.id;idx<=matching.end.id;idx++){
+                    if(combinator[matching.curveIdx][idx] == _labelstart || combinator[matching.curveIdx][idx] == labeling[i]){
+                        combinator[matching.curveIdx][idx] = labeling[i];
+                    }else{
+                        combinator[matching.curveIdx][idx] = transition;
+                    }
+                }
+
                 double intxs = partialLengths[matching.curveIdx] + matching.start.id + matching.start.t;
                 double intxt = partialLengths[matching.curveIdx] + matching.end.id + matching.end.t;
 
@@ -1369,6 +1392,242 @@ void ClusteringVisulaizer::showClustering(Curves c, std::vector<std::vector<std:
                 circle(img, Point2d(intxt, y-0.1) * scale, 5, _labelColor(labeling[i]), -1);
             }
         }
+
+        //draw combinator
+        for (int i = 0; i < c.size(); i++) {
+            int startx = partialLengths[i];
+            for (int j=0;j<combinator[i].size();j++){
+                //draw labeling of vertex
+                rectangle(img,Point2d(startx+j,ySize-12)*scale,Point2d(startx+j+1,ySize-28)*scale, _labelColor(combinator[i][j]),-1);
+            }
+            rectangle(img,Point2d(startx,ySize-12)*scale,Point2d(startx+combinator[i].size(),ySize-28)*scale, _labelColor(transition),2);
+            //line(img, Point2d(partialLengths[i], 1) * scale, Point2d(partialLengths[i + 1]-1, 1) * scale, Scalar(0, 0, 0),5);
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            auto wrappercandidate = candidates[i];
+            Candidate candidate = wrappercandidate;
+            for (auto matching: candidate.visualMatchings) {
+
+                double intxs = partialLengths[matching.curveIdx] + matching.start.id + matching.start.t;
+                double intxt = partialLengths[matching.curveIdx] + matching.end.id + matching.end.t;
+
+                line(img, Point2d(intxs, ySize-28) * scale, Point2d(intxs, ySize-12) * scale, _labelColor(transition), 2);
+                //line(img, Point2d(intxt, ySize-8) * scale, Point2d(intxt, ySize-2) * scale, _labelColor(transition), 2);
+                //circle(img, Point2d(intxs, y+0.1) * scale, 5, _labelColor(labeling[i]), -1);
+                //circle(img, Point2d(intxt, y-0.1) * scale, 5, _labelColor(labeling[i]), -1);
+            }
+        }
+
+        int winH = 1800;
+        int winW = 3200;
+        if (winH >= img.rows)winH = img.rows - 1;
+        if (winW >= img.cols)winW = img.cols - 1;
+        while (true) {
+            int truescrolHight = (img.rows - winH)*scrolHight/1000;
+            int truescrolWidth = (img.cols - winW)*scrolWidth/1000;
+            Mat winImage = img(Rect(truescrolWidth, img.rows - winH - truescrolHight, winW, winH));
+            imshow("winImage", winImage);
+            int input = waitKey(0);
+            if (input == 'q')
+                break;
+            if(input == '+'){
+                scale = std::min(scale*2,128);
+                redraw = true;
+                break;
+            }
+            if(input == '-'){
+                scale = std::max(scale/2,1);
+                redraw = true;
+                break;
+            }
+            if(input == 'w'){
+                scrolHight = std::min(scrolHight+25,1000);
+            }
+            if(input == 'd'){
+                scrolWidth = std::min(scrolWidth+25,1000);
+            }
+            if(input == 's'){
+                scrolHight = std::max(scrolHight-25,0);
+            }
+            if(input == 'a'){
+                scrolWidth = std::max(scrolWidth-25,0);
+            }
+            if(input == 'j'){
+                if(labeling[labelingIdx] != _labelstart) {
+                    labeling[labelingIdx] = (Label) (labeling[labelingIdx] - 1);
+
+                    for(auto l : labeling){
+                        std::cout << l << " ";
+                    }
+                    std::cout << std::endl;
+
+                    redraw = true;
+                    break;
+                }
+            }
+            if(input == 'l'){
+                if(labeling[labelingIdx] != _labelend) {
+                    labeling[labelingIdx] = (Label) (labeling[labelingIdx] + 1);
+
+                    for(auto l : labeling){
+                        std::cout << l << " ";
+                    }
+                    std::cout << std::endl;
+
+                    redraw = true;
+                    break;
+                }
+            }
+            if(input == 'i'){
+                if(labelingIdx > 0){
+                    labelingIdx -= 1;
+                }
+            }
+            if(input == 'k'){
+                if(labelingIdx < labeling.size()-1){
+                    labelingIdx += 1;
+                }
+            }
+        }
+    }
+
+    cv::destroyAllWindows();
+
+    cv::waitKey(1);
+}
+
+void ClusteringVisulaizer::showClusteringStretched(Curves c,
+                                                   std::vector<std::vector<std::pair<Label, ParamPoint>>> groundthruth,
+                                                   std::vector<Candidate> candidates) {
+
+    int scale = 8;
+
+    int scrolHight = 0;
+    int scrolWidth = 0;
+
+    std::vector<Label> labeling(candidates.size());
+    int labelingIdx = 0;
+
+    std::vector<int> partialLengths;
+    partialLengths.push_back(1);
+    for (auto curve: c) {
+        partialLengths.push_back(partialLengths[partialLengths.size() - 1] + 1 + curve.size());
+    }
+    int xSize = (partialLengths[partialLengths.size() - 1]);
+    int ySize = 1 + (_labelend - _labelstart - 1) + 5 + candidates.size() + 20 + 20 + 10;
+
+    std::vector<std::vector<Label>> combinator;
+    for(auto curve : c){
+        combinator.emplace_back(curve.size()-1,Label::_labelstart);
+    }
+
+    std::cout << xSize << " x " << ySize << std::endl;
+
+    namedWindow("winImage", WINDOW_NORMAL);
+    namedWindow("controlWin", WINDOW_AUTOSIZE);
+
+    createTrackbar("Hscroll", "controlWin", &scrolHight, 1000);
+    createTrackbar("Wscroll", "controlWin", &scrolWidth, 1000);
+
+    double targetXSize = 320;
+    double xScale = targetXSize/xSize;
+
+    bool redraw = true;
+    while(redraw) {
+        redraw = false;
+
+        Mat img(scale * ySize, scale * xSize*xScale, CV_8UC3, Scalar(255, 255, 255));
+
+        for (int i = 0; i < c.size(); i++) {
+            line(img, Point2d(partialLengths[i]*xScale, 1) * scale, Point2d((partialLengths[i + 1]-1)*xScale, 1) * scale, Scalar(0, 0, 0),
+                 5);
+            circle(img, Point2d(partialLengths[i]*xScale, 1) * scale, 5, Scalar(0, 0, 0), -1);
+            circle(img, Point2d((partialLengths[i + 1]-1)*xScale, 1) * scale, 5, Scalar(0, 0, 0), -1);
+        }
+
+        for(Label label = (Label)(_labelstart+1);label!=_labelend;label = (Label)(label+1)){
+            double y = 1+label;
+            line(img, Point2d(partialLengths[0]*xScale, y) * scale, Point2d(partialLengths[partialLengths.size()-1]*xScale, y) * scale, Scalar(0, 0, 0),
+                 1);
+        }
+
+        for (int curveindex = 0; curveindex < c.size(); curveindex++) {
+            ParamPoint start = {0, 0};
+            for (auto assignment: groundthruth[curveindex]) {
+                double y = 1 + assignment.first;
+
+                double intxs = partialLengths[curveindex] + start.id + start.t;
+                double intxt = partialLengths[curveindex] + assignment.second.id + assignment.second.t;
+
+                rectangle(img,Point2d(intxs*xScale, ySize-32)*scale,Point2d(intxt*xScale, ySize-48)*scale, _labelColor(assignment.first),-1);
+                rectangle(img,Point2d(intxs*xScale, ySize-32)*scale,Point2d(intxt*xScale, ySize-48)*scale, _labelColor(transition),2);
+                line(img, Point2d(intxs*xScale, y) * scale, Point2d(intxt*xScale, y) * scale, _labelColor(assignment.first), 5);
+                circle(img, Point2d(intxs*xScale, y) * scale, 5, _labelColor(assignment.first), -1);
+                circle(img, Point2d(intxt*xScale, y) * scale, 5, _labelColor(assignment.first), -1);
+
+                start = assignment.second;
+            }
+        }
+
+        //clear combinator
+        combinator.clear();
+        for(auto curve : c){
+            combinator.emplace_back(curve.size()-1,Label::_labelstart);
+        }
+
+
+        for (int i = 0; i < candidates.size(); i++) {
+            auto wrappercandidate = candidates[i];
+            Candidate candidate = wrappercandidate;
+            double y = 1 + (_labelend - _labelstart - 1) + 5 + i;
+            line(img, Point2d(partialLengths[0]*xScale, y) * scale, Point2d(partialLengths[partialLengths.size()-1]*xScale, y) * scale, Scalar(0, 0, 0),
+                 1);
+            for (auto matching: candidate.visualMatchings) {
+
+                for(int idx = matching.start.id;idx<=matching.end.id;idx++){
+                    if(combinator[matching.curveIdx][idx] == _labelstart || combinator[matching.curveIdx][idx] == labeling[i]){
+                        combinator[matching.curveIdx][idx] = labeling[i];
+                    }else{
+                        combinator[matching.curveIdx][idx] = transition;
+                    }
+                }
+
+                double intxs = partialLengths[matching.curveIdx] + matching.start.id + matching.start.t;
+                double intxt = partialLengths[matching.curveIdx] + matching.end.id + matching.end.t;
+
+                line(img, Point2d(intxs*xScale, y+0.1) * scale, Point2d(intxt*xScale, y-0.1) * scale, _labelColor(labeling[i]), 5);
+                circle(img, Point2d(intxs*xScale, y+0.1) * scale, 5, _labelColor(labeling[i]), -1);
+                circle(img, Point2d(intxt*xScale, y-0.1) * scale, 5, _labelColor(labeling[i]), -1);
+            }
+        }
+
+        //draw combinator
+        for (int i = 0; i < c.size(); i++) {
+            int startx = partialLengths[i];
+            for (int j=0;j<combinator[i].size();j++){
+                //draw labeling of vertex
+                rectangle(img,Point2d((startx+j)*xScale,ySize-12)*scale,Point2d((startx+j+1)*xScale,ySize-28)*scale, _labelColor(combinator[i][j]),-1);
+            }
+            rectangle(img,Point2d(startx*xScale,ySize-12)*scale,Point2d((startx+combinator[i].size())*xScale,ySize-28)*scale, _labelColor(transition),2);
+            //line(img, Point2d(partialLengths[i], 1) * scale, Point2d(partialLengths[i + 1]-1, 1) * scale, Scalar(0, 0, 0),5);
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            auto wrappercandidate = candidates[i];
+            Candidate candidate = wrappercandidate;
+            for (auto matching: candidate.visualMatchings) {
+
+                double intxs = partialLengths[matching.curveIdx] + matching.start.id + matching.start.t;
+                double intxt = partialLengths[matching.curveIdx] + matching.end.id + matching.end.t;
+
+                line(img, Point2d(intxs*xScale, ySize-28) * scale, Point2d(intxs*xScale, ySize-12) * scale, _labelColor(transition), 2);
+                //line(img, Point2d(intxt, ySize-8) * scale, Point2d(intxt, ySize-2) * scale, _labelColor(transition), 2);
+                //circle(img, Point2d(intxs, y+0.1) * scale, 5, _labelColor(labeling[i]), -1);
+                //circle(img, Point2d(intxt, y-0.1) * scale, 5, _labelColor(labeling[i]), -1);
+            }
+        }
+
         int winH = 1800;
         int winW = 3200;
         if (winH >= img.rows)winH = img.rows - 1;

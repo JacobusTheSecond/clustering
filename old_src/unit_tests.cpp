@@ -4,8 +4,8 @@
 #endif
 #include "unit_tests.h"
 
-#include "defs.h"
-#include "geometric_algs.h"
+#include "../src/defs.h"
+#include "../src/geometric_algs.h"
 
 //
 // Define some helpers

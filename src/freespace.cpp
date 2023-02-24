@@ -64,10 +64,15 @@ FreeSpace::FreeSpace(const Curve& B, const Curve& T, double delta, int threadcou
             cell.lrc3 = (dc).length_sqr();
 
             cell.delta = delta;
-            IntersectionAlgorithm::intersection_interval(cell.a,delta,cell.c,cell.d,&cell.left);
-            IntersectionAlgorithm::intersection_interval(cell.b,delta,cell.c,cell.d,&cell.right);
-            IntersectionAlgorithm::intersection_interval(cell.c,delta,cell.a,cell.b,&cell.bottom);
-            IntersectionAlgorithm::intersection_interval(cell.d,delta,cell.a,cell.b,&cell.top);
+
+            IntersectionAlgorithm::intersection_interval(cell.tba1,cell.tbb1,0.0*cell.tbb2,cell.tbc1,0.0*cell.tbc2,0.0*0.0*cell.tbc3,delta,&cell.left);
+            IntersectionAlgorithm::intersection_interval(cell.tba1,cell.tbb1,1.0*cell.tbb2,cell.tbc1,1.0*cell.tbc2,1.0*1.0*cell.tbc3,delta,&cell.right);
+            IntersectionAlgorithm::intersection_interval(cell.lra1,cell.lrb1,0.0*cell.lrb2,cell.lrc1,0.0*cell.lrc2,0.0*0.0*cell.lrc3,delta, &cell.bottom);
+            IntersectionAlgorithm::intersection_interval(cell.lra1,cell.lrb1,1.0*cell.lrb2,cell.lrc1,1.0*cell.lrc2,1.0*1.0*cell.lrc3,delta, &cell.top);
+            //IntersectionAlgorithm::intersection_interval(cell.a,delta,cell.c,cell.d,&cell.left);
+            //IntersectionAlgorithm::intersection_interval(cell.b,delta,cell.c,cell.d,&cell.right);
+            //IntersectionAlgorithm::intersection_interval(cell.c,delta,cell.a,cell.b,&cell.bottom);
+            //IntersectionAlgorithm::intersection_interval(cell.d,delta,cell.a,cell.b,&cell.top);
             cell.left = clipper.clip(cell.left);
             cell.right = clipper.clip(cell.right);
             cell.top = clipper.clip(cell.top);
@@ -80,12 +85,16 @@ FreeSpace::FreeSpace(const Curve& B, const Curve& T, double delta, int threadcou
             }else {
                 cell.isEmpty = false;
                 //intersection.begin is x-coord of leftmost point, intersection.end is rightmost
-                Point p = cell.a + (cell.b - cell.a) * intersection.begin;
-                Point q = cell.a + (cell.b - cell.a) * intersection.end;
+                double x1 = intersection.begin;
+                double x2 = intersection.end;
+                //Point p = cell.a + (cell.b - cell.a) * intersection.begin;
+                //Point q = cell.a + (cell.b - cell.a) * intersection.end;
                 Interval intersection2;
-                IntersectionAlgorithm::intersection_interval(p, delta, cell.c, cell.d, &intersection2);
+                //IntersectionAlgorithm::intersection_interval(p, delta, cell.c, cell.d, &intersection2);
                 Interval intersection3;
-                IntersectionAlgorithm::intersection_interval(q, delta, cell.c, cell.d, &intersection3);
+                //IntersectionAlgorithm::intersection_interval(q, delta, cell.c, cell.d, &intersection3);
+                IntersectionAlgorithm::intersection_interval(cell.tba1,cell.tbb1,x1*cell.tbb2,cell.tbc1,x1*cell.tbc2,x1*x1*cell.tbc3,delta,&intersection2);
+                IntersectionAlgorithm::intersection_interval(cell.tba1,cell.tbb1,x2*cell.tbb2,cell.tbc1,x2*cell.tbc2,x2*x2*cell.tbc3,delta,&intersection3);
                 assert(!intersection2.is_empty());
                 assert(!intersection3.is_empty());
                 //cell.leftMost = Point(clipper.clip(intersection.begin), clipper.clip(intersection2.begin));
@@ -96,11 +105,16 @@ FreeSpace::FreeSpace(const Curve& B, const Curve& T, double delta, int threadcou
 
                 //compute Topmost
                 Interval intersection4 = IntersectionAlgorithm::intersection_interval(cell.a,cell.b,delta,cell.c,cell.d);
+                double y1 = intersection4.begin;
+                double y2 = intersection4.end;
                 Interval intersection5,intersection6;
-                Point u = cell.c + (cell.d-cell.c)*intersection4.begin;
-                Point v = cell.c + (cell.d-cell.c)*intersection4.end;
-                IntersectionAlgorithm::intersection_interval(u,delta,cell.a,cell.b,&intersection5);
-                IntersectionAlgorithm::intersection_interval(v,delta,cell.a,cell.b,&intersection6);
+                //Point u = cell.c + (cell.d-cell.c)*intersection4.begin;
+                //Point v = cell.c + (cell.d-cell.c)*intersection4.end;
+                //IntersectionAlgorithm::intersection_interval(u,delta,cell.a,cell.b,&intersection5);
+                //IntersectionAlgorithm::intersection_interval(v,delta,cell.a,cell.b,&intersection6);
+
+                IntersectionAlgorithm::intersection_interval(cell.lra1,cell.lrb1,y1*cell.lrb2,cell.lrc1,y1*cell.lrc2,y1*y1*cell.lrc3,delta, &intersection5);
+                IntersectionAlgorithm::intersection_interval(cell.lra1,cell.lrb1,y2*cell.lrb2,cell.lrc1,y2*cell.lrc2,y2*y2*cell.lrc3,delta, &intersection6);
                 //cell.bottomMost = Point(intersection5.begin,intersection4.begin);
                 //cell.topMost = Point(intersection6.end,intersection4.end);
                 cell.bottomPair = {CellPoint(clipper.clip(intersection5.begin),clipper.clip(intersection4.begin)),CellPoint(clipper.clip(intersection5.end),clipper.clip(intersection4.begin))};
@@ -146,263 +160,7 @@ void FreeSpace::reset(int threadID) {
         }
     }
 }
-/*
-void FreeSpace::identifyImportantYs() {
 
-
-    for(int x=nx-1;x>=0;x--){
-        for(int y=ny-1;y>=0;y--) {
-
-            Cell* cell = getCell(x,y);
-            if(cell->isEmpty)
-                continue;
-            FreeSpacePoint start = {{x,cell->rightMost.x()},{y,cell->rightMost.y()}};
-            FreeSpacePoint leftMost = findExtremPointInDirectionFromPoint<Direction::Left>(start);
-
-            //check if endcell already contains this Y
-            bool contains = false;
-            for(std::pair<Point, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantYs)
-                if(startP.first.y() == leftMost.y.t) {
-                    contains = true;
-                    break;
-                }
-            if(!contains) {
-                Point p = {leftMost.x.t, leftMost.y.t};
-                std::pair<Point,FreeSpacePoint> pair = {p,start};
-                getCell(leftMost.x.id, leftMost.y.id)->importantYs.push_back(pair);
-            }
-        }
-    }
-}
-*/
-/*
-void FreeSpace::identifyImportantUpDownYs() {
-    int veryshortcount = 0;
-    Interval clipper = Interval(0,1);
-    for(int x=nx-1;x>=0;x--){
-        for(int y=ny-1;y>=0;y--) {
-
-            Cell* cell = getCell(x,y);
-            if(cell->isEmpty)
-                continue;
-
-
-            //TODO: rename properly, this is nolonger topright
-            CellPoint lefttop = cell->getExtreme<Direction::Left,Direction::Up>();
-            CellPoint leftbottom = cell->getExtreme<Direction::Left,Direction::Down>();
-            FreeSpacePoint topstart = {{x,lefttop.x},{y,lefttop.y}};
-            FreeSpacePoint bottomstart = {{x,leftbottom.x},{y,leftbottom.y}};
-            std::vector<FreeSpacePoint> leftDownMost = findExtremePointsFromPoint<Direction::Left,Direction::Down>(topstart);
-            std::vector<FreeSpacePoint> leftUpMost = findExtremePointsFromPoint<Direction::Left,Direction::Up>(bottomstart);
-
-            //check if endcell already contains this Y
-            for(FreeSpacePoint leftMost : leftDownMost) {
-                if(leftMost.y.id == topstart.y.id && std::abs( leftMost.y.t - topstart.y.t) < EPSILON){
-                    veryshortcount++;
-                    continue;
-                }
-                if(leftMost.y.id == topstart.y.id && clipper.clip(leftMost.y.t) == clipper.clip(topstart.y.t)) {
-                    veryshortcount++;
-                    continue;
-                }
-                bool contains = false;
-                for (std::pair<CellPoint, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantDownYs)
-                    if (clipper.clip(startP.first.y) == clipper.clip(leftMost.y.t)) {
-                        contains = true;
-                        break;
-                    }
-                if (!contains) {
-                    CellPoint p = {leftMost.x.t, leftMost.y.t};
-                    std::pair<CellPoint, FreeSpacePoint> pair = {p, topstart};
-                    getCell(leftMost.x.id, leftMost.y.id)->importantDownYs.push_back(pair);
-                }
-            }
-            for(FreeSpacePoint leftMost : leftUpMost) {
-                if(leftMost.y.id == bottomstart.y.id && std::abs(leftMost.y.t- bottomstart.y.t) < EPSILON){
-                    veryshortcount++;
-                    continue;
-                }
-                if(leftMost.y.id == bottomstart.y.id && clipper.clip(leftMost.y.t) == clipper.clip(bottomstart.y.t)) {
-                    veryshortcount++;
-                    continue;
-                }
-                bool contains = false;
-                for (std::pair<CellPoint, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantUpYs)
-                    if (clipper.clip(startP.first.y) == clipper.clip(leftMost.y.t)) {
-                        contains = true;
-                        break;
-                    }
-                if (!contains) {
-                    CellPoint p = {leftMost.x.t, leftMost.y.t};
-                    std::pair<CellPoint, FreeSpacePoint> pair = {p, bottomstart};
-                    getCell(leftMost.x.id, leftMost.y.id)->importantUpYs.push_back(pair);
-                }
-            }
-
-            if(!cell->getBoundary<Direction::Left>().is_empty() && cell->getBoundary<Direction::Left>().end != 1.0){
-                //try to walk left as far as possible
-                double t = cell->getBoundary<Direction::Left>().end;
-                int tx = x;
-                Cell* curcell = getCell(tx,y);
-                while(tx >= 0 && curcell->left.begin <= t && t <= curcell->left.end) {
-                    curcell = getCell(tx,y);
-                    tx -= 1;
-                }
-                //offset tx
-                tx++;
-                if(curcell->leftPair.first.y > t) {
-                    CellPoint p = curcell->getExtremePointAt<Direction::Left>(t);
-                    FreeSpacePoint upperstart = {{x,0},{y,t}};
-                    std::pair<CellPoint, FreeSpacePoint> pair = {p, upperstart};
-                    getCell(tx, y)->importantUpYs.push_back(pair);
-                }
-            }
-        }
-    }
-    std::cout << "Ignoring " << veryshortcount << " same-cell-candidates of length <= " << EPSILON << "\n";
-}
-
-void FreeSpace::identifyImportantUpDownYs(int x, int y) {
-    int veryshortcount = 0;
-    Interval clipper = Interval(0,1);
-            Cell* cell = getCell(x,y);
-            if(cell->isEmpty)
-                return;
-
-
-            //TODO: rename properly, this is nolonger topright
-            CellPoint lefttop = cell->getExtreme<Direction::Left,Direction::Up>();
-            CellPoint leftbottom = cell->getExtreme<Direction::Left,Direction::Down>();
-            FreeSpacePoint topstart = {{x,lefttop.x},{y,lefttop.y}};
-            FreeSpacePoint bottomstart = {{x,leftbottom.x},{y,leftbottom.y}};
-            std::vector<FreeSpacePoint> leftDownMost = findExtremePointsFromPoint<Direction::Left,Direction::Down>(topstart);
-            std::vector<FreeSpacePoint> leftUpMost = findExtremePointsFromPoint<Direction::Left,Direction::Up>(bottomstart);
-
-            //check if endcell already contains this Y
-            for(FreeSpacePoint leftMost : leftDownMost) {
-                if(leftMost.y.id == topstart.y.id && leftMost.x.id == topstart.x.id && std::abs( leftMost.y.t - topstart.y.t) < EPSILON){
-                    veryshortcount++;
-                    continue;
-                }
-                if(leftMost.y.id == topstart.y.id && clipper.clip(leftMost.y.t) == clipper.clip(topstart.y.t)) {
-                    veryshortcount++;
-                    continue;
-                }
-                bool contains = false;
-                for (std::pair<CellPoint, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantDownYs)
-                    if (clipper.clip(startP.first.y) == clipper.clip(leftMost.y.t)) {
-                        contains = true;
-                        break;
-                    }
-                if (!contains) {
-                    CellPoint p = {leftMost.x.t, leftMost.y.t};
-                    std::pair<CellPoint, FreeSpacePoint> pair = {p, topstart};
-                    getCell(leftMost.x.id, leftMost.y.id)->importantDownYs.push_back(pair);
-                }
-            }
-            for(FreeSpacePoint leftMost : leftUpMost) {
-                if(leftMost.y.id == bottomstart.y.id && leftMost.x.id == bottomstart.x.id && std::abs(leftMost.y.t- bottomstart.y.t) < EPSILON){
-                    veryshortcount++;
-                    continue;
-                }
-                if(leftMost.y.id == bottomstart.y.id && clipper.clip(leftMost.y.t) == clipper.clip(bottomstart.y.t)) {
-                    veryshortcount++;
-                    continue;
-                }
-                bool contains = false;
-                for (std::pair<CellPoint, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantUpYs)
-                    if (clipper.clip(startP.first.y) == clipper.clip(leftMost.y.t)) {
-                        contains = true;
-                        break;
-                    }
-                if (!contains) {
-                    CellPoint p = {leftMost.x.t, leftMost.y.t};
-                    std::pair<CellPoint, FreeSpacePoint> pair = {p, bottomstart};
-                    getCell(leftMost.x.id, leftMost.y.id)->importantUpYs.push_back(pair);
-                }
-            }
-
-
-            if(!cell->getBoundary<Direction::Left>().is_empty() && cell->getBoundary<Direction::Left>().end != 1.0){
-                //try to walk left as far as possible
-                double t = cell->getBoundary<Direction::Left>().end;
-                int tx = x;
-                Cell* curcell = getCell(tx,y);
-                while(tx >= 0 && curcell->left.begin <= t && t <= curcell->left.end) {
-                    curcell = getCell(tx,y);
-                    tx -= 1;
-                }
-                //offset tx
-                tx++;
-                if(curcell->leftPair.first.y > t) {
-                    CellPoint p = curcell->getExtremePointAt<Direction::Left>(t);
-                    FreeSpacePoint upperstart = {{x,0},{y,t}};
-                    std::pair<CellPoint, FreeSpacePoint> pair = {p, upperstart};
-                    getCell(tx, y)->importantUpYs.push_back(pair);
-        }
-    }
-    std::cout << "Ignoring " << veryshortcount << " same-cell-candidates of length <= " << EPSILON << "\n";
-}
-*/
-/*
-bool FreeSpace::updateCellTopRight(int x, int y) {
-
-    Cell* currentCell = getCell(x,y);
-
-    if(currentCell->is_empty())
-        return true;
-
-    Interval fromBelow,fromLeft;
-    if(x>0)
-        fromLeft = getCell(x-1,y)->toRight;
-    if(y>0)
-        fromBelow = getCell(x,y-1)->toAbove;
-
-    if(fromLeft.is_empty() && fromBelow.is_empty())
-        return true;
-
-    if(!fromLeft.is_empty())
-        currentCell->toAbove = currentCell->top;
-    else
-        currentCell->toAbove = currentCell->top.maximum(fromBelow.begin);
-
-    if(!fromBelow.is_empty())
-        currentCell->toRight = currentCell->right;
-    else
-        currentCell->toRight = currentCell->right.maximum(fromLeft.begin);
-
-    return false;
-}*/
-/*
-bool FreeSpace::updateCellBottomLeft(int x, int y)  {
-
-    Cell* currentCell = getCell(x,y);
-
-    if(currentCell->is_empty())
-        return true;
-
-    Interval fromAbove,fromRight;
-    if(x<nx-1)
-        fromRight = getCell(x+1,y)->toLeft;
-    if(y<ny-1)
-        fromAbove = getCell(x,y+1)->toBottom;
-
-    if(fromRight.is_empty() && fromAbove.is_empty())
-        return true;
-
-    if(!fromRight.is_empty())
-        currentCell->toBottom = currentCell->bottom;
-    else
-        currentCell->toBottom = currentCell->bottom.minimum(fromAbove.end);
-
-    if(!fromAbove.is_empty())
-        currentCell->toLeft = currentCell->left;
-    else
-        currentCell->toLeft = currentCell->left.minimum(fromRight.end);
-
-    return false;
-}
-*/
 //TODO: maybe be really fast with trivial cells
 template<Direction primary, Direction secondary>
 std::vector<FreeSpacePoint> FreeSpace::findExtremePointsFromPoint(FreeSpacePoint start, ParamPoint globalLimit, bool applyToSecondary, int threadID, std::vector<FreeSpacePoint>* localMaxima ) {
@@ -903,100 +661,7 @@ std::vector<FreeSpacePoint> FreeSpace::findExtremePointsFromPointWrapper(Directi
             break;
     }
 }
-/*
-void FreeSpace::identifyImportantUpDownYs(int l) {
-    //ultrafastIdentify(l);
-    //Length-limit: l
-        int veryshortcount = 0;
-        Interval clipper = Interval(0,1);
-        for(int x=nx-1;x>=0;x--){
-            if((nx-x)%10==0)
-                std::cout << "Down to column " << x << std::endl;
-            for(int y=ny-1;y>=0;y--) {
 
-                Cell* cell = getCell(x,y);
-                if(cell->isEmpty)
-                    continue;
-
-
-                //TODO: rename properly, this is nolonger topright
-                CellPoint lefttop = cell->getExtreme<Direction::Left,Direction::Up>();
-                CellPoint leftbottom = cell->getExtreme<Direction::Left,Direction::Down>();
-                FreeSpacePoint topstart = {{x,lefttop.x},{y,lefttop.y}};
-                FreeSpacePoint bottomstart = {{x,leftbottom.x},{y,leftbottom.y}};
-                ParamPoint downlimit = {y-l+1,0.0};
-                ParamPoint uplimit = {y+l-1,1.0};
-                std::vector<FreeSpacePoint> leftDownMost = findExtremePointsFromPoint<Direction::Left,Direction::Down>(topstart,downlimit,true);
-                std::vector<FreeSpacePoint> leftUpMost = findExtremePointsFromPoint<Direction::Left,Direction::Up>(bottomstart,uplimit,true);
-
-                //check if endcell already contains this Y
-                for(FreeSpacePoint leftMost : leftDownMost) {
-                    if(leftMost.y.id == topstart.y.id && std::abs( leftMost.y.t - topstart.y.t) < EPSILON){
-                        veryshortcount++;
-                        continue;
-                    }
-                    if(leftMost.y.id == topstart.y.id && clipper.clip(leftMost.y.t) == clipper.clip(topstart.y.t)) {
-                        veryshortcount++;
-                        continue;
-                    }
-                    bool contains = false;
-                    for (std::pair<CellPoint, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantDownYs)
-                        if (clipper.clip(startP.first.y) == clipper.clip(leftMost.y.t)) {
-                            contains = true;
-                            break;
-                        }
-                    if (!contains) {
-                        CellPoint p = {leftMost.x.t, leftMost.y.t};
-                        std::pair<CellPoint, FreeSpacePoint> pair = {p, topstart};
-                        getCell(leftMost.x.id, leftMost.y.id)->importantDownYs.push_back(pair);
-                    }
-                }
-                for(FreeSpacePoint leftMost : leftUpMost) {
-                    if(leftMost.y.id == bottomstart.y.id && std::abs(leftMost.y.t- bottomstart.y.t) < EPSILON){
-                        veryshortcount++;
-                        continue;
-                    }
-                    if(leftMost.y.id == bottomstart.y.id && clipper.clip(leftMost.y.t) == clipper.clip(bottomstart.y.t)) {
-                        veryshortcount++;
-                        continue;
-                    }
-                    bool contains = false;
-                    for (std::pair<CellPoint, FreeSpacePoint> startP: getCell(leftMost.x.id, leftMost.y.id)->importantUpYs)
-                        if (clipper.clip(startP.first.y) == clipper.clip(leftMost.y.t)) {
-                            contains = true;
-                            break;
-                        }
-                    if (!contains) {
-                        CellPoint p = {leftMost.x.t, leftMost.y.t};
-                        std::pair<CellPoint, FreeSpacePoint> pair = {p, bottomstart};
-                        getCell(leftMost.x.id, leftMost.y.id)->importantUpYs.push_back(pair);
-                    }
-                }
-
-                //TODO: wtf is  i probably have to walk left as long as the left-interval is contained in what i have checked so far... I dont know, what this trash if condition is
-                if(!cell->getBoundary<Direction::Left>().is_empty() && cell->getBoundary<Direction::Left>().end != 1.0){
-                    //try to walk left as far as possible
-                    double t = cell->getBoundary<Direction::Left>().end;
-                    int tx = x;
-                    Cell* curcell = getCell(tx,y);
-                    while(tx >= 0 && curcell->left.begin <= t && t <= curcell->left.end) {
-                        curcell = getCell(tx,y);
-                        tx -= 1;
-                    }
-                    //offset tx
-                    tx++;
-                    if(curcell->leftPair.first.y > t) {
-                        CellPoint p = curcell->getExtremePointAt<Direction::Left>(t);
-                        FreeSpacePoint upperstart = {{x,0},{y,t}};
-                        std::pair<CellPoint, FreeSpacePoint> pair = {p, upperstart};
-                        getCell(tx, y)->importantUpYs.push_back(pair);
-                    }
-                }
-            }
-        }
-        std::cout << "Ignoring " << veryshortcount << " same-cell-candidates of length <= " << EPSILON << "\n";
-}
-*/
 void FreeSpace::ultrafastIdentify(int l) {
     assert(l>0);
     upStarts.clear();

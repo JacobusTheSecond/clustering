@@ -89,7 +89,7 @@ public:
     void resetWeights();
 };
 
-auto cmpPQ = [](const Candidate& left, const Candidate& right) { return (left.semiUpdatedCoverLength) < (right.semiUpdatedCoverLength); };
+static auto cmpPQ = [](const Candidate& left, const Candidate& right) { return (left.semiUpdatedCoverLength) < (right.semiUpdatedCoverLength); };
 class CandidateSetPQ : std::priority_queue<Candidate,std::vector<Candidate>,decltype(cmpPQ)>{
 private:
     using Parent = std::priority_queue<Candidate,std::vector<Candidate>,decltype(cmpPQ)>;

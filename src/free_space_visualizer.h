@@ -37,6 +37,7 @@ public:
 class ClusteringVisulaizer{
 public:
     void showClustering(Curves c, std::vector<std::vector<std::pair<Label,ParamPoint>>> groundthruth, std::vector<Candidate> candidates);
+    void showClusteringStretched(Curves c, std::vector<std::vector<std::pair<Label,ParamPoint>>> groundthruth, std::vector<Candidate> candidates);
 };
 
 #endif //CLUSTERING_FREE_SPACE_VISUALIZER_H

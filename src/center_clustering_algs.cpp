@@ -257,7 +257,7 @@ double lengthOfUncovered(Curves curves, std::vector<Candidate> candidateSet){
     return uncovered;
 }
 
-Curves greedyCover(Curves& curves, double delta, int l, int max_rounds, bool show){
+Curves greedyCoverAlreadySimplified(Curves& curves, double delta, int l, int max_rounds, bool show){
     std::vector<Candidate> bestResultVisualizer = greedyCoverUnsanitizedOutput(curves,delta,l,max_rounds,show,[=](const Candidate& a){return a.getEnd().id - a.getStart().id > l/4;});
     Curves bestresult;
 

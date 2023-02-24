@@ -258,7 +258,7 @@ std::vector<std::pair<Label, int>> readHM36GroundTruth(const std::string &ground
         std::ifstream file(ground_truth_data_file);
 
         std::vector<std::pair<Label,int>> gt;
-        int framecount = 0;
+        int framecount = 1;
 
         while(file){
             int nextlabel = -1;

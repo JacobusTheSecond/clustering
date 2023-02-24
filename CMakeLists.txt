@@ -39,17 +39,17 @@ if(OpenCV_FOUND)
 	add_executable(clustering
 			src/main.cpp
 			#src/center_algs.cpp
-			src/center_clustering_algs.cpp
-			src/clustering_algs.cpp
+            src/center_clustering_algs.cpp
+			#src/clustering_algs.cpp
 			src/curve.cpp
 			src/curve_simplification.cpp
-			src/geometric_algs.cpp
+			#src/geometric_algs.cpp
 			src/filter.cpp
 			src/frechet_light.cpp
-			src/frechet_matching.cpp
+			#src/frechet_matching.cpp
 			src/geometry_basics.cpp
 			src/io.cpp
-			src/random.cpp
+			#src/random.cpp
 			src/freespace.cpp
 			src/free_space_visualizer.cpp
 			src/candidate.cpp
@@ -63,17 +63,17 @@ else()
 	add_executable(clustering
 			src/main.cpp
 			#src/center_algs.cpp
-			src/center_clustering_algs.cpp
-			src/clustering_algs.cpp
+            src/center_clustering_algs.cpp
+			#src/clustering_algs.cpp
 			src/curve.cpp
 			src/curve_simplification.cpp
-			src/geometric_algs.cpp
+			#src/geometric_algs.cpp
 			src/filter.cpp
 			src/frechet_light.cpp
-			src/frechet_matching.cpp
+			#src/frechet_matching.cpp
 			src/geometry_basics.cpp
 			src/io.cpp
-			src/random.cpp
+			#src/random.cpp
 			src/freespace.cpp
 			src/candidate.cpp
 			src/SWatch.h)

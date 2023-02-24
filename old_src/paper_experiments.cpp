@@ -1,7 +1,7 @@
 #include "center_clustering_algs.h"
-#include "defs.h"
-#include "frechet_light.h"
-#include "io.h"
+#include "../src/defs.h"
+#include "../src/frechet_light.h"
+#include "../src/io.h"
 
 #include <algorithm>
 #include <chrono>
