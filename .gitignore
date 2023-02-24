@@ -10,3 +10,5 @@ cmake-build-release/
 cmake-build-debug/
 .idea/
 build/
+.DS_Store
+src/.DS_Store
