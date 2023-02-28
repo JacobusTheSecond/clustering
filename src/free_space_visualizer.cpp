@@ -1507,6 +1507,36 @@ void ClusteringVisulaizer::showClusteringStretched(Curves c,
     int scrolWidth = 0;
 
     std::vector<Label> labeling(candidates.size());
+    if(withAutocoloring){
+        for(int i=0;i<candidates.size();++i){
+            //tally up
+            std::vector<int> labelcount(_labelend,0);
+            Candidate candidate = candidates[i];
+            for(auto m : candidate.matchings){
+                for(ParamPoint s = m.getStart();s<= m.getEnd();s.id += 1){
+                    int currentLabelIdx = 0;
+                    while(groundthruth[m.getIndex()][currentLabelIdx].second < s){
+                        currentLabelIdx += 1;
+                    }
+                    labelcount[groundthruth[m.getIndex()][currentLabelIdx].first] += 1;
+                }
+            }
+            //find maximum
+            Label maxLabel = _labelstart;
+            int count = -1;
+            int totalcount = 0;
+            for(int j=0;j<labelcount.size();j++){
+                totalcount += labelcount[j];
+                if(labelcount[j] > count){
+                    count = labelcount[j];
+                    maxLabel = (Label)j;
+                }
+            }
+            if(count*2 > totalcount){
+                labeling[i] = maxLabel;
+            }
+        }
+    }
     int labelingIdx = 0;
 
     std::vector<int> partialLengths;
@@ -1530,7 +1560,7 @@ void ClusteringVisulaizer::showClusteringStretched(Curves c,
     createTrackbar("Hscroll", "controlWin", &scrolHight, 1000);
     createTrackbar("Wscroll", "controlWin", &scrolWidth, 1000);
 
-    double targetXSize = 320;
+    double targetXSize = 200;
     double xScale = targetXSize/xSize;
 
     bool redraw = true;
@@ -1586,6 +1616,9 @@ void ClusteringVisulaizer::showClusteringStretched(Curves c,
             for (auto matching: candidate.visualMatchings) {
 
                 for(int idx = matching.start.id;idx<=matching.end.id;idx++){
+                    if(labeling[i] == _labelstart){
+                        continue;
+                    }
                     if(combinator[matching.curveIdx][idx] == _labelstart || combinator[matching.curveIdx][idx] == labeling[i]){
                         combinator[matching.curveIdx][idx] = labeling[i];
                     }else{
@@ -1616,13 +1649,17 @@ void ClusteringVisulaizer::showClusteringStretched(Curves c,
         for (int i = 0; i < candidates.size(); i++) {
             auto wrappercandidate = candidates[i];
             Candidate candidate = wrappercandidate;
-            for (auto matching: candidate.visualMatchings) {
+            for (auto matching: candidate.matchings) {
 
-                double intxs = partialLengths[matching.curveIdx] + matching.start.id + matching.start.t;
-                double intxt = partialLengths[matching.curveIdx] + matching.end.id + matching.end.t;
+                double intxs = partialLengths[matching.curveIdx] + matching.start.id;// + matching.start.t;
+                double intxt = partialLengths[matching.curveIdx] + matching.end.id;// + matching.end.t;
 
-                line(img, Point2d(intxs*xScale, ySize-28) * scale, Point2d(intxs*xScale, ySize-12) * scale, _labelColor(transition), 2);
-                //line(img, Point2d(intxt, ySize-8) * scale, Point2d(intxt, ySize-2) * scale, _labelColor(transition), 2);
+                if(labeling[i]!=_labelstart) {
+                    line(img, Point2d(intxs * xScale, ySize - 28) * scale, Point2d(intxs * xScale, ySize - 12) * scale,
+                         _labelColor(transition), 2);
+                    //line(img, Point2d(intxt*xScale, ySize - 28) * scale, Point2d(intxt*xScale, ySize - 12) * scale,
+                    //     _labelColor(transition), 2);
+                }
                 //circle(img, Point2d(intxs, y+0.1) * scale, 5, _labelColor(labeling[i]), -1);
                 //circle(img, Point2d(intxt, y-0.1) * scale, 5, _labelColor(labeling[i]), -1);
             }

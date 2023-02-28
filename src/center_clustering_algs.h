@@ -27,6 +27,8 @@ private:
     bool withSubsamplingRule;
     int subsamplingFrequency;
 
+    bool withSort=true;
+
     //visual stuff
     bool showFreespaces;
 
@@ -62,6 +64,10 @@ public:
             withSubsamplingRule = true;
         }
         showFreespaces = showFlag;
+    }
+
+    void setWithSort(bool sort){
+        withSort = sort;
     }
 
     void initCurves(Curves& curves, double _delta){
@@ -254,11 +260,14 @@ public:
             cs.resetWeights();
             std::cout << "Done";
         }
-        std::sort(bestResultVisualizer.begin(),bestResultVisualizer.end(),
-                  [](const Candidate& a,const Candidate& b){
-                      return (a.matchings[0].curveIdx < b.matchings[0].curveIdx) ||
-                             ( (a.matchings[0].curveIdx == b.matchings[0].curveIdx) && (a.matchings[0].start < b.matchings[0].start));
-                  });
+        if(withSort) {
+            std::sort(bestResultVisualizer.begin(), bestResultVisualizer.end(),
+                      [](const Candidate &a, const Candidate &b) {
+                          return (a.matchings[0].curveIdx < b.matchings[0].curveIdx) ||
+                                 ((a.matchings[0].curveIdx == b.matchings[0].curveIdx) &&
+                                  (a.matchings[0].start < b.matchings[0].start));
+                      });
+        }
         if(showFreespaces) {
 #ifdef HASVISUAL
             cs.showCovering(bestResultVisualizer);
