@@ -16,7 +16,8 @@
 //	          << "The header size (default: 1) gives the number of lines which are ignored at the beginning of each curve file.\n";
 //}
 
-void experiment1() {
+
+void experiment1(const std::string& root_dir) {
     Curve c1 = Curve("../data/86_1.txt", 93);
 
     //groundtruths are 1-indexed, as they are from a mathlab file
@@ -75,7 +76,7 @@ void experiment1() {
         for (int j = 0; j < c.visualMatchings.size(); ++j) {
             auto m = c.visualMatchings[j];
             io::exportSubcurve(
-                    "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(i) + "/interval" +
+                    root_dir + "/matching" + std::to_string(i) + "/interval" +
                     std::to_string(j) + ".txt", cc.simplifiedCurves[m.getIndex()], m.getStart(), m.getEnd(), 100);
         }
     }
@@ -375,7 +376,7 @@ int main(int argc, char *argv[]) {
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
 
-    experiment1();
+    experiment1("ANONYMIZEDDIR");
 
     return 0;
 }
