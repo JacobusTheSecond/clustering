@@ -43,6 +43,8 @@ private:
     bool hasGTs;
     //std::vector<std::pair<Label,int>> groundTruth;
 
+    std::vector<std::vector<int>> times;
+
 
 
 public:
@@ -54,6 +56,15 @@ public:
     CurveClusterer(int samplingRate, bool showFlag){
         updateFlags(samplingRate,showFlag);
     };
+
+    ParamPoint mapSimplificationToBase(int curveIdx, ParamPoint t){
+        ParamPoint p = {times[curveIdx][t.id],t.t};
+        while(p.t > 1.0 + EPSILON){
+            p.id += 1;
+            p.t -= 1.0;
+        }
+        return p;
+    }
 
     void updateFlags(int samplingRate, bool showFlag){
         if (samplingRate<0){
@@ -74,11 +85,14 @@ public:
         hasGTs = false;
         delta = _delta;
         simplifiedCurves.clear();
-        for(auto curve : curves){
+        times.clear();
+        for(int i=0;i<curves.size();++i){
+            times.emplace_back();
+            Curve curve = curves[i];
             if(subsamplingFrequency >= 0){
-                simplifiedCurves.push_back(good_simplification(curve,delta,subsamplingFrequency));
+                simplifiedCurves.push_back(good_simplification(curve,delta,subsamplingFrequency,&times[i]));
             }else{
-                simplifiedCurves.push_back(good_simplification(curve,delta));
+                simplifiedCurves.push_back(good_simplification(curve,delta,&times[i]));
             }
         }
     }
@@ -89,13 +103,15 @@ public:
         delta = _delta;
         simplifiedCurves.clear();
         simplifiedGTs.clear();
+        times.clear();
         for(int i=0;i<curves.size();++i){
+            times.emplace_back();
             Curve curve = curves[i];
             simplifiedGTs.emplace_back();
             if(subsamplingFrequency >= 0){
-                simplifiedCurves.push_back(good_simplification(curve,delta,GTs[i],&(simplifiedGTs[i]),subsamplingFrequency));
+                simplifiedCurves.push_back(good_simplification(curve,delta,GTs[i],&(simplifiedGTs[i]),subsamplingFrequency,&times[i]));
             }else{
-                simplifiedCurves.push_back(good_simplification(curve,delta,GTs[i],&(simplifiedGTs[i])));
+                simplifiedCurves.push_back(good_simplification(curve,delta,GTs[i],&(simplifiedGTs[i]),&times[i]));
             }
         }
     }

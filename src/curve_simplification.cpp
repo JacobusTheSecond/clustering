@@ -102,18 +102,24 @@ Curve good_simplification(const Curve &c, const distance_t delta, std::vector<in
     return simplification;
 }
 
-Curve good_simplification(const Curve &c, const distance_t delta, FrameLabeling & groundthruth, ParamLabeling * simplifiedLabels) {
+Curve good_simplification(const Curve &c, const distance_t delta, FrameLabeling & groundthruth, ParamLabeling * simplifiedLabels, std::vector<int>* indices) {
     assert(groundthruth[groundthruth.size()-1].second == c.size());
     std::vector<int> I;
+    if(indices != nullptr)
+        indices->push_back(0);
     I.push_back(0);
     int length = 0;
     for (int i=1;i<c.size();++i){
         while(length > 0 && _less_than_or_equal_edge(2*delta,c[I[length-1]],c[i],c,I[length-1],i)){
             I.pop_back();
+            if(indices != nullptr)
+                indices->pop_back();
             length -= 1;
         }
         if(c[I[length]].dist_sqr(c[i])>=delta*delta/9.0){
             I.push_back(i);
+            if(indices != nullptr)
+                indices->push_back(i);
             length += 1;
         }
     }
@@ -143,16 +149,20 @@ Curve good_simplification(const Curve &c, const distance_t delta, FrameLabeling 
 }
 
 Curve good_simplification(const Curve &c, const distance_t delta, FrameLabeling &groundthruth,
-                          ParamLabeling *simplifiedLabels, int maxSkip) {
+                          ParamLabeling *simplifiedLabels, int maxSkip, std::vector<int>* indices) {
 
     assert(groundthruth[groundthruth.size()-1].second == c.size());
     std::vector<int> I;
+    if(indices != nullptr)
+        indices->push_back(0);
     I.push_back(0);
     int length = 0;
     for (int i=1;i<c.size();++i){
         bool cantSkip = false;
         while(length > 0 && i - I[length-1] < maxSkip && _less_than_or_equal_edge(2*delta,c[I[length-1]],c[i],c,I[length-1],i)){
             I.pop_back();
+            if(indices != nullptr)
+                indices->pop_back();
             length -= 1;
         }
         if((length == 0 && i-I[length] >= maxSkip) || (length > 0 && i - I[length-1] >= maxSkip)){
@@ -160,6 +170,8 @@ Curve good_simplification(const Curve &c, const distance_t delta, FrameLabeling 
         }
         if(c[I[length]].dist_sqr(c[i])>=delta*delta/9.0 || cantSkip){
             I.push_back(i);
+            if(indices != nullptr)
+                indices->push_back(i);
             length += 1;
         }
     }
@@ -188,15 +200,19 @@ Curve good_simplification(const Curve &c, const distance_t delta, FrameLabeling 
     return simplification;
 }
 
-Curve good_simplification(const Curve &c, const distance_t delta, int maxSkip) {
+Curve good_simplification(const Curve &c, const distance_t delta, int maxSkip, std::vector<int>* indices) {
 
     std::vector<int> I;
+    if(indices != nullptr)
+        indices->push_back(0);
     I.push_back(0);
     int length = 0;
     for (int i=1;i<c.size();++i){
         bool cantSkip = false;
         while(length > 0 && i - I[length-1] < maxSkip && _less_than_or_equal_edge(2*delta,c[I[length-1]],c[i],c,I[length-1],i)){
             I.pop_back();
+            if(indices != nullptr)
+                indices->pop_back();
             length -= 1;
         }
         if((length == 0 && i-I[length] >= maxSkip) || (length > 0 && i - I[length-1] >= maxSkip)){
@@ -204,6 +220,8 @@ Curve good_simplification(const Curve &c, const distance_t delta, int maxSkip) {
         }
         if(c[I[length]].dist_sqr(c[i])>=delta*delta/9.0 || cantSkip){
             I.push_back(i);
+            if(indices != nullptr)
+                indices->push_back(i);
             length += 1;
         }
     }

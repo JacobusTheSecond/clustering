@@ -59,12 +59,14 @@ void experiment1(const std::string& root_dir) {
     //cover algorithm
     auto result = cc.greedyCover(complexity, 10, filter);
 
-    //visulaization
-    std::cout << "Cutoff length: " << 2 * guarantee * delta << " & " << complexity / 3 << std::endl;
-    for (auto r: result) {
-        std::cout << "(" << r.getEnd().id - r.getStart().id << ","
-                  << cc.simplifiedCurves[r.getIndex()].subcurve_length(r.getStart(), r.getEnd()) << ")"
-                  << std::endl;
+    //print parameters
+    for(auto r : result){
+        for(auto m : r.matchings){
+            ParamPoint s = cc.mapSimplificationToBase(m.getIndex(),m.getStart());
+            ParamPoint t = cc.mapSimplificationToBase(m.getIndex(),m.getEnd());
+            std::cout << "(" << (double)s.id + s.t << "," << (double)t.id + t.t << ") ";
+        }
+        std::cout << std::endl;
     }
 
     ClusteringVisulaizer cv;
@@ -355,14 +357,6 @@ void experiments() {
 
         //cover algorithm
         auto result = cc.greedyCover(complexity, 10, filter);
-
-        //visulaization
-        std::cout << "Cutoff length: " << 2 * guarantee * delta << " & " << complexity / 3 << std::endl;
-        for (auto r: result) {
-            std::cout << "(" << r.getEnd().id - r.getStart().id << ","
-                      << cc.simplifiedCurves[r.getIndex()].subcurve_length(r.getStart(), r.getEnd()) << ")"
-                      << std::endl;
-        }
 
         ClusteringVisulaizer cv{true};
         cv.showClusteringStretched(cc.simplifiedCurves, cc.simplifiedGTs, result);
