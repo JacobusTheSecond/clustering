@@ -109,7 +109,7 @@ void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, Para
         ERROR("Couldn't open clustering file: " << filename);
     }
     for(int i=0;i<=interpol;++i){
-        std::cout << "(" << s.interpol(t,i,interpol).id << "," << s.interpol(t,i,interpol).t << ") ";
+        //std::cout << "(" << s.interpol(t,i,interpol).id << "," << s.interpol(t,i,interpol).t << ") ";
         for(auto coord:curve.eval(s.interpol(t,i,interpol))){
             file << coord << " ";
         }

@@ -12,7 +12,6 @@ typedef std::vector<std::pair<Label,ParamPoint>> ParamLabeling;
 
 namespace io
 {
-
 Curves readCurves(std::string const& curve_data_file, int header_size = 0);
 void exportClustering(std::string const& filename, std::string const& base_path, Clustering const& clustering, Curves const& curves);
 void exportCurve(std::string const& curve_data_file,Curve);

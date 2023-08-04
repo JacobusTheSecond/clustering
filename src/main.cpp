@@ -370,7 +370,7 @@ int main(int argc, char *argv[]) {
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
 
-    experiment1("/Users/styx/data/curveclustering/results/cluster");
+    //experiment1("/Users/styx/data/curveclustering/results/cluster");
     experiments();
 
     return 0;

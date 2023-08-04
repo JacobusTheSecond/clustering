@@ -12,9 +12,11 @@ set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-point
 set(ENV{OMP_NUM_THREADS} 12)
 
 #openMP stuff
-find_package(OpenMP REQUIRED)
+#find_package(OpenMP REQUIRED)
 
-add_definitions(-D_GLIBCXX_PARALLEL)
+#add_definitions(-D_GLIBCXX_PARALLEL)
+
+find_package(OpenMP REQUIRED)
 
 if(OpenMP_CXX_FOUND)
 	link_libraries(OpenMP::OpenMP_CXX)
@@ -55,7 +57,13 @@ if(OpenCV_FOUND)
 			src/candidate.cpp
 			src/SWatch.h)
 
-	target_link_libraries(clustering ${OpenCV_LIBS} )
+	add_executable(overhaul
+			new_src/main.cpp new_src/geometry_types.h new_src/basic_types.h new_src/id.h new_src/geometry_types.cpp new_src/Curve.cpp new_src/Curve.h new_src/CurveSimplification.cpp new_src/CurveSimplification.h new_src/io.cpp new_src/io.h new_src/defs.h new_src/SparseFreespace.cpp new_src/SparseFreespace.h new_src/FreespaceVisualizer.cpp new_src/FreespaceVisualizer.h new_src/Candidate.cpp new_src/Candidate.h new_src/center_clustering_algs.cpp new_src/center_clustering_algs.h new_src/SWatch.h)
+
+	target_link_libraries(clustering ${OpenCV_LIBS})
+	target_link_libraries(overhaul ${OpenCV_LIBS})
+	#target_link_libraries(clustering )
+	#target_link_libraries(overhaul PUBLIC OpenMP:OpenMP_CXX )
 else()
 	set(CMAKE_CXX_FLAGS "-Wall")
 	set(CMAKE_CXX_FLAGS "-lstdc++")
@@ -77,4 +85,7 @@ else()
 			src/freespace.cpp
 			src/candidate.cpp
 			src/SWatch.h)
+
+	add_executable(overhaul
+			new_src/main.cpp new_src/geometry_types.h new_src/basic_types.h new_src/id.h new_src/geometry_types.cpp new_src/Curve.cpp new_src/Curve.h new_src/CurveSimplification.cpp new_src/CurveSimplification.h new_src/io.cpp new_src/io.h new_src/defs.h new_src/SparseFreespace.cpp new_src/SparseFreespace.h new_src/FreespaceVisualizer.cpp new_src/FreespaceVisualizer.h new_src/Candidate.cpp new_src/Candidate.h new_src/center_clustering_algs.cpp new_src/center_clustering_algs.h new_src/SWatch.h)
 endif()
