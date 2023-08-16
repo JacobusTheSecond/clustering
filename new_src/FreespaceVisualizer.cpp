@@ -98,16 +98,16 @@ void FreeSpaceVisualizer::show(bool withPoints){
                 Point2d bl = origin + Point2d(0.0,0.0)*CS;
                 Point2d br = origin + Point2d(1.0,0.0)*CS;
 
-                if(cellwrapper->up != nullptr){
+                if(cellwrapper->upId != -1){
                     line(img, tl, tr, Scalar(255, 0, 0), 4);
                 }
-                if(cellwrapper->down != nullptr){
+                if(cellwrapper->downId != -1){
                     line(img, bl, br, Scalar(255, 0, 0), 4);
                 }
-                if(cellwrapper->right != nullptr){
+                if(cellwrapper->rightId != -1){
                     line(img, tr, br, Scalar(255, 0, 0), 4);
                 }
-                if(cellwrapper->left != nullptr){
+                if(cellwrapper->leftId != -1){
                     line(img, tl, bl, Scalar(255, 0, 0), 4);
                 }
 
@@ -302,16 +302,16 @@ void FreeSpacesVisualizer::show() {
                         Point2d bl = origin + Point2d(0.0,0.0)*CS;
                         Point2d br = origin + Point2d(1.0,0.0)*CS;
 
-                        if(cellwrapper->up != nullptr){
+                        if(cellwrapper->upId != -1){
                             line(img, tl, tr, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->down != nullptr){
+                        if(cellwrapper->downId != -1){
                             line(img, bl, br, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->right != nullptr){
+                        if(cellwrapper->rightId != -1){
                             line(img, tr, br, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->left != nullptr){
+                        if(cellwrapper->leftId != -1){
                             line(img, tl, bl, Scalar(255, 0, 0), 4);
                         }
 
@@ -503,16 +503,16 @@ void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
                         Point2d bl = origin + Point2d(0.0,0.0)*CS;
                         Point2d br = origin + Point2d(1.0,0.0)*CS;
 
-                        if(cellwrapper->up != nullptr){
+                        if(cellwrapper->upId != -1){
                             line(img, tl, tr, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->down != nullptr){
+                        if(cellwrapper->downId != -1){
                             line(img, bl, br, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->right != nullptr){
+                        if(cellwrapper->rightId != -1){
                             line(img, tr, br, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->left != nullptr){
+                        if(cellwrapper->leftId != -1){
                             line(img, tl, bl, Scalar(255, 0, 0), 4);
                         }
 
@@ -1009,16 +1009,16 @@ void SparseFreeSpacesVisualizer::show() {
                         Point2d bl = origin + Point2d(0.0,0.0)*CS;
                         Point2d br = origin + Point2d(1.0,0.0)*CS;
 
-                        if(cellwrapper->up != nullptr){
+                        if(cellwrapper->upId != -1){
                             line(img, tl, tr, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->down != nullptr){
+                        if(cellwrapper->downId != -1){
                             line(img, bl, br, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->right != nullptr){
+                        if(cellwrapper->rightId != -1){
                             line(img, tr, br, Scalar(255, 0, 0), 4);
                         }
-                        if(cellwrapper->left != nullptr){
+                        if(cellwrapper->leftId != -1){
                             line(img, tl, bl, Scalar(255, 0, 0), 4);
                         }
 
@@ -1212,16 +1212,16 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
                         Point2d bl = origin + Point2d(0.0, 0.0) * CS;
                         Point2d br = origin + Point2d(1.0, 0.0) * CS;
 
-                        if (cellwrapper->up != nullptr) {
+                        if(cellwrapper->upId != -1){
                             line(img, tl, tr, Scalar(255, 0, 0), 4);
                         }
-                        if (cellwrapper->down != nullptr) {
+                        if(cellwrapper->downId != -1){
                             line(img, bl, br, Scalar(255, 0, 0), 4);
                         }
-                        if (cellwrapper->right != nullptr) {
+                        if(cellwrapper->rightId != -1){
                             line(img, tr, br, Scalar(255, 0, 0), 4);
                         }
-                        if (cellwrapper->left != nullptr) {
+                        if(cellwrapper->leftId != -1){
                             line(img, tl, bl, Scalar(255, 0, 0), 4);
                         }
 

@@ -14,7 +14,10 @@ CandidateSetPQ::CandidateSetPQ(Curves &c, double d) : Parent(cmpPQ), curves(c), 
     //fsv.show();
 }
 
-CPoints propagateUpAndIntersect(SparseGridCell<SparseCell>* startcell, distance_t startheight, const CPoints& ends, CurveID tIndex){
+CPoints propagateUpAndIntersect(SparseFreespace& sfs, int y, int x, distance_t startheight, const CPoints& ends, CurveID tIndex){
+
+    SparseGridCell<SparseCell>* startcell = sfs.cell(y,x);
+
     std::vector<SparseGridCell<SparseCell>*> resetList;
     resetList.push_back(startcell);
     std::deque<SparseGridCell<SparseCell>*> nextList;
@@ -35,18 +38,18 @@ CPoints propagateUpAndIntersect(SparseGridCell<SparseCell>* startcell, distance_
         }else{
             cur = nextList.front();
             nextList.pop_front();
-            fromLeft = (cur->left!= nullptr)?cur->left->data.toRight():Interval(1.0,0.0);
-            fromBelow = (cur->down!= nullptr)?cur->down->data.toAbove():Interval(1.0,0.0);
+            fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data.toRight():Interval(1.0,0.0);
+            fromBelow = (cur->downId!= -1)?sfs.cell(cur->y-1,cur->downId)->data.toAbove():Interval(1.0,0.0);
         }
         initialIteration = false;
         assert(!(fromBelow.is_empty() && fromLeft.is_empty()));
         cur->data.toRight() = (fromBelow.is_empty())?cur->data.right.clip({fromLeft.begin,1.0}):cur->data.right;
         cur->data.toAbove() = (fromLeft.is_empty())?cur->data.top.clip({fromBelow.begin,1.0}):cur->data.top;
 
-        if(cur->up != nullptr && !cur->data.toAbove().is_empty() && cur->y < ends.back().getPoint()) {nextList.push_back(cur->up); resetList.push_back(cur->up);}
-        if(cur->right != nullptr && !cur->data.toRight().is_empty() //has something to the right to propagate to
-            && (nextList.empty() || nextList.front()!=cur->right))  //and the next entry in the nextList is not already the upcoming cell
-        {nextList.push_front(cur->right); resetList.push_back(cur->right);}
+        if(cur->upId != -1 && !cur->data.toAbove().is_empty() && cur->y < ends.back().getPoint()) {nextList.push_back(sfs.cell(cur->y+1,cur->upId)); resetList.push_back(sfs.cell(cur->y+1,cur->upId));}
+        if(cur->rightId != -1 && !cur->data.toRight().is_empty() //has something to the right to propagate to
+            && (nextList.empty() || nextList.front()!=sfs.cell(cur->y,cur->rightId)))  //and the next entry in the nextList is not already the upcoming cell
+        {nextList.push_front(sfs.cell(cur->y,cur->rightId)); resetList.push_back(sfs.cell(cur->y,cur->rightId));}
 
         //compute interval of values, that can be updated
         Interval fromBelowApplicableHeights = fromBelow.is_empty()?Interval(1.0,0.0):
@@ -76,7 +79,8 @@ CPoints propagateUpAndIntersect(SparseGridCell<SparseCell>* startcell, distance_
 }
 
 
-CPoints propagateDownAndIntersect(SparseGridCell<SparseCell>* startcell, distance_t startheight, const CPoints& ends, CurveID tIndex){
+CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t startheight, const CPoints& ends, CurveID tIndex){
+    SparseGridCell<SparseCell>* startcell = sfs.cell(y,x);
     std::vector<SparseGridCell<SparseCell>*> resetList;
     resetList.push_back(startcell);
     std::deque<SparseGridCell<SparseCell>*> nextList;
@@ -98,14 +102,14 @@ CPoints propagateDownAndIntersect(SparseGridCell<SparseCell>* startcell, distanc
         }else{
             cur = nextList.front();
             nextList.pop_front();
-            fromLeft = (cur->left!= nullptr)?cur->left->data.toRight():Interval(1.0,0.0);
+            fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data.toRight():Interval(1.0,0.0);
         }
         initialIteration = false;
         assert(!(fromBelow.is_empty() && fromLeft.is_empty()));
         cur->data.toRight() = cur->data.right.clip({0.0,fromLeft.end});
 
-        if(cur->right != nullptr && !cur->data.toRight().is_empty())
-        {nextList.push_front(cur->right); resetList.push_back(cur->right);}
+        if(cur->rightId != -1 && !cur->data.toRight().is_empty())
+        {nextList.push_front(sfs.cell(cur->y,cur->rightId)); resetList.push_back(sfs.cell(cur->y,cur->rightId));}
 
         //compute interval of values, that can be updated
         Interval fromLeftApplicableHeights = fromLeft.is_empty()?Interval(1.0,0.0):Interval(cur->data.bottomPair.first.y,fromLeft.end);
@@ -145,7 +149,7 @@ std::vector<Candidate> CandidateSetPQ::uncompressCandidate(CurveID bIndex, CPoin
             auto cell = fs.cell(start.getPoint(),xIdx);
             if(cell->data.bottomPair.first.y <= start.getFraction() && start.getFraction() <= cell->data.topPair.first.y){
                 //cell intersects, so we can traverse
-                auto limits = (ends[0]<start)?propagateDownAndIntersect(cell,start.getFraction(),ends,tId):propagateUpAndIntersect(cell,start.getFraction(),ends,tId);
+                auto limits = (ends[0]<start)?propagateDownAndIntersect(fs,start.getPoint(),xIdx,start.getFraction(),ends,tId):propagateUpAndIntersect(fs,start.getPoint(),xIdx,start.getFraction(),ends,tId);
                 for(int i=0;i< limits.size();i++){
                     auto limit = limits[i];
                     if(limit != CPoint(0,-1.0)){
@@ -154,9 +158,9 @@ std::vector<Candidate> CandidateSetPQ::uncompressCandidate(CurveID bIndex, CPoin
                 }
                 //propagate through freespace and keep track
             }
-            while(cell->right != nullptr && cell->data.right.begin <= start.getFraction() && start.getFraction() <= cell->data.right.end){
+            while(cell->rightId != -1 && cell->data.right.begin <= start.getFraction() && start.getFraction() <= cell->data.right.end){
                 xIdx++;
-                cell = cell->right;
+                cell = fs.cell(start.getPoint(),xIdx);
             }
         }
     }

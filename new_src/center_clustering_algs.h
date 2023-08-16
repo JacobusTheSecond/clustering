@@ -147,7 +147,7 @@ public:
     }
 
     template<typename func>
-    std::vector<Candidate> greedyCover(int l, int rounds, func filter,int* size = nullptr) {
+    std::vector<Candidate> greedyCover(int l, int rounds, func filter,long long* size = nullptr) {
 
         assert(not simplifiedCurves.empty());
 
@@ -160,7 +160,12 @@ public:
         cs.ultrafastCompute(l, filter);
 
         if(size != nullptr){
-            *size = (int)(cs.size());
+            *size = 0;
+            while(not cs.empty()){
+                *size += cs.top().matching.size();
+                cs.pop();
+            }
+            //*size = (int)(cs.size());
             return bestResultVisualizer;
         }
 

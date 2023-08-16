@@ -74,10 +74,14 @@ public:
     T data;
     int x;
     int y;
-    SparseGridCell<T>* up=nullptr;
-    SparseGridCell<T>* down=nullptr;
-    SparseGridCell<T>* left=nullptr;
-    SparseGridCell<T>* right=nullptr;
+    int upId = -1;
+    int downId = -1;
+    int leftId = -1;
+    int rightId = -1;
+    //SparseGridCell<T>* up=nullptr;
+    //SparseGridCell<T>* down=nullptr;
+    //SparseGridCell<T>* left=nullptr;
+    //SparseGridCell<T>* right=nullptr;
     SparseGridCell(T& _data, int _x, int _y):data(_data),x(_x),y(_y){}
 };
 

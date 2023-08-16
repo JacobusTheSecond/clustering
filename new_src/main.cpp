@@ -882,7 +882,7 @@ void experiments2(){
     std::vector<double> deltas {5000,10000,25000,50000};
     std::vector<int> complexities{1,5,10};
     std::vector<int> lengths{(int)(curves.size())/50,(int)(curves.size())/20,(int)(curves.size())/10,(int)(curves.size())/5,(int)(curves.size())/3,(int)(curves.size())/2,(int)(curves.size())};
-    std::vector<std::vector<std::vector<int>>> results;
+    std::vector<std::vector<std::vector<long long>>> results;
     std::vector<std::vector<std::vector<int>>> sizes;
     std::vector<int> realLengths;
     std::vector<std::vector<std::vector<double>>> times;
@@ -923,7 +923,7 @@ void experiments2(){
                     return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);
                 };
                 auto trivialFilter = [=](const Candidate &c){return true;};
-                int candidateSetSize;
+                long long candidateSetSize;
                 auto result = cc.greedyCover(complexity,1,trivialFilter,&candidateSetSize);
                 swatch.stop();
                 double time = std::chrono::duration<double>(swatch.elapsed()).count();
@@ -985,7 +985,7 @@ void experiments3(){
 
     int complexity = 10;
     double guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
-    double delta = 10000;
+    double delta = 15000;
 
     CurveClusterer cc(-1, false);
     cc.initCurves(curves,delta);
@@ -1006,7 +1006,7 @@ void experiments3(){
 
     for (int i = 0; i < std::min(50, (int) result.size()); ++i) {
         Candidate c = result[i];
-        io::exportSubcurve("/Users/styx/data/gdac2/resultcenters/candidate"+ std::to_string(i)+".txt",
+        io::exportSubcurve("/Users/styx/data/gdac2/result/resultcenters/candidate"+ std::to_string(i)+".txt",
                            cc.simplifiedCurves[c.getCurveIndex()],c.getBegin(),c.getEnd());
         for (int j = 0; j < c.visualMatching.size(); ++j) {
             auto m = c.visualMatching[j];
@@ -1015,10 +1015,10 @@ void experiments3(){
             auto s = cc.mapSimplificationToBase(m.getCurveIndex(),m.getBegin());
             auto t = cc.mapSimplificationToBase(m.getCurveIndex(),m.getEnd());
             io::exportSubcurve(
-                    "/Users/styx/data/gdac2/results/matching" + std::to_string(i) + "/interval" +
+                    "/Users/styx/data/gdac2/result/results/matching" + std::to_string(i) + "/interval" +
                     std::to_string(j) + ".txt", originalCurve, s, t);
             io::exportSubcurve(
-                    "/Users/styx/data/gdac2/resultsimp/matching" + std::to_string(i) + "/interval" +
+                    "/Users/styx/data/gdac2/result/resultsimp/matching" + std::to_string(i) + "/interval" +
                     std::to_string(j) + ".txt", cc.simplifiedCurves[m.getCurveIndex()], m.getBegin(), m.getEnd());
         }
     }
@@ -1032,9 +1032,9 @@ int main(int argc, char *argv[]) {
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
 
-    experiments();
+    //experiments();
     //experiments2();
-    //experiments3();
+    experiments3();
 /*
     Curve c1 = Curve("../data/86_1.txt", 93);
     Curve c2 = Curve("../data/86_2.txt", 93);
