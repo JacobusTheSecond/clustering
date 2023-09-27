@@ -30,6 +30,7 @@ void io::exportSubcurve(std::string const& filename, Curve curve, CPoint s, CPoi
         file << coord << " ";
     }
     file << "\n";
+    file.close();
 }
 
 void io::exportSubcurve(std::string const& filename, Curve curve, CPoint s, CPoint t, int interpol){
@@ -46,4 +47,5 @@ void io::exportSubcurve(std::string const& filename, Curve curve, CPoint s, CPoi
         file << "\n";
     }
     std::cout << std::endl;
+    file.close();
 }

@@ -1001,7 +1001,8 @@ void experiments3(){
         return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);
     };
     auto trivialFilter = [=](const Candidate &c){return true;};
-    auto result = cc.greedyCover(complexity,1,filter);
+    auto result = cc.greedyCover(complexity,1,trivialFilter);
+    std::cout << "Done clustering!\n";
 
 
     for (int i = 0; i < std::min(50, (int) result.size()); ++i) {
@@ -1022,7 +1023,55 @@ void experiments3(){
                     std::to_string(j) + ".txt", cc.simplifiedCurves[m.getCurveIndex()], m.getBegin(), m.getEnd());
         }
     }
+    std::cout << "Done writing!\n";
+}
+
+void experiments4(){
+    Curves curves;
+    for(int i=1;i<2109;i++){
+        std::string name = "/Users/styx/data/gdac2/world3d_txt/"+std::to_string(i)+"_drifter.txt";
+        curves.emplace_back(name,3);
+        if(curves.back().size() <= 1){
+            curves.pop_back();
+            continue;
+        }
+        std::string delimiter = "world3d_txt";
+        std::string token1 = name.substr(0, name.find(delimiter));
+        std::string token2 = name.substr(name.find(delimiter) + delimiter.length());
+        curves.back().filename = token1 + "simp" + token2;
+    }
+
+    int complexity = 1;
+    double guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
+    double delta = 15000;
+
+    CurveClusterer cc(-1, false);
+    cc.initCurves(curves,delta);
+    auto filter = [=](const Candidate &a) {
+        bool withIsTrivial = false;
+        bool withIsDown = false;
+        bool istrivial = complexity == 1;
+        bool isdown = a.getEnd() < a.getBegin();
+        bool nontrivial_length =
+                cc.simplifiedCurves[a.getCurveIndex()].subcurve_length(a.getBegin(), a.getEnd()) >
+                2 * guarantee * delta;
+        bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + complexity / 4;
+        return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);
+    };
+    auto trivialFilter = [=](const Candidate &c){return true;};
+    auto result = cc.greedyCover(complexity,1,trivialFilter);
     std::cout << "Done clustering!\n";
+
+    //rossby radius
+    //hierarchische zeit
+
+    for (int i = 0; i < std::min(500, (int) result.size()); ++i) {
+        Candidate c = result[i];
+        //std::cout <<"[" << (c.getEnd().getPoint() - c.getBegin().getPoint()) << "," << c.visualMatching.size() << "],";
+        io::exportSubcurve("/Users/styx/data/gdac2/result/resultcentersl1/candidate"+ std::to_string(i)+".txt",
+                           cc.simplifiedCurves[c.getCurveIndex()],c.getBegin(),c.getEnd());
+    }
+    std::cout << "Done writing!\n";
 }
 
 int main(int argc, char *argv[]) {
@@ -1034,7 +1083,8 @@ int main(int argc, char *argv[]) {
 
     //experiments();
     //experiments2();
-    experiments3();
+    //experiments3();
+    experiments4();
 /*
     Curve c1 = Curve("../data/86_1.txt", 93);
     Curve c2 = Curve("../data/86_2.txt", 93);
