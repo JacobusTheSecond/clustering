@@ -2,6 +2,7 @@
 // Created by Jacobus Conradi on 17.04.23.
 //
 
+#include <vector>
 #include "io.h"
 #include <fstream>
 #include <sstream>

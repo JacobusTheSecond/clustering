@@ -403,5 +403,4 @@ Interval IntersectionAlgorithm::intersection_interval(const Point& s, const Poin
     }
 
     return result;
-
 }
