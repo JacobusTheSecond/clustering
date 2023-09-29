@@ -500,3 +500,192 @@ void SparseFreespace::identifyEnds() {
     std::sort(upEnds.begin(),upEnds.end());
     std::sort(downEnds.begin(),downEnds.end());
 }
+
+MinkowskiCell::MinkowskiCell(Point &a, Point &b, Point &c, Point &d, distance_t ra, distance_t rb, distance_t rc,
+                             distance_t rd, int tc): ra(ra),rb(rb),rc(rc),rd(rd),toAboves(tc), toBottoms(tc), toLefts(tc),toRights(tc) {
+    //acac,acab,accd,abab,abcd;
+    //caca,cacd,caab,cdcd,cdab;
+    Interval intersection = MinkowskiIntersectionAlgorithm::edgeEdgeIntersection(c,d,rc,rd,a,b,ra,rb,nullptr);
+    if(intersection.is_empty()){
+        is_empty = true;
+    }else{
+        Point ac = c-a;
+        Point ab = b-a;
+        Point cd = d-c;
+        Point ca = a-c;
+
+        acac = ac.dot(ac);
+        acab = ac.dot(ab);
+        accd = ac.dot(cd);
+        abab = ab.dot(ab);
+        abcd = ab.dot(cd);
+        caca = ca.dot(ca);
+        cacd = ca.dot(cd);
+        caab = ca.dot(ab);
+        cdcd = cd.dot(cd);
+        cdab = cd.dot(ab);
+
+        left = MinkowskiIntersectionAlgorithm::pointEdgeIntersection(a,ra,c,d,rc,rd,nullptr);
+        right = MinkowskiIntersectionAlgorithm::pointEdgeIntersection(b,rb,c,d,rc,rd,nullptr);
+        bottom = MinkowskiIntersectionAlgorithm::pointEdgeIntersection(c,rc,a,b,ra,rb,nullptr);
+        top = MinkowskiIntersectionAlgorithm::pointEdgeIntersection(d,rd,a,b,ra,rb,nullptr);
+
+        Interval clipper = Interval(0.0, 1.0);
+        //intersection.begin is x-coord of leftmost point, intersection.end is rightmost
+        double x1 = (left.is_empty() ? intersection.begin : 0.0);
+        double x2 = (right.is_empty() ? intersection.end : 1.0);
+        Interval intersection2;
+        Interval intersection3;
+        MinkowskiIntersectionAlgorithm::pointEdgeIntersection(a+((b-a)*x1),ra+((rb-ra)*x1),c,d,rc,rd,&intersection2);
+        //IntersectionAlgorithm::intersection_interval(tba1, tbb1, x1 * tbb2, tbc1, x1 * tbc2, x1 * x1 * tbc3, delta,
+        //                                             &intersection2);
+        MinkowskiIntersectionAlgorithm::pointEdgeIntersection(a+((b-a)*x2),ra+((rb-ra)*x2),c,d,rc,rd,&intersection3);
+        //IntersectionAlgorithm::intersection_interval(tba1, tbb1, x2 * tbb2, tbc1, x2 * tbc2, x2 * x2 * tbc3, delta,
+        //                                             &intersection3);
+        assert(!intersection2.is_empty());
+        assert(!intersection3.is_empty());
+        leftPair = {CellPoint(x1, clipper.clip(intersection2.begin)), CellPoint(x1, clipper.clip(intersection2.end))};
+        rightPair = {CellPoint(x2, clipper.clip(intersection3.begin)), CellPoint(x2, clipper.clip(intersection3.end))};
+
+
+        //compute Topmost
+        Interval intersection4 = MinkowskiIntersectionAlgorithm::edgeEdgeIntersection(a,b,ra,rb,c,d,rc,rd,nullptr);
+        double y1 = (bottom.is_empty() ? intersection4.begin : 0.0);
+        double y2 = (top.is_empty() ? intersection4.end : 1.0);
+        Interval intersection5, intersection6;
+        MinkowskiIntersectionAlgorithm::pointEdgeIntersection(c+((d-c)*y1),rc+((rd-rc)*y1),a,b,ra,rb,&intersection5);
+        //IntersectionAlgorithm::intersection_interval(lra1, lrb1, y1 * lrb2, lrc1, y1 * lrc2, y1 * y1 * lrc3, delta,
+        //                                             &intersection5);
+        MinkowskiIntersectionAlgorithm::pointEdgeIntersection(c+((d-c)*y2),rc+((rd-rc)*y2),a,b,ra,rb,&intersection6);
+        //IntersectionAlgorithm::intersection_interval(lra1, lrb1, y2 * lrb2, lrc1, y2 * lrc2, y2 * y2 * lrc3, delta,
+        //                                             &intersection6);
+
+        //bottomMost = Point(intersection5.begin,intersection4.begin);
+        //topMost = Point(intersection6.end,intersection4.end);
+        bottomPair = {CellPoint(clipper.clip(intersection5.begin), y1), CellPoint(clipper.clip(intersection5.end), y1)};
+        topPair = {CellPoint(clipper.clip(intersection6.begin), y2), CellPoint(clipper.clip(intersection6.end), y2)};
+    }
+
+}
+
+CellPoint MinkowskiCell::leftMostAt(double y, CellPoint *outer) const {
+    assert(0<=y && y<=1);
+    Interval out;
+    //Interval in = IntersectionAlgorithm::intersection_interval(lra1,lrb1,y*lrb2,lrc1,y*lrc2,y*y*lrc3,delta, &out);
+    distance_t papa = caca -(2*y*cacd) + (y*y*cdcd);
+    distance_t paab = caab - (y*cdab);
+    Interval in = MinkowskiIntersectionAlgorithm::pointEdgeIntersectionPrimitive(papa,paab,abab,rc + ((rd-rc)*y),ra,rb,&out);
+
+    assert(!in.is_empty());
+    if(outer != nullptr)
+        outer->x = out.begin, outer->y = y;
+    return {in.begin,y};
+}
+
+CellPoint MinkowskiCell::rightMostAt(double y, CellPoint *outer) const {
+    assert(0<=y && y<=1);
+    Interval out;
+    //Interval in = IntersectionAlgorithm::intersection_interval(lra1,lrb1,y*lrb2,lrc1,y*lrc2,y*y*lrc3,delta, &out);
+    distance_t papa = caca -(2*y*cacd) + (y*y*cdcd);
+    distance_t paab = caab - (y*cdab);
+    Interval in = MinkowskiIntersectionAlgorithm::pointEdgeIntersectionPrimitive(papa,paab,abab,rc + ((rd-rc)*y),ra,rb,&out);
+
+    assert(!in.is_empty());
+    if(outer != nullptr)
+        outer->x = out.end, outer->y = y;
+    return {in.end,y};
+}
+
+CellPoint MinkowskiCell::topMostAt(double x, CellPoint *outer) const {
+    assert(0<=x && x<=1);
+    Interval out;
+    //Interval in = IntersectionAlgorithm::intersection_interval(tba1,tbb1,x*tbb2,tbc1,x*tbc2,x*x*tbc3,delta,&out);
+    distance_t pcpc = acac - (2*x*acab) + (x*x*abab);
+    distance_t pccd = accd - (x*abcd);
+    Interval in = MinkowskiIntersectionAlgorithm::pointEdgeIntersectionPrimitive(pcpc,pccd,cdcd,ra+((rb-ra)*x),rc,rd,&out);
+
+    assert(!in.is_empty());
+    if(outer != nullptr)
+        outer->x = x, outer->y = out.end;
+    return {x,in.end};
+}
+
+CellPoint MinkowskiCell::bottomMostAt(double x, CellPoint *outer) const {
+    assert(0<=x && x<=1);
+    Interval out;
+    //Interval in = IntersectionAlgorithm::intersection_interval(tba1,tbb1,x*tbb2,tbc1,x*tbc2,x*x*tbc3,delta,&out);
+    distance_t pcpc = acac - (2*x*acab) + (x*x*abab);
+    distance_t pccd = accd - (x*abcd);
+    Interval in = MinkowskiIntersectionAlgorithm::pointEdgeIntersectionPrimitive(pcpc,pccd,cdcd,ra+((rb-ra)*x),rc,rd,&out);
+
+    assert(!in.is_empty());
+    if(outer != nullptr)
+        outer->x = x, outer->y = out.begin;
+    return {x,in.begin};
+}
+
+/*    Interval intersection = IntersectionAlgorithm::intersection_interval(c,d,delta,a,b);
+    if(intersection.is_empty()){
+        isEmpty = true;
+    }else {
+        isEmpty = false;
+
+        Point dc = d - c, ca = c - a, ba = b - a, ac = a - c;
+
+        //topbottom values
+        tba1 = (dc).length_sqr();
+        tbb1 = (ca).dot(dc);
+        tbb2 = (ba).dot(dc);
+        tbc1 = (ca).length_sqr();
+        tbc2 = (ca).dot(ba);
+        tbc3 = (ba).length_sqr();
+
+        //leftright values
+        lra1 = (ba).length_sqr();
+        lrb1 = (ac).dot(ba);
+        lrb2 = (dc).dot(ba);
+        lrc1 = (ac).length_sqr();
+        lrc2 = (ac).dot(dc);
+        lrc3 = (dc).length_sqr();
+
+        //boundary update
+        left = IntersectionAlgorithm::intersection_interval(tba1, tbb1, 0.0 * tbb2, tbc1, 0.0 * tbc2, 0.0 * 0.0 * tbc3,
+                                                            delta);
+        right = IntersectionAlgorithm::intersection_interval(tba1, tbb1, 1.0 * tbb2, tbc1, 1.0 * tbc2, 1.0 * 1.0 * tbc3,
+                                                             delta);
+        bottom = IntersectionAlgorithm::intersection_interval(lra1, lrb1, 0.0 * lrb2, lrc1, 0.0 * lrc2,
+                                                              0.0 * 0.0 * lrc3, delta);
+        top = IntersectionAlgorithm::intersection_interval(lra1, lrb1, 1.0 * lrb2, lrc1, 1.0 * lrc2, 1.0 * 1.0 * lrc3,
+                                                           delta);
+
+
+        Interval clipper = Interval(0.0, 1.0);
+        //intersection.begin is x-coord of leftmost point, intersection.end is rightmost
+        double x1 = (left.is_empty() ? intersection.begin : 0.0);
+        double x2 = (right.is_empty() ? intersection.end : 1.0);
+        Interval intersection2;
+        Interval intersection3;
+        IntersectionAlgorithm::intersection_interval(tba1, tbb1, x1 * tbb2, tbc1, x1 * tbc2, x1 * x1 * tbc3, delta,
+                                                     &intersection2);
+        IntersectionAlgorithm::intersection_interval(tba1, tbb1, x2 * tbb2, tbc1, x2 * tbc2, x2 * x2 * tbc3, delta,
+                                                     &intersection3);
+        assert(!intersection2.is_empty());
+        assert(!intersection3.is_empty());
+        leftPair = {CellPoint(x1, clipper.clip(intersection2.begin)), CellPoint(x1, clipper.clip(intersection2.end))};
+        rightPair = {CellPoint(x2, clipper.clip(intersection3.begin)), CellPoint(x2, clipper.clip(intersection3.end))};
+
+
+        //compute Topmost
+        Interval intersection4 = IntersectionAlgorithm::intersection_interval(a, b, delta, c, d);
+        double y1 = (bottom.is_empty() ? intersection4.begin : 0.0);
+        double y2 = (top.is_empty() ? intersection4.end : 1.0);
+        Interval intersection5, intersection6;
+        IntersectionAlgorithm::intersection_interval(lra1, lrb1, y1 * lrb2, lrc1, y1 * lrc2, y1 * y1 * lrc3, delta,
+                                                     &intersection5);
+        IntersectionAlgorithm::intersection_interval(lra1, lrb1, y2 * lrb2, lrc1, y2 * lrc2, y2 * y2 * lrc3, delta,
+                                                     &intersection6);
+        //bottomMost = Point(intersection5.begin,intersection4.begin);
+        //topMost = Point(intersection6.end,intersection4.end);
+        bottomPair = {CellPoint(clipper.clip(intersection5.begin), y1), CellPoint(clipper.clip(intersection5.end), y1)};
+        topPair = {CellPoint(clipper.clip(intersection6.begin), y2), CellPoint(clipper.clip(intersection6.end), y2)};
+    }*/

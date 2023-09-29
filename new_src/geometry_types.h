@@ -485,4 +485,50 @@ private:
     static inline bool smallDistanceAt(distance_t hatt, double d1, double d2, double d3, double d4, double d5, double d6, distance_t radius_sqr);
 };
 
+class MinkowskiIntersectionAlgorithm
+{
+public:
+    static constexpr distance_t eps = 1e-8;
+    static Interval
+    pointEdgeIntersectionPrimitive(distance_t pcpc, distance_t pccd, distance_t cdcd, distance_t ra, distance_t rc,
+                                   distance_t rd, Interval *outer);
+
+    static Interval
+    pointEdgeIntersection(const Point &ap, distance_t ra, const Point &cp, const Point &dp, distance_t rc,
+                          distance_t rd,
+                          Interval *outer);
+
+    static Interval
+    edgeEdgeIntersection(const Point &a, const Point &b, distance_t ra, distance_t rb, const Point &c, const Point &d,
+                         distance_t rc, distance_t rd, Interval *outer);
+
+    /*
+     * Returns which section of the line segment from line_start to line_end is inside the circle given by circle_center and radius.
+     * If the circle and line segment do not intersect, the result is the empty Interval (and outer is the empty Interval, too).
+     * Otherwise the result is an interval [x,y] such that the distance at x and at y is at most the radius, i.e., [x,y] is a subset of the free interval.
+     * The optional output "outer" is an interval strictly containing the free interval.
+     * In other words, "outer" is an interval [x',y'] containing [x,y] such that x-x', y'-y <= eps and:
+     * If x = 0 then x' = -eps, while if x > 0 then the distance at x' is more than the radius.
+     * If y = 1 then y' = 1+eps, while if y < 1 then the distance at y' is more than the radius.
+     */
+private:
+    MinkowskiIntersectionAlgorithm() {} // Make class static-only
+    static constexpr distance_t save_eps = 0.5 * eps;
+    static constexpr distance_t save_eps_half = 0.25 * eps;
+
+    static inline bool smallDistanceAt(distance_t t, const Point &ap, distance_t ra, const Point &cp, const Point &dp, distance_t rc,
+                         distance_t rd);
+
+    static inline bool smallDistanceAt(distance_t t, distance_t acac, distance_t accd, distance_t cdcd, distance_t ra, distance_t rc,
+                         distance_t rd);
+
+
+    static bool smallDistanceAt(distance_t t, const Point &a, const Point &b, distance_t ra, distance_t rb, const Point &c,
+                         const Point &d, distance_t rc, distance_t rd);
+
+    static Interval
+    edgeEdgePrimitive(const Point &a, const Point &b, distance_t ra, distance_t rb, const Point &c, const Point &d,
+                      distance_t rc, distance_t rd, Interval *outer);
+};
+
 #endif //CLUSTERING_GEOMETRY_TYPES_H

@@ -69,6 +69,38 @@ SparseCell(Point &a, Point &b, Point &c, Point &d,distance_t delta, int threadco
     bool is_empty();
 };
 
+class MinkowskiCell{
+
+private:
+    Point a,b,c,d;
+    distance_t ra,rb,rc,rd;
+    bool is_empty;
+
+    distance_t acac,acab,accd,abab,abcd;
+    distance_t caca,cacd,caab,cdcd,cdab;
+public:
+    std::pair<CellPoint,CellPoint> leftPair, rightPair, topPair, bottomPair;
+    Interval left,top,right,bottom;
+
+    Interval& toAbove(int threadID = 0){return toAboves[threadID];}
+    Interval& toRight(int threadID = 0){return toRights[threadID];}
+    Interval& toBottom(int threadID = 0){return toBottoms[threadID];}
+    Interval& toLeft(int threadID = 0){return toLefts[threadID];}
+
+    std::vector<Interval> toAboves;
+    std::vector<Interval> toRights;
+    std::vector<Interval> toLefts;
+    std::vector<Interval> toBottoms;
+
+    CellPoint leftMostAt(double y, CellPoint* outer = nullptr) const;
+    CellPoint rightMostAt(double y, CellPoint* outer = nullptr) const;
+    CellPoint topMostAt(double x, CellPoint* outer = nullptr) const;
+    CellPoint bottomMostAt(double x, CellPoint* outer = nullptr) const;
+
+    MinkowskiCell(Point &a, Point &b, Point &c, Point &d, distance_t ra, distance_t rb, distance_t rc, distance_t rd, int tc = 1);
+
+};
+
 template <typename T> class SparseGridCell{
 public:
     T data;
