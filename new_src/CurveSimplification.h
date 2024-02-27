@@ -15,7 +15,9 @@ private:
     int curveLengthRule = 0;
     std::vector<int> times;
     ParamLabeling outputLabelings;
-    static bool _less_than_or_equal_edge(const distance_t dist, const Point &p1, const Point &p2, const Curve &c,int start,int end) {
+    static bool
+
+    _less_than_or_equal_edge(const distance_t dist, const Point &p1, const Point &p2, const Curve &c,int start,int end) {
         assert(start <= end && end < c.size() && 0<=start);
         if(p1.dist_sqr(c[start])>dist*dist || p2.dist_sqr(c[end])>dist*dist)
             return false;

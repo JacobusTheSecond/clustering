@@ -766,7 +766,6 @@ void experiments() {
     swatch.stop();
     std::cout << "----------\nElapsed time loading curves: " << std::chrono::duration<double>(swatch.elapsed()).count() << "\n----------\n";
 
-
     std::vector<std::vector<double>> times;
     std::vector<std::vector<int>> lengths;
     std::vector<std::vector<int>> results;
@@ -862,7 +861,7 @@ void experiments() {
 
 void experiments2(){
     Curves curves;
-    for(int i=1;i<2109;i++){
+    for(int i=1;i<210/*9*/;i++){
         std::string name = "/Users/styx/data/gdac2/world3d_txt/"+std::to_string(i)+"_drifter.txt";
         curves.emplace_back(name,3);
         if(curves.back().size() <= 1){
@@ -874,6 +873,27 @@ void experiments2(){
         std::string token2 = name.substr(name.find(delimiter) + delimiter.length());
         curves.back().filename = token1 + "simp" + token2;
     }
+    auto f = [](Point& p){
+        double x = p[0];
+        double y = p[1];
+        double z = p[2];
+        double tan = z/(sqrt((x*x)+(y*y)));
+        double c1 = sqrt(9.81*3600)/100; //Magic 100
+        double sin = tan/sqrt(1+(tan*tan));
+        double cos = 1/sqrt(1+(tan*tan));
+        double twoOmega = 2*7.2921*0.00001;
+        double L = c1/abs(twoOmega*sin);
+        double Ls = sqrt(c1/(2*twoOmega*(1.0/6371000.0)*cos));
+
+        double phi = atan(tan)*180/M_PI;
+        double r = fmin(L,Ls)/200000; //Normalize with 200km
+        //double f = 2*7.2921*0.00001*(tan/(sqrt(1+(tan*tan))));
+        return r;//sqrt(9.81*3600)/abs(f);
+    };
+
+    //for(auto& c : curves){
+    //    c.assignWeights(f);
+    //}
 
     //int complexity = 10;
     double guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
@@ -882,6 +902,10 @@ void experiments2(){
     std::vector<double> deltas {5000,10000,25000,50000};
     std::vector<int> complexities{1,5,10};
     std::vector<int> lengths{(int)(curves.size())/50,(int)(curves.size())/20,(int)(curves.size())/10,(int)(curves.size())/5,(int)(curves.size())/3,(int)(curves.size())/2,(int)(curves.size())};
+    //std::vector<double> deltas {10000};
+    //std::vector<int> complexities{10};
+    //std::vector<int> lengths{((int)(curves.size())/10)};
+
     std::vector<std::vector<std::vector<long long>>> results;
     std::vector<std::vector<std::vector<int>>> sizes;
     std::vector<int> realLengths;
@@ -965,7 +989,6 @@ void experiments2(){
     }
 */
     std::cout << "Done clustering!\n";
-
 }
 
 void experiments3(){
@@ -983,9 +1006,31 @@ void experiments3(){
         curves.back().filename = token1 + "simp" + token2;
     }
 
+    auto f = [](Point& p){
+        double x = p[0];
+        double y = p[1];
+        double z = p[2];
+        double tan = z/(sqrt((x*x)+(y*y)));
+        double c1 = sqrt(9.81*3600)/100; //Magic 100
+        double sin = tan/sqrt(1+(tan*tan));
+        double cos = 1/sqrt(1+(tan*tan));
+        double twoOmega = 2*7.2921*0.00001;
+        double L = c1/abs(twoOmega*sin);
+        double Ls = sqrt(c1/(2*twoOmega*(1.0/6371000.0)*cos));
+
+        double phi = atan(tan)*180/M_PI;
+        double r = fmin(L,Ls)/200000; //Normalize with 200km
+        //double f = 2*7.2921*0.00001*(tan/(sqrt(1+(tan*tan))));
+        return r;//sqrt(9.81*3600)/abs(f);
+    };
+
+    for(auto& c : curves){
+        c.assignWeights(f);
+    }
+
     int complexity = 10;
     double guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
-    double delta = 15000;
+    double delta = 200000/guarantee;
 
     CurveClusterer cc(-1, false);
     cc.initCurves(curves,delta);
@@ -1005,7 +1050,7 @@ void experiments3(){
     std::cout << "Done clustering!\n";
 
 
-    for (int i = 0; i < std::min(50, (int) result.size()); ++i) {
+    for (int i = 0; i < std::min(500, (int) result.size()); ++i) {
         Candidate c = result[i];
         io::exportSubcurve("/Users/styx/data/gdac2/result/resultcenters/candidate"+ std::to_string(i)+".txt",
                            cc.simplifiedCurves[c.getCurveIndex()],c.getBegin(),c.getEnd());
@@ -1028,8 +1073,8 @@ void experiments3(){
 
 void experiments4(){
     Curves curves;
-    for(int i=1;i<2109;i++){
-        std::string name = "/Users/styx/data/gdac2/world3d_txt/"+std::to_string(i)+"_drifter.txt";
+    for(int i=1;i<5000;i++){
+        std::string name = "/Users/styx/data/gdac3/world3d_txt/"+std::to_string(i)+"_drifter.txt";
         curves.emplace_back(name,3);
         if(curves.back().size() <= 1){
             curves.pop_back();
@@ -1041,9 +1086,31 @@ void experiments4(){
         curves.back().filename = token1 + "simp" + token2;
     }
 
-    int complexity = 1;
+    auto f = [](Point& p){
+        double x = p[0];
+        double y = p[1];
+        double z = p[2];
+        double tan = z/(sqrt((x*x)+(y*y)));
+        double c1 = sqrt(9.81*3600)/100; //Magic 100
+        double sin = tan/sqrt(1+(tan*tan));
+        double cos = 1/sqrt(1+(tan*tan));
+        double twoOmega = 2*7.2921*0.00001;
+        double L = c1/abs(twoOmega*sin);
+        double Ls = sqrt(c1/(2*twoOmega*(1.0/6371000.0)*cos));
+
+        double phi = atan(tan)*180/M_PI;
+        double r = fmin(L,Ls)/200000; //Normalize with 200km
+        //double f = 2*7.2921*0.00001*(tan/(sqrt(1+(tan*tan))));
+        return r;//sqrt(9.81*3600)/abs(f);
+    };
+
+    for(auto& c : curves){
+        c.assignWeights(f);
+    }
+
+    int complexity = 10;
     double guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
-    double delta = 15000;
+    double delta = 100000/guarantee;
 
     CurveClusterer cc(-1, false);
     cc.initCurves(curves,delta);
@@ -1068,7 +1135,7 @@ void experiments4(){
     for (int i = 0; i < std::min(500, (int) result.size()); ++i) {
         Candidate c = result[i];
         //std::cout <<"[" << (c.getEnd().getPoint() - c.getBegin().getPoint()) << "," << c.visualMatching.size() << "],";
-        io::exportSubcurve("/Users/styx/data/gdac2/result/resultcentersl1/candidate"+ std::to_string(i)+".txt",
+        io::exportSubcurve("/Users/styx/data/gdac3/result/resultcentersl10/candidate"+ std::to_string(i)+".txt",
                            cc.simplifiedCurves[c.getCurveIndex()],c.getBegin(),c.getEnd());
     }
     std::cout << "Done writing!\n";
@@ -1087,12 +1154,13 @@ cv::Point2f visual(Point in){
 #include <random>
 
 void intersectionprimitivetest(){
+
     std::uniform_real_distribution<double> coord_dist(1,9);
     std::uniform_real_distribution<double> radius_dist(0,2);
     std::default_random_engine re;
     re.seed(std::chrono::system_clock::now().time_since_epoch().count());
 
-    for(int i=0;i<10000;i++) {
+    for(int i=0;i<10;i++) {
         cv::namedWindow("winImage", cv::WINDOW_NORMAL);
         cv::Mat m = cv::Mat(1000, 1000, CV_8UC3, cv::Scalar(255, 255, 255));
 
@@ -1110,6 +1178,16 @@ void intersectionprimitivetest(){
         std::cout << "b: " << b.x() << " " << b.y() << " " << rb << std::endl;
         std::cout << "c: " << c.x() << " " << c.y() << " " << rc << std::endl;
         std::cout << "d: " << d.x() << " " << d.y() << " " << rd << std::endl;
+
+        SparseCell sc(a,b,c,d,ra);
+        SparseGridCell<std::unique_ptr<Cell>> sgs(std::make_unique<SparseCell>(sc),0,0);
+        //std::unique_ptr<Cell> fsc = std::make_unique<SparseCell>(sc);
+        //std::unique_ptr<Cell> ssc(std::move(fsc));
+
+        //B obj(1,2);
+        //std::unique_ptr<A> fobj = std::make_unique<B>(obj);
+        //std::unique_ptr<A> sobj(std::move(fobj));
+        //fobj->show();
 
         Point ab = b - a;
 
@@ -1255,11 +1333,11 @@ int main(int argc, char *argv[]) {
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
 
-    //experiments();
+    experiments();
     //experiments2();
     //experiments3();
-    //experiments4();
-    intersectionprimitivetest();
+    //experiments2();
+    //intersectionprimitivetest();
 /*
     Curve c1 = Curve("../data/86_1.txt", 93);
     Curve c2 = Curve("../data/86_2.txt", 93);

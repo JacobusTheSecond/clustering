@@ -42,8 +42,8 @@ void FreeSpaceVisualizer::show(bool withPoints){
 
                 auto cellwrapper = freespace.cell(y, xidx);
                 int x = cellwrapper->x;
-                auto cell = cellwrapper->data;
-                if (cell.is_empty())
+                //auto cell = cellwrapper->data;
+                if (cellwrapper->data->is_empty())
                     continue;
 
                 //stupid mapping only flip y
@@ -82,8 +82,8 @@ void FreeSpaceVisualizer::show(bool withPoints){
 
                 auto cellwrapper = freespace.cell(y, xidx);
                 int x = cellwrapper->x;
-                auto cell = cellwrapper->data;
-                if (cell.is_empty())
+                //auto cell = cellwrapper->data;
+                if (cellwrapper->data->is_empty())
                     continue;
 
                 //stupid mapping only flip y
@@ -113,14 +113,14 @@ void FreeSpaceVisualizer::show(bool withPoints){
 
                 //eight points, eight lines
 
-                Point2d p1 = Point2d(cell.leftPair.first.x, -cell.leftPair.first.y) * CS + origin;
-                Point2d p2 = Point2d(cell.leftPair.second.x, -cell.leftPair.second.y) * CS + origin;
-                Point2d p3 = Point2d(cell.topPair.first.x, -cell.topPair.first.y) * CS + origin;
-                Point2d p4 = Point2d(cell.topPair.second.x, -cell.topPair.second.y) * CS + origin;
-                Point2d p6 = Point2d(cell.rightPair.first.x, -cell.rightPair.first.y) * CS + origin;
-                Point2d p5 = Point2d(cell.rightPair.second.x, -cell.rightPair.second.y) * CS + origin;
-                Point2d p8 = Point2d(cell.bottomPair.first.x, -cell.bottomPair.first.y) * CS + origin;
-                Point2d p7 = Point2d(cell.bottomPair.second.x, -cell.bottomPair.second.y) * CS + origin;
+                Point2d p1 = Point2d(cellwrapper->data->leftPair.first.x, -cellwrapper->data->leftPair.first.y) * CS + origin;
+                Point2d p2 = Point2d(cellwrapper->data->leftPair.second.x, -cellwrapper->data->leftPair.second.y) * CS + origin;
+                Point2d p3 = Point2d(cellwrapper->data->topPair.first.x, -cellwrapper->data->topPair.first.y) * CS + origin;
+                Point2d p4 = Point2d(cellwrapper->data->topPair.second.x, -cellwrapper->data->topPair.second.y) * CS + origin;
+                Point2d p6 = Point2d(cellwrapper->data->rightPair.first.x, -cellwrapper->data->rightPair.first.y) * CS + origin;
+                Point2d p5 = Point2d(cellwrapper->data->rightPair.second.x, -cellwrapper->data->rightPair.second.y) * CS + origin;
+                Point2d p8 = Point2d(cellwrapper->data->bottomPair.first.x, -cellwrapper->data->bottomPair.first.y) * CS + origin;
+                Point2d p7 = Point2d(cellwrapper->data->bottomPair.second.x, -cellwrapper->data->bottomPair.second.y) * CS + origin;
 
                 line(img, p1, p2, Scalar(0, 0, 255), 2);
                 line(img, p2, p3, Scalar(0, 0, 255), 2);
@@ -199,14 +199,14 @@ void FreeSpacesVisualizer::show() {
 
     std::vector<int> partialYSums;
     int ySize = 1;
-    for(auto col : freespaces){
+    for(auto& col : freespaces){
         partialYSums.push_back(ySize);
         ySize += (col.front().ySize() + 2);
     }
 
     std::vector<int> partialXSums;
     int xSize = 1;
-    for(auto fs : freespaces[0]){
+    for(auto& fs : freespaces[0]){
         partialXSums.push_back(xSize);
         xSize += (fs.xSize() + 2);
     }
@@ -246,8 +246,8 @@ void FreeSpacesVisualizer::show() {
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -286,8 +286,8 @@ void FreeSpacesVisualizer::show() {
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -317,14 +317,14 @@ void FreeSpacesVisualizer::show() {
 
                         //eight points, eight lines
 
-                        Point2d p1 = Point2d(cell.leftPair.first.x, -cell.leftPair.first.y) * CS + origin;
-                        Point2d p2 = Point2d(cell.leftPair.second.x, -cell.leftPair.second.y) * CS + origin;
-                        Point2d p3 = Point2d(cell.topPair.first.x, -cell.topPair.first.y) * CS + origin;
-                        Point2d p4 = Point2d(cell.topPair.second.x, -cell.topPair.second.y) * CS + origin;
-                        Point2d p6 = Point2d(cell.rightPair.first.x, -cell.rightPair.first.y) * CS + origin;
-                        Point2d p5 = Point2d(cell.rightPair.second.x, -cell.rightPair.second.y) * CS + origin;
-                        Point2d p8 = Point2d(cell.bottomPair.first.x, -cell.bottomPair.first.y) * CS + origin;
-                        Point2d p7 = Point2d(cell.bottomPair.second.x, -cell.bottomPair.second.y) * CS + origin;
+                        Point2d p1 = Point2d(cellwrapper->data->leftPair.first.x, -cellwrapper->data->leftPair.first.y) * CS + origin;
+                        Point2d p2 = Point2d(cellwrapper->data->leftPair.second.x, -cellwrapper->data->leftPair.second.y) * CS + origin;
+                        Point2d p3 = Point2d(cellwrapper->data->topPair.first.x, -cellwrapper->data->topPair.first.y) * CS + origin;
+                        Point2d p4 = Point2d(cellwrapper->data->topPair.second.x, -cellwrapper->data->topPair.second.y) * CS + origin;
+                        Point2d p6 = Point2d(cellwrapper->data->rightPair.first.x, -cellwrapper->data->rightPair.first.y) * CS + origin;
+                        Point2d p5 = Point2d(cellwrapper->data->rightPair.second.x, -cellwrapper->data->rightPair.second.y) * CS + origin;
+                        Point2d p8 = Point2d(cellwrapper->data->bottomPair.first.x, -cellwrapper->data->bottomPair.first.y) * CS + origin;
+                        Point2d p7 = Point2d(cellwrapper->data->bottomPair.second.x, -cellwrapper->data->bottomPair.second.y) * CS + origin;
 
                         line(img, p1, p2, Scalar(0, 0, 255), 2);
                         line(img, p2, p3, Scalar(0, 0, 255), 2);
@@ -402,14 +402,14 @@ void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
 
     std::vector<int> partialYSums;
     int ySize = 1;
-    for(auto col : freespaces){
+    for(auto& col : freespaces){
         partialYSums.push_back(ySize);
         ySize += (col.front().ySize() + 2);
     }
 
     std::vector<int> partialXSums;
     int xSize = 1;
-    for(auto fs : freespaces[0]){
+    for(auto& fs : freespaces[0]){
         partialXSums.push_back(xSize);
         xSize += (fs.xSize() + 2);
     }
@@ -447,8 +447,8 @@ void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -487,8 +487,8 @@ void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -518,14 +518,14 @@ void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
 
                         //eight points, eight lines
 
-                        Point2d p1 = Point2d(cell.leftPair.first.x, -cell.leftPair.first.y) * CS + origin;
-                        Point2d p2 = Point2d(cell.leftPair.second.x, -cell.leftPair.second.y) * CS + origin;
-                        Point2d p3 = Point2d(cell.topPair.first.x, -cell.topPair.first.y) * CS + origin;
-                        Point2d p4 = Point2d(cell.topPair.second.x, -cell.topPair.second.y) * CS + origin;
-                        Point2d p6 = Point2d(cell.rightPair.first.x, -cell.rightPair.first.y) * CS + origin;
-                        Point2d p5 = Point2d(cell.rightPair.second.x, -cell.rightPair.second.y) * CS + origin;
-                        Point2d p8 = Point2d(cell.bottomPair.first.x, -cell.bottomPair.first.y) * CS + origin;
-                        Point2d p7 = Point2d(cell.bottomPair.second.x, -cell.bottomPair.second.y) * CS + origin;
+                        Point2d p1 = Point2d(cellwrapper->data->leftPair.first.x, -cellwrapper->data->leftPair.first.y) * CS + origin;
+                        Point2d p2 = Point2d(cellwrapper->data->leftPair.second.x, -cellwrapper->data->leftPair.second.y) * CS + origin;
+                        Point2d p3 = Point2d(cellwrapper->data->topPair.first.x, -cellwrapper->data->topPair.first.y) * CS + origin;
+                        Point2d p4 = Point2d(cellwrapper->data->topPair.second.x, -cellwrapper->data->topPair.second.y) * CS + origin;
+                        Point2d p6 = Point2d(cellwrapper->data->rightPair.first.x, -cellwrapper->data->rightPair.first.y) * CS + origin;
+                        Point2d p5 = Point2d(cellwrapper->data->rightPair.second.x, -cellwrapper->data->rightPair.second.y) * CS + origin;
+                        Point2d p8 = Point2d(cellwrapper->data->bottomPair.first.x, -cellwrapper->data->bottomPair.first.y) * CS + origin;
+                        Point2d p7 = Point2d(cellwrapper->data->bottomPair.second.x, -cellwrapper->data->bottomPair.second.y) * CS + origin;
 
                         line(img, p1, p2, Scalar(0, 0, 255), 2);
                         line(img, p2, p3, Scalar(0, 0, 255), 2);
@@ -911,7 +911,7 @@ void SparseFreeSpacesVisualizer::show() {
     int ySize = 1;
     std::vector<int> partialXSums;
     int xSize = 1;
-    for(auto col : freespaces){
+    for(auto& col : freespaces){
         partialYSums.push_back(ySize);
         ySize += (col.front().ySize() + 2);
         partialXSums.push_back(xSize);
@@ -953,8 +953,8 @@ void SparseFreeSpacesVisualizer::show() {
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -993,8 +993,8 @@ void SparseFreeSpacesVisualizer::show() {
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -1024,14 +1024,14 @@ void SparseFreeSpacesVisualizer::show() {
 
                         //eight points, eight lines
 
-                        Point2d p1 = Point2d(cell.leftPair.first.x, -cell.leftPair.first.y) * CS + origin;
-                        Point2d p2 = Point2d(cell.leftPair.second.x, -cell.leftPair.second.y) * CS + origin;
-                        Point2d p3 = Point2d(cell.topPair.first.x, -cell.topPair.first.y) * CS + origin;
-                        Point2d p4 = Point2d(cell.topPair.second.x, -cell.topPair.second.y) * CS + origin;
-                        Point2d p6 = Point2d(cell.rightPair.first.x, -cell.rightPair.first.y) * CS + origin;
-                        Point2d p5 = Point2d(cell.rightPair.second.x, -cell.rightPair.second.y) * CS + origin;
-                        Point2d p8 = Point2d(cell.bottomPair.first.x, -cell.bottomPair.first.y) * CS + origin;
-                        Point2d p7 = Point2d(cell.bottomPair.second.x, -cell.bottomPair.second.y) * CS + origin;
+                        Point2d p1 = Point2d(cellwrapper->data->leftPair.first.x, -cellwrapper->data->leftPair.first.y) * CS + origin;
+                        Point2d p2 = Point2d(cellwrapper->data->leftPair.second.x, -cellwrapper->data->leftPair.second.y) * CS + origin;
+                        Point2d p3 = Point2d(cellwrapper->data->topPair.first.x, -cellwrapper->data->topPair.first.y) * CS + origin;
+                        Point2d p4 = Point2d(cellwrapper->data->topPair.second.x, -cellwrapper->data->topPair.second.y) * CS + origin;
+                        Point2d p6 = Point2d(cellwrapper->data->rightPair.first.x, -cellwrapper->data->rightPair.first.y) * CS + origin;
+                        Point2d p5 = Point2d(cellwrapper->data->rightPair.second.x, -cellwrapper->data->rightPair.second.y) * CS + origin;
+                        Point2d p8 = Point2d(cellwrapper->data->bottomPair.first.x, -cellwrapper->data->bottomPair.first.y) * CS + origin;
+                        Point2d p7 = Point2d(cellwrapper->data->bottomPair.second.x, -cellwrapper->data->bottomPair.second.y) * CS + origin;
 
                         line(img, p1, p2, Scalar(0, 0, 255), 2);
                         line(img, p2, p3, Scalar(0, 0, 255), 2);
@@ -1114,7 +1114,7 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
     int ySize = 1;
     std::vector<int> partialXSums;
     int xSize = 1;
-    for (auto col: freespaces) {
+    for (auto& col: freespaces) {
         partialYSums.push_back(ySize);
         ySize += (col.front().ySize() + 2);
         partialXSums.push_back(xSize);
@@ -1156,8 +1156,8 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -1196,8 +1196,8 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
 
                         auto cellwrapper = freespace.cell(y, xidx);
                         int x = cellwrapper->x;
-                        auto cell = cellwrapper->data;
-                        if (cell.is_empty())
+                        //auto cell = cellwrapper->data;
+                        if (cellwrapper->data->is_empty())
                             continue;
 
                         //stupid mapping only flip y
@@ -1227,14 +1227,14 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
 
                         //eight points, eight lines
 
-                        Point2d p1 = Point2d(cell.leftPair.first.x, -cell.leftPair.first.y) * CS + origin;
-                        Point2d p2 = Point2d(cell.leftPair.second.x, -cell.leftPair.second.y) * CS + origin;
-                        Point2d p3 = Point2d(cell.topPair.first.x, -cell.topPair.first.y) * CS + origin;
-                        Point2d p4 = Point2d(cell.topPair.second.x, -cell.topPair.second.y) * CS + origin;
-                        Point2d p6 = Point2d(cell.rightPair.first.x, -cell.rightPair.first.y) * CS + origin;
-                        Point2d p5 = Point2d(cell.rightPair.second.x, -cell.rightPair.second.y) * CS + origin;
-                        Point2d p8 = Point2d(cell.bottomPair.first.x, -cell.bottomPair.first.y) * CS + origin;
-                        Point2d p7 = Point2d(cell.bottomPair.second.x, -cell.bottomPair.second.y) * CS + origin;
+                        Point2d p1 = Point2d(cellwrapper->data->leftPair.first.x, -cellwrapper->data->leftPair.first.y) * CS + origin;
+                        Point2d p2 = Point2d(cellwrapper->data->leftPair.second.x, -cellwrapper->data->leftPair.second.y) * CS + origin;
+                        Point2d p3 = Point2d(cellwrapper->data->topPair.first.x, -cellwrapper->data->topPair.first.y) * CS + origin;
+                        Point2d p4 = Point2d(cellwrapper->data->topPair.second.x, -cellwrapper->data->topPair.second.y) * CS + origin;
+                        Point2d p6 = Point2d(cellwrapper->data->rightPair.first.x, -cellwrapper->data->rightPair.first.y) * CS + origin;
+                        Point2d p5 = Point2d(cellwrapper->data->rightPair.second.x, -cellwrapper->data->rightPair.second.y) * CS + origin;
+                        Point2d p8 = Point2d(cellwrapper->data->bottomPair.first.x, -cellwrapper->data->bottomPair.first.y) * CS + origin;
+                        Point2d p7 = Point2d(cellwrapper->data->bottomPair.second.x, -cellwrapper->data->bottomPair.second.y) * CS + origin;
 
                         line(img, p1, p2, Scalar(0, 0, 255), 2);
                         line(img, p2, p3, Scalar(0, 0, 255), 2);

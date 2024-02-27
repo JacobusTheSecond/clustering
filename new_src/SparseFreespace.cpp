@@ -46,8 +46,7 @@ CellPoint SparseCell::bottomMostAt(double x, CellPoint* outer) const {
     return {x,in.begin};
 }
 
-SparseCell::SparseCell(Point &a, Point &b, Point &c, Point &d, distance_t delta, int tc):/*a(a),b(b),c(c),d(d),*/delta(delta),toAboves(tc), toBottoms(tc), toLefts(tc),toRights(tc) {
-
+SparseCell::SparseCell(Point &a, Point &b, Point &c, Point &d, distance_t delta, int tc):/*a(a),b(b),c(c),d(d),*/Cell(tc),delta(delta) {
     Interval intersection = IntersectionAlgorithm::intersection_interval(c,d,delta,a,b);
     if(intersection.is_empty()){
         isEmpty = true;
@@ -115,10 +114,6 @@ SparseCell::SparseCell(Point &a, Point &b, Point &c, Point &d, distance_t delta,
     }
 }
 
-bool SparseCell::is_empty() {
-    return isEmpty;
-}
-
 bool close_linesegments(const Point& p1, const Point& p2, const Point& q1, const Point& q2, distance_t delta){
     Interval intersection = IntersectionAlgorithm::intersection_interval(p1,p2,delta,q1,q2);
     return !intersection.is_empty();
@@ -135,8 +130,10 @@ SparseFreespace::SparseFreespace(Curve &B, Curve &T, distance_t delta, int threa
 //                {
 //                n += 1;
 //            }
-                SparseCell c = SparseCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],delta, threadcount);
-                row(y).emplace_back(c, x, y);
+                //SparseCell c = SparseCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],delta, threadcount);
+                MinkowskiCell c = MinkowskiCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],T.weight(x)*delta,T.weight(x+1)*delta,B.weight(y)*delta,B.weight(y+1)*delta, threadcount);
+                //SparseGridCell<std::unique_ptr<Cell>> sgc(std::make_unique<SparseCell>(c),x,y);
+                row(y).emplace_back(std::make_unique<MinkowskiCell>(c), x, y);
             }
         }
     }
@@ -145,7 +142,7 @@ SparseFreespace::SparseFreespace(Curve &B, Curve &T, distance_t delta, int threa
 #pragma omp parallel for default(none)
     for(int y=0;y<ny;y++){
         for(int xidx=0;xidx+1<row(y).size();xidx++){
-            if(cell(y,xidx)->x+1 == cell(y,xidx+1)->x && !cell(y,xidx)->data.right.is_empty()){
+            if(cell(y,xidx)->x+1 == cell(y,xidx+1)->x && !cell(y,xidx)->data->right.is_empty()){
                 operator[](y).operator[](xidx).rightId = xidx+1;//&(operator[](y).operator[](xidx+1));
                 operator[](y).operator[](xidx+1).leftId = xidx;//&(operator[](y).operator[](xidx));
             }
@@ -168,7 +165,7 @@ SparseFreespace::SparseFreespace(Curve &B, Curve &T, distance_t delta, int threa
                 break;
             }
 
-            if( cell(y+1,nextXidx)->x == cell(y,xidx)->x && !cell(y,xidx)->data.top.is_empty()){
+            if( cell(y+1,nextXidx)->x == cell(y,xidx)->x && !cell(y,xidx)->data->top.is_empty()){
                 operator[](y).operator[](xidx).upId = nextXidx;//&(operator[](y+1).operator[](nextXidx));
                 operator[](y+1).operator[](nextXidx).downId = xidx;// &(operator[](y).operator[](xidx));
             }
@@ -207,13 +204,13 @@ void SparseFreespace::identifyStarts() {
             //UP
             //if we are at a rightmost cell, append the rightmost point
             if(cellwrapper->rightId == -1){
-                potentialUpPairs.emplace_back(cellwrapper->data.rightPair.second.y,cellwrapper->data.rightPair.second.y,true);
+                potentialUpPairs.emplace_back(cellwrapper->data->rightPair.second.y,cellwrapper->data->rightPair.second.y,true);
             }
 
             //if the rightmost point in the current cell cant be reached and we can go further left, we might
             //be in a monotonicity case. append this as well
-            if(cellwrapper->leftId != -1 && cellwrapper->data.rightPair.second.y < cellwrapper->data.leftPair.first.y){
-                potentialUpPairs.emplace_back(cellwrapper->data.leftPair.first.y,cellwrapper->data.leftPair.first.y,false);
+            if(cellwrapper->leftId != -1 && cellwrapper->data->rightPair.second.y < cellwrapper->data->leftPair.first.y){
+                potentialUpPairs.emplace_back(cellwrapper->data->leftPair.first.y,cellwrapper->data->leftPair.first.y,false);
             }
 
             //if we can escape the cell to above, append this case too
@@ -228,11 +225,11 @@ void SparseFreespace::identifyStarts() {
                 bool induced_by_rightmost = std::get<2>(start);
 
                 if(!induced_by_rightmost){
-                    if(cellwrapper->data.leftPair.second.y < cur){
-                        cur = cellwrapper->data.leftPair.second.y;
+                    if(cellwrapper->data->leftPair.second.y < cur){
+                        cur = cellwrapper->data->leftPair.second.y;
                         induced_by_rightmost = true;
-                    }else if(cellwrapper->data.leftPair.first.y > cur){
-                        tempUpPairs.emplace_back(cellwrapper->data.leftPair.first.y,cellwrapper->data.leftPair.first.y,false);
+                    }else if(cellwrapper->data->leftPair.first.y > cur){
+                        tempUpPairs.emplace_back(cellwrapper->data->leftPair.first.y,cellwrapper->data->leftPair.first.y,false);
                     }
                 }
                 if(induced_by_rightmost){
@@ -240,9 +237,9 @@ void SparseFreespace::identifyStarts() {
                     //if we can go further left
                     if(cellwrapper->leftId != -1){
                         //push coordinate down if possible, or otherwise push the coordinate
-                        if(cellwrapper->data.leftPair.second.y <= cur){
-                            tempUpPairs.emplace_back(inducer,cellwrapper->data.leftPair.second.y,induced_by_rightmost);
-                        }else if(cellwrapper->data.leftPair.first.y > cur){
+                        if(cellwrapper->data->leftPair.second.y <= cur){
+                            tempUpPairs.emplace_back(inducer,cellwrapper->data->leftPair.second.y,induced_by_rightmost);
+                        }else if(cellwrapper->data->leftPair.first.y > cur){
                             //push the value unless inducer = cur
                             if(cur < inducer){
                                 if(cur > EPSILON){
@@ -259,12 +256,12 @@ void SparseFreespace::identifyStarts() {
                         }
                     }else{
                         //then we are in a leftmost cell, and we need to push everything that is below the second value
-                        if(cellwrapper->data.leftPair.second.y < cur){
-                            upStarts.emplace_back(y,cellwrapper->data.leftPair.first.y);
+                        if(cellwrapper->data->leftPair.second.y < cur){
+                            upStarts.emplace_back(y,cellwrapper->data->leftPair.first.y);
                             if(inducer <= 1-EPSILON){
                                 upEnds.emplace_back(y,inducer);
                             }
-                        }else if(cellwrapper->data.leftPair.first.y >= cur){
+                        }else if(cellwrapper->data->leftPair.first.y >= cur){
                             //push the value unless inducer = cur
                             if(cur < inducer){
                                 if(cur > EPSILON){
@@ -286,13 +283,13 @@ void SparseFreespace::identifyStarts() {
             //DOWN
             //if we are at a rightmost cell, append the rightmost point
             if(cellwrapper->rightId == -1){
-                potentialDownPairs.emplace_back(cellwrapper->data.rightPair.first.y,cellwrapper->data.rightPair.first.y,true);
+                potentialDownPairs.emplace_back(cellwrapper->data->rightPair.first.y,cellwrapper->data->rightPair.first.y,true);
             }
 
             //if the rightmost point in the current cell cant be reached and we can go further left, we might
             //be in a monotonicity case. append this as well
-            if(cellwrapper->leftId != -1 && cellwrapper->data.rightPair.first.y > cellwrapper->data.leftPair.second.y){
-                potentialDownPairs.emplace_back(cellwrapper->data.leftPair.second.y,cellwrapper->data.leftPair.second.y,false);
+            if(cellwrapper->leftId != -1 && cellwrapper->data->rightPair.first.y > cellwrapper->data->leftPair.second.y){
+                potentialDownPairs.emplace_back(cellwrapper->data->leftPair.second.y,cellwrapper->data->leftPair.second.y,false);
             }
 
             std::vector<std::tuple<double,double,bool>> tempDownPairs;
@@ -302,11 +299,11 @@ void SparseFreespace::identifyStarts() {
                 bool induced_by_rightmost = std::get<2>(start);
 
                 if(!induced_by_rightmost){
-                    if(cellwrapper->data.leftPair.first.y > cur){
-                        cur = cellwrapper->data.leftPair.first.y;
+                    if(cellwrapper->data->leftPair.first.y > cur){
+                        cur = cellwrapper->data->leftPair.first.y;
                         induced_by_rightmost = true;
-                    }else if(cellwrapper->data.leftPair.second.y <= cur){
-                        tempDownPairs.emplace_back(cellwrapper->data.leftPair.second.y,cellwrapper->data.leftPair.second.y,false);
+                    }else if(cellwrapper->data->leftPair.second.y <= cur){
+                        tempDownPairs.emplace_back(cellwrapper->data->leftPair.second.y,cellwrapper->data->leftPair.second.y,false);
                     }
                 }
                 if(induced_by_rightmost){
@@ -314,9 +311,9 @@ void SparseFreespace::identifyStarts() {
                     //if we can go further left
                     if(cellwrapper->leftId != -1){
                         //push coordinate down if possible, or otherwise push the coordinate
-                        if(cellwrapper->data.leftPair.first.y >= cur){
-                            tempDownPairs.emplace_back(inducer,cellwrapper->data.leftPair.first.y,induced_by_rightmost);
-                        }else if(cellwrapper->data.leftPair.second.y < cur){
+                        if(cellwrapper->data->leftPair.first.y >= cur){
+                            tempDownPairs.emplace_back(inducer,cellwrapper->data->leftPair.first.y,induced_by_rightmost);
+                        }else if(cellwrapper->data->leftPair.second.y < cur){
                             //push the value unless inducer = cur
                             if(cur > inducer){
                                 if(cur < 1-EPSILON){
@@ -333,12 +330,12 @@ void SparseFreespace::identifyStarts() {
                         }
                     }else{
                         //then we are in a leftmost cell, and we need to push everything that is below the second value
-                        if(cellwrapper->data.leftPair.first.y > cur){
-                            downStarts.emplace_back(y,cellwrapper->data.leftPair.second.y);
+                        if(cellwrapper->data->leftPair.first.y > cur){
+                            downStarts.emplace_back(y,cellwrapper->data->leftPair.second.y);
                             if(inducer >= EPSILON){
                                 downEnds.emplace_back(y,inducer);
                             }
-                        }else if(cellwrapper->data.leftPair.second.y <= cur){
+                        }else if(cellwrapper->data->leftPair.second.y <= cur){
                             //push the value unless inducer = cur
                             if(cur > inducer){
                                 if(cur < 1-EPSILON){
@@ -445,33 +442,33 @@ void SparseFreespace::identifyEnds() {
             if (cellwrapper->rightId == -1) {
 
                 //if we are in a trivial end-situation, dont push the endcoordinate yet, otherwise push it
-                if (numericalclip.contains(cellwrapper->data.rightPair.second.y)) {
-                    upEnds.emplace_back(y, cellwrapper->data.rightPair.second.y);
-                }else if((cellwrapper->data.rightPair.second.y > 1.0 - EPSILON) && (not (cellwrapper->upId != -1 && cell(y+1,cellwrapper->upId)->data.rightPair.first.y < EPSILON))){
+                if (numericalclip.contains(cellwrapper->data->rightPair.second.y)) {
+                    upEnds.emplace_back(y, cellwrapper->data->rightPair.second.y);
+                }else if((cellwrapper->data->rightPair.second.y > 1.0 - EPSILON) && (not (cellwrapper->upId != -1 && cell(y+1,cellwrapper->upId)->data->rightPair.first.y < EPSILON))){
                     requireTrivialUpEnd = true;
                 }
 
                 //push all potential up end, that lie above the rightmost point
                 for (auto up: potentialUpEnds) {
-                    if (numericalclip.contains(up)&& up > cellwrapper->data.rightPair.second.y)
+                    if (numericalclip.contains(up)&& up > cellwrapper->data->rightPair.second.y)
                         upEnds.emplace_back(y, up);
                 }
 
                 //handle downstarts similarly
-                if (numericalclip.contains(cellwrapper->data.rightPair.first.y)) {
-                    downEnds.emplace_back(y, cellwrapper->data.rightPair.first.y);
+                if (numericalclip.contains(cellwrapper->data->rightPair.first.y)) {
+                    downEnds.emplace_back(y, cellwrapper->data->rightPair.first.y);
                 }
 
                 for (auto down: potentialDownEnds) {
-                    if (numericalclip.contains(down) && down < cellwrapper->data.rightPair.first.y)
+                    if (numericalclip.contains(down) && down < cellwrapper->data->rightPair.first.y)
                         downEnds.emplace_back(y, down);
                 }
                 potentialUpEnds.clear();
                 potentialDownEnds.clear();
             } else {
                 std::vector<double> temporaryUpEnds, temporaryDownEnds;
-                temporaryUpEnds.push_back(cellwrapper->data.right.begin);
-                double upcutoff = cellwrapper->data.right.begin;
+                temporaryUpEnds.push_back(cellwrapper->data->right.begin);
+                double upcutoff = cellwrapper->data->right.begin;
                 for (auto up: potentialUpEnds) {
                     if (up > upcutoff) {
                         temporaryUpEnds.push_back(up);
@@ -480,8 +477,8 @@ void SparseFreespace::identifyEnds() {
                 potentialUpEnds = temporaryUpEnds;
 
 
-                temporaryDownEnds.push_back(cellwrapper->data.right.end);
-                double downcutoff = cellwrapper->data.right.end;
+                temporaryDownEnds.push_back(cellwrapper->data->right.end);
+                double downcutoff = cellwrapper->data->right.end;
                 for (auto down: potentialDownEnds) {
                     if (down < downcutoff) {
                         temporaryDownEnds.push_back(down);
@@ -502,12 +499,12 @@ void SparseFreespace::identifyEnds() {
 }
 
 MinkowskiCell::MinkowskiCell(Point &a, Point &b, Point &c, Point &d, distance_t ra, distance_t rb, distance_t rc,
-                             distance_t rd, int tc): ra(ra),rb(rb),rc(rc),rd(rd),toAboves(tc), toBottoms(tc), toLefts(tc),toRights(tc) {
+                             distance_t rd, int tc): Cell(tc),ra(ra),rb(rb),rc(rc),rd(rd){
     //acac,acab,accd,abab,abcd;
     //caca,cacd,caab,cdcd,cdab;
     Interval intersection = MinkowskiIntersectionAlgorithm::edgeEdgeIntersection(c,d,rc,rd,a,b,ra,rb,nullptr);
     if(intersection.is_empty()){
-        is_empty = true;
+        isEmpty = true;
     }else{
         Point ac = c-a;
         Point ab = b-a;

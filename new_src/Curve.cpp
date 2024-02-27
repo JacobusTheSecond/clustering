@@ -7,7 +7,7 @@
 #include "geometry_types.h"
 
 Curve::Curve(const Points& points)
-        : points(points), prefix_length(points.size())
+        : points(points), prefix_length(points.size()), weights(points.size(),0.5f)
 {
     if (points.empty()) { return; }
 
@@ -25,7 +25,7 @@ Curve::Curve(const Points& points)
     }
 }
 
-void Curve::push_back(Point const& point)
+void Curve::push_back(Point const& point, double w)
 {
     if(size() == 0)
         extreme_points = {point,point};
@@ -41,6 +41,7 @@ void Curve::push_back(Point const& point)
     extreme_points.max = extreme_points.max.max(point);
 
     points.push_back(point*1.0);
+    weights.push_back(w);
 }
 
 auto Curve::getExtremePoints() const -> ExtremePoints const&
@@ -71,8 +72,10 @@ Curve::Curve(std::string _filename,dimensions_t d) {
             p.push_back(number);
         }
         //somehow the last point is added 96 times without this... very weird
-        if(file)
+        if(file) {
             push_back(p);
+            weights.push_back(0.5);
+        }
     }
 
     prefix_length = std::vector<distance_t>(points.size());
@@ -84,9 +87,11 @@ Curve::Curve(std::string _filename,dimensions_t d) {
 
 void Curve::clear() {
     points.clear();
+    weights.clear();
+    prefix_length.clear();
 }
 
-Curve::Curve(const Curve& c, std::vector<int> times) {
+Curve::Curve(const Curve& c, std::vector<int> times){
     for(int startindex = 0; startindex<c.size()-1;++startindex){
         Point s = c[startindex];
         Point t = c[startindex+1];
@@ -94,9 +99,11 @@ Curve::Curve(const Curve& c, std::vector<int> times) {
         int ttime = times[startindex+1];
         for(int i=stime;i<ttime;++i){
             push_back(s + (t-s)*((double)(i-stime)/(double)(ttime-stime)));
+            weights.push_back(0.5);
         }
     }
     push_back(c.back());
+    weights.push_back(0.5);
 }
 
 Point Curve::eval(CPoint t) {
@@ -108,13 +115,13 @@ Point Curve::eval(CPoint t) {
 Curve Curve::constructSubcurve(CPoint s, CPoint t) {
     Curve result;
 
-    result.push_back(eval(s));
+    result.push_back(eval(s), evalWeight(s));
 
     int step = (s>t)?-1:1;
 
     for(PointID i = s.getPoint()+std::max(step,0);(s>t)?i>t.getPoint():i<=t.getPoint();i+=step){
-        result.push_back(operator[](i));
+        result.push_back(operator[](i),weights[i]);
     }
-    result.push_back(eval(t));
+    result.push_back(eval(t), evalWeight(t));
     return result;
 }

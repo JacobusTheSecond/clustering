@@ -56,7 +56,7 @@ public:
     Point front() const { return points.front(); }
     Point back() const { return points.back(); }
 
-    void push_back(Point const& point);
+    void push_back(Point const& point, double w = 0.5);
 
     void clear();
 
@@ -75,9 +75,32 @@ public:
 
     std::vector<distance_t> prefix_length;
 
+    void assignWeights(std::vector<double> ws){
+        assert(ws.size() == size());
+        weights = ws;
+    };
+
+    template <typename func> void assignWeights(func f){
+        weights.clear();
+        for(auto p : points){
+            weights.push_back(f(p));
+        }
+    }
+
+    double weight(int i){
+        return weights[i];
+    }
+
 private:
     Points points;
     ExtremePoints extreme_points;
+    std::vector<double> weights;
+    double evalWeight(CPoint t) {
+        double ws = weights[t.getPoint()];
+        double wt = weights[t.getPoint() + 1];
+        return ws + (wt - ws) * t.getFraction();
+    };
+
 
 
 

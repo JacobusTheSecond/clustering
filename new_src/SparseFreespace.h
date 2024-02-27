@@ -16,7 +16,31 @@ struct CellPoint{
     distance_t y{};
 };
 
-class SparseCell{
+class Cell{
+public:
+    std::pair<CellPoint,CellPoint> leftPair, rightPair, topPair, bottomPair;
+    Interval left,top,right,bottom;
+
+    //this isnt exactly clean
+    Interval& toAbove(int threadID = 0){return toAboves[threadID];}
+    Interval& toRight(int threadID = 0){return toRights[threadID];}
+    Interval& toBottom(int threadID = 0){return toBottoms[threadID];}
+    Interval& toLeft(int threadID = 0){return toLefts[threadID];}
+    std::vector<Interval> toAboves;
+    std::vector<Interval> toRights;
+    std::vector<Interval> toLefts;
+    std::vector<Interval> toBottoms;
+
+    virtual CellPoint leftMostAt(double y, CellPoint* outer = nullptr) const = 0;
+    virtual CellPoint rightMostAt(double y, CellPoint* outer = nullptr) const = 0;
+    virtual CellPoint topMostAt(double x, CellPoint* outer = nullptr) const = 0;
+    virtual CellPoint bottomMostAt(double x, CellPoint* outer = nullptr) const = 0;
+    virtual bool is_empty()=0;
+    Cell(int tc):toAboves(tc),toRights(tc),toLefts(tc),toBottoms(tc){};
+    virtual ~Cell(){};
+};
+
+class SparseCell : public Cell{
     //void updateDelta(distance_t delta);
 private:
     //topbottom values
@@ -37,68 +61,36 @@ private:
 
     //Point& a,b,c,d;
 
-
     bool isEmpty;
 public:
-
-    //trying numerical stability stuff. they are always orderd bottom to top, and left to right
-    std::pair<CellPoint,CellPoint> leftPair, rightPair, topPair, bottomPair;
-    Interval left,top,right,bottom;
-
-    Interval& toAbove(int threadID = 0){return toAboves[threadID];}
-    Interval& toRight(int threadID = 0){return toRights[threadID];}
-    Interval& toBottom(int threadID = 0){return toBottoms[threadID];}
-    Interval& toLeft(int threadID = 0){return toLefts[threadID];}
-
-    std::vector<Interval> toAboves;
-    std::vector<Interval> toRights;
-    std::vector<Interval> toLefts;
-    std::vector<Interval> toBottoms;
-
     double delta=0;
 
     CellPoint leftMostAt(double y, CellPoint* outer = nullptr) const;
     CellPoint rightMostAt(double y, CellPoint* outer = nullptr) const;
     CellPoint topMostAt(double x, CellPoint* outer = nullptr) const;
     CellPoint bottomMostAt(double x, CellPoint* outer = nullptr) const;
-
-public:
-//SparseCell(Point &a, Point &b, Point &c, Point &d,int threadcount = 1);
-SparseCell(Point &a, Point &b, Point &c, Point &d,distance_t delta, int threadcount = 1);
-
-    bool is_empty();
+    //SparseCell(Point &a, Point &b, Point &c, Point &d,int threadcount = 1);
+    SparseCell(Point &a, Point &b, Point &c, Point &d,distance_t delta, int threadcount = 1);
+    bool is_empty(){return isEmpty;};
 };
 
-class MinkowskiCell{
+class MinkowskiCell : public Cell{
 
 private:
     Point a,b,c,d;
     distance_t ra,rb,rc,rd;
-    bool is_empty;
+    bool isEmpty;
 
     distance_t acac,acab,accd,abab,abcd;
     distance_t caca,cacd,caab,cdcd,cdab;
 public:
-    std::pair<CellPoint,CellPoint> leftPair, rightPair, topPair, bottomPair;
-    Interval left,top,right,bottom;
-
-    Interval& toAbove(int threadID = 0){return toAboves[threadID];}
-    Interval& toRight(int threadID = 0){return toRights[threadID];}
-    Interval& toBottom(int threadID = 0){return toBottoms[threadID];}
-    Interval& toLeft(int threadID = 0){return toLefts[threadID];}
-
-    std::vector<Interval> toAboves;
-    std::vector<Interval> toRights;
-    std::vector<Interval> toLefts;
-    std::vector<Interval> toBottoms;
-
     CellPoint leftMostAt(double y, CellPoint* outer = nullptr) const;
     CellPoint rightMostAt(double y, CellPoint* outer = nullptr) const;
     CellPoint topMostAt(double x, CellPoint* outer = nullptr) const;
     CellPoint bottomMostAt(double x, CellPoint* outer = nullptr) const;
 
     MinkowskiCell(Point &a, Point &b, Point &c, Point &d, distance_t ra, distance_t rb, distance_t rc, distance_t rd, int tc = 1);
-
+    bool is_empty(){return isEmpty;};
 };
 
 template <typename T> class SparseGridCell{
@@ -114,20 +106,20 @@ public:
     //SparseGridCell<T>* down=nullptr;
     //SparseGridCell<T>* left=nullptr;
     //SparseGridCell<T>* right=nullptr;
-    SparseGridCell(T& _data, int _x, int _y):data(_data),x(_x),y(_y){}
+    SparseGridCell(T _data, int _x, int _y):data(std::move(_data)),x(_x),y(_y){}
 };
 
-class SparseFreespace :std::vector<std::vector<SparseGridCell<SparseCell>>> {
+class SparseFreespace :std::vector<std::vector<SparseGridCell<std::unique_ptr<Cell>>>> {
 private:
-    using Parent = std::vector<std::vector<SparseGridCell<SparseCell>>>;
+    using Parent = std::vector<std::vector<SparseGridCell<std::unique_ptr<Cell>>>>;
     const unsigned int nx,ny;
 public:
     std::vector<CPoint> upStarts, downStarts, upEnds, downEnds;
     const CurveID BID,TID;
     const distance_t delta;
     SparseFreespace(Curve& B, Curve& T, distance_t _delta, int threadcount = 1, CurveID BID = -1, CurveID TID = -1);
-    std::vector<SparseGridCell<SparseCell>>& row(PointID y){return operator[](y);}
-    SparseGridCell<SparseCell>* cell(PointID y, PointID xidx){return &(operator[](y).operator[](xidx));}
+    std::vector<SparseGridCell<std::unique_ptr<Cell>>>& row(PointID y){return operator[](y);}
+    SparseGridCell<std::unique_ptr<Cell>>* cell(PointID y, PointID xidx){return &(operator[](y).operator[](xidx));}
     int xSize();
     int ySize();
     void identifyStarts();
