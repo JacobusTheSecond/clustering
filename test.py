@@ -1,7 +1,7 @@
 import numpy as np
 import klcluster as kl
 cs = kl.Curves()
-for i in range(100):
+for i in range(10):
 	cs.add(kl.Curve(np.random.rand(10,3)*100))
 cc = kl.CurveClusterer()
 cc.initCurves(cs,1)
