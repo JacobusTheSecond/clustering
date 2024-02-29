@@ -1,17 +1,11 @@
-#pragma once
+//
+// Created by Jacobus Conradi on 17.04.23.
+//
 
-#include "curve.h"
-#include "id.h"
+#ifndef CLUSTERING_BASIC_TYPES_H
+#define CLUSTERING_BASIC_TYPES_H
 
-#include <vector>
+using Label = int;
+typedef std::vector<std::pair<Label,int>> FrameLabeling;
 
-struct Cluster
-{
-	CurveIDs curve_ids;
-	Curve center_curve;
-	distance_t cost = std::numeric_limits<distance_t>::max();
-};
-
-using Clustering = std::vector<Cluster>;
-using ClusterID = ID<Cluster>;
-using ClusterIDs = std::vector<ClusterID>;
+#endif //CLUSTERING_BASIC_TYPES_H

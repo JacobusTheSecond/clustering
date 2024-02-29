@@ -1,25 +1,23 @@
-#pragma once
+//
+// Created by Jacobus Conradi on 17.04.23.
+//
 
+#ifndef CLUSTERING_IO_H
+#define CLUSTERING_IO_H
+
+#include <utility>
 #include "basic_types.h"
-#include "curve.h"
+#include "geometry_types.h"
+#include "Curve.h"
 
+//enum Label {_labelstart,transition,walk,jump,punch,leg_kick,squat,run,stand,arm_up,drink,stretch,slap,turn,_labelend};
 
-//labelset for 86_1,86_2 and 86_4
-enum Label {_labelstart,transition,walk,jump,punch,leg_kick,squat,run,stand,arm_up,drink,stretch,slap,turn,_labelend};
-
-typedef std::vector<std::pair<Label,int>> FrameLabeling;
-typedef std::vector<std::pair<Label,ParamPoint>> ParamLabeling;
 
 namespace io
 {
-Curves readCurves(std::string const& curve_data_file, int header_size = 0);
-void exportClustering(std::string const& filename, std::string const& base_path, Clustering const& clustering, Curves const& curves);
-void exportCurve(std::string const& curve_data_file,Curve);
-void exportCenters(std::string const& filename, Clustering const& clustering);
-void exportCentersGPX(std::string const& filename, Clustering const& clustering);
-void exportCurvesGPX(std::string const& filename, Curves const& curves);
-void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, ParamPoint t);
-void exportSubcurve(std::string const& filename, Curve curve, ParamPoint s, ParamPoint t, int interpol);
-std::vector<std::pair<Label, int>> readHM36GroundTruth(const std::string &ground_truth_data_file, int labels);
+    void exportSubcurve(std::string const& filename, Curve curve, CPoint s, CPoint t);
+    void exportSubcurve(std::string const& filename, Curve curve, CPoint s, CPoint t, int interpol);
+};
 
-} // end namespace io
+
+#endif //CLUSTERING_IO_H

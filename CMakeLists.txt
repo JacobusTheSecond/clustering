@@ -1,91 +1,63 @@
 cmake_minimum_required(VERSION 3.13)
 project(clustering)
 
-set(CMAKE_CXX_STANDARD 20)
+#set(CMAKE_CXX_STANDARD 20)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+#set(ENV{OMP_NUM_THREADS} 12)
 
-set(ENV{OMP_NUM_THREADS} 12)
+
+#set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+#set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+
 
 #openMP stuff
 #find_package(OpenMP REQUIRED)
 
 #add_definitions(-D_GLIBCXX_PARALLEL)
 
-find_package(OpenMP REQUIRED)
 
+
+find_package(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
 	link_libraries(OpenMP::OpenMP_CXX)
 endif()
-if(NOT TARGET OpenMP::OpenMP_CXX)
-	find_package(Threads REQUIRED)
-	add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
-	set_property(TARGET OpenMP::OpenMP_CXX
-			PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
-	set_property(TARGET OpenMP::OpenMP_CXX
-			PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
-	link_libraries(OpenMP::OpenMP_CXX)
-endif()
 
-find_package(OpenCV)
-if(OpenCV_FOUND)
+#find_package(OpenCV REQUIRED)
+#include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-	set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
+#set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
 
-	include_directories( ${OpenCV_INCLUDE_DIRS} )
+add_subdirectory(pybind11)
+pybind11_add_module(klcluster src/geometry_types.cpp src/Curve.cpp src/io.cpp src/SparseFreespace.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)
 
-	add_executable(clustering
-			src/main.cpp
-			#src/center_algs.cpp
-            src/center_clustering_algs.cpp
-			#src/clustering_algs.cpp
-			src/curve.cpp
-			src/curve_simplification.cpp
-			#src/geometric_algs.cpp
-			src/filter.cpp
-			src/frechet_light.cpp
-			#src/frechet_matching.cpp
-			src/geometry_basics.cpp
-			src/io.cpp
-			#src/random.cpp
-			src/freespace.cpp
-			src/free_space_visualizer.cpp
-			src/candidate.cpp
-			src/SWatch.h)
+#target_link_libraries(klcluster ${OpenCV_LIBS})
+		#src/geometry_types.cpp  src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)
 
-	add_executable(overhaul
-			new_src/main.cpp new_src/geometry_types.h new_src/basic_types.h new_src/id.h new_src/geometry_types.cpp new_src/Curve.cpp new_src/Curve.h new_src/CurveSimplification.cpp new_src/CurveSimplification.h new_src/io.cpp new_src/io.h new_src/defs.h new_src/SparseFreespace.cpp new_src/SparseFreespace.h new_src/FreespaceVisualizer.cpp new_src/FreespaceVisualizer.h new_src/Candidate.cpp new_src/Candidate.h new_src/center_clustering_algs.cpp new_src/center_clustering_algs.h new_src/SWatch.h)
+#if(NOT TARGET OpenMP::OpenMP_CXX)
+#	find_package(Threads REQUIRED)
+#	add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
+#	set_property(TARGET OpenMP::OpenMP_CXX
+#			PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
+#	set_property(TARGET OpenMP::OpenMP_CXX
+#			PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
+#	link_libraries(OpenMP::OpenMP_CXX)
+#endif()
 
-	target_link_libraries(clustering ${OpenCV_LIBS})
-	target_link_libraries(overhaul ${OpenCV_LIBS})
-	#target_link_libraries(clustering )
-	#target_link_libraries(overhaul PUBLIC OpenMP:OpenMP_CXX )
-else()
-	set(CMAKE_CXX_FLAGS "-Wall")
-	set(CMAKE_CXX_FLAGS "-lstdc++")
+#pybind11_add_module(backend src/main.cpp src/geometry_types.cpp src/Curve.cpp src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp)
 
-	add_executable(clustering
-			src/main.cpp
-			#src/center_algs.cpp
-            src/center_clustering_algs.cpp
-			#src/clustering_algs.cpp
-			src/curve.cpp
-			src/curve_simplification.cpp
-			#src/geometric_algs.cpp
-			src/filter.cpp
-			src/frechet_light.cpp
-			#src/frechet_matching.cpp
-			src/geometry_basics.cpp
-			src/io.cpp
-			#src/random.cpp
-			src/freespace.cpp
-			src/candidate.cpp
-			src/SWatch.h)
 
-	add_executable(overhaul
-			new_src/main.cpp new_src/geometry_types.h new_src/basic_types.h new_src/id.h new_src/geometry_types.cpp new_src/Curve.cpp new_src/Curve.h new_src/CurveSimplification.cpp new_src/CurveSimplification.h new_src/io.cpp new_src/io.h new_src/defs.h new_src/SparseFreespace.cpp new_src/SparseFreespace.h new_src/FreespaceVisualizer.cpp new_src/FreespaceVisualizer.h new_src/Candidate.cpp new_src/Candidate.h new_src/center_clustering_algs.cpp new_src/center_clustering_algs.h new_src/SWatch.h)
-endif()
+#add_executable(overhaul src/main.cpp src/geometry_types.h src/basic_types.h src/id.h src/geometry_types.cpp src/Curve.cpp src/Curve.h src/CurveSimplification.cpp src/CurveSimplification.h src/io.cpp src/io.h src/defs.h src/SparseFreespace.cpp src/SparseFreespace.h src/FreespaceVisualizer.cpp src/FreespaceVisualizer.h src/Candidate.cpp src/Candidate.h src/center_clustering_algs.cpp src/center_clustering_algs.h src/SWatch.h)
+
+#if(OpenCV_FOUND)
+#	set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
+#	include_directories( ${OpenCV_INCLUDE_DIRS} )
+#	add_executable(overhaul src/main.cpp src/geometry_types.cpp src/Curve.cpp src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp)
+#	target_link_libraries(overhaul ${OpenCV_LIBS})
+#else()
+#	set(CMAKE_CXX_FLAGS "-Wall")
+#	set(CMAKE_CXX_FLAGS "-lstdc++")
+#	add_executable(overhaul src/main.cpp src/geometry_types.h src/basic_types.h src/id.h src/geometry_types.cpp src/Curve.cpp src/Curve.h src/CurveSimplification.cpp src/CurveSimplification.h src/io.cpp src/io.h src/defs.h src/SparseFreespace.cpp src/SparseFreespace.h src/FreespaceVisualizer.cpp src/FreespaceVisualizer.h src/Candidate.cpp src/Candidate.h src/center_clustering_algs.cpp src/center_clustering_algs.h src/SWatch.h)
+#endif()

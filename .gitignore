@@ -8,7 +8,10 @@ dataSources/
 dataSources.local.xml
 cmake-build-release/
 cmake-build-debug/
+CMakeFiles
+venv
 .idea/
 build/
 .DS_Store
 src/.DS_Store
+CMakeCache.txt

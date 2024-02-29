@@ -61,8 +61,8 @@ distance_t Curve::getUpperBoundDistance(Curve const& other) const
 }
 
 Curve::Curve(std::string _filename,dimensions_t d) {
-    filename = _filename;
-    std::ifstream file(filename);
+    name = _filename;
+    std::ifstream file(name);
     std::string line;
     while(file){
         double number;
@@ -125,3 +125,76 @@ Curve Curve::constructSubcurve(CPoint s, CPoint t) {
     result.push_back(eval(t), evalWeight(t));
     return result;
 }
+
+Curve::Curve(const py::array_t<distance_t> &in, const std::string &name)
+    : points(in.request().shape[0], in.request().ndim > 1 ? in.request().shape[1] : 1),
+    name{name},prefix_length(in.request().shape[0]),weights(in.request().shape[0],0.5f) {
+    const auto array_dim = in.ndim();
+
+    if (array_dim > 2){
+        std::cerr << "A Curve requires a 1- or 2-dimensional numpy array of type " << typeid(distance_t).name() << "." << std::endl;
+        std::cerr << "Current dimensions: " << array_dim << std::endl;
+        std::cerr << "WARNING: constructed empty curve" << std::endl;
+        return;
+    }
+
+    if (array_dim == 2) {
+#pragma omp parallel for simd default(none) shared(in)
+        for (auto i = 0; i < size(); ++i)
+            for (dimensions_t j = 0; j < dimensions(); ++j) {
+                points[i][j] = *in.data(i, j);
+            }
+
+    } else {
+#pragma omp parallel for simd default(none) shared(in)
+        for (auto i = 0; i < size(); ++i) {
+            points[i][0] = *in.data(i);
+        }
+    }
+
+    if (empty()) {
+        std::cerr << "WARNING: constructed empty curve" << std::endl;
+        return;
+    }
+
+    auto const& front = points.front();
+    extreme_points = {front,front};
+    prefix_length[0] = 0;
+
+    for (PointID i = 1; i < points.size(); ++i)
+    {
+        auto segment_distance = points[i - 1].dist(points[i]);
+        prefix_length[i] = prefix_length[i - 1] + segment_distance;
+
+        extreme_points.min = extreme_points.min.min(points[i]);
+        extreme_points.max = extreme_points.max.max(points[i]);
+    }
+}
+
+
+std::string Curve::repr() const {
+    std::stringstream ss;
+    ss << "Curve '" << name << "' of complexity " << size() << std::flush;
+    return ss.str();
+}
+
+//std::string Curves::repr() const {
+//    std::stringstream ss;
+//    ss << "Curves collection with " << size() << " curves" << std::flush;
+//    return ss.str();
+//}
+
+std::string Curve::str() const {
+    std::stringstream ss;
+    ss << name << std::endl;
+    for(auto p : points){
+        ss << p.str() << std::endl;
+    }
+    return ss.str();
+}
+
+//std::string Curves::str() const {
+//    std::stringstream ss;
+//    ss << *this;
+//    return ss.str();
+//}

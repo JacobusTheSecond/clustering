@@ -11,6 +11,8 @@
 #include <queue>
 #include <omp.h>
 
+
+
 class Candidate:CInterval{
 public:
     std::vector<CInterval> matching;
@@ -62,6 +64,8 @@ public:
     using Parent::size;
     CandidateSetPQ(Curves& c,double d);
 
+    void showFreespaces();
+
 
     //std::vector<std::vector<SparseFreespace>> freespaces;
     SparseFreeSpaces sparsefreespaces;
@@ -74,6 +78,9 @@ public:
                 fs.identifyStartsAndEnds();
             }
         }
+
+
+
         //Step 2: aggregate all starts and ends, and remove duplicates
         std::vector<CPoints> upStarts, downStarts, upEnds, downEnds;
         for (auto &fss: sparsefreespaces) {
@@ -110,8 +117,8 @@ public:
             ends.erase(std::unique(ends.begin(), ends.end()), ends.end());
         }
 
-        std::cout << "Generated " << uS << " many upstarts and " << uE << " many upends\n";
-        std::cout << "Generated " << dS << " many downstarts and " << dE << " many downends\n";
+        std::cout << "Generated " << uS << " many upstarts and " << uE << " many upends\n"<<std::flush;
+        std::cout << "Generated " << dS << " many downstarts and " << dE << " many downends\n"<<std::flush;
 
 
         //Step 3: for every start
@@ -134,7 +141,7 @@ public:
 
         //std::cout << "Done with up!\n";
 
-//#pragma omp parallel for default(none) shared(curves,std::cout,upStarts,upEnds,l,upcC,upavgC,compressedCandidates) schedule(dynamic)
+#pragma omp parallel for default(none) shared(curves,std::cout,upStarts,upEnds,l,upcC,upavgC,compressedCandidates) schedule(dynamic)
         for (int id = 0; id < curves.size(); id++) {
             for (PointID start = 0; start == 0 || start+l < curves[id].size(); start += 1) {
                 CPoint lowercutoff = {std::min((unsigned int) (curves[id].size() - 2), start + l - 1), 0.0};
@@ -143,7 +150,7 @@ public:
                 auto rightBound = std::upper_bound(upEnds[id].begin(), upEnds[id].end(), uppercutoff);
                 if (leftBound != rightBound) {
                     CPoint s = {start, 0.0};
-//#pragma omp critical
+#pragma omp critical
 //                    {
                     compressedCandidates.emplace_back(id, s, leftBound, rightBound);
   //              };

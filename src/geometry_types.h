@@ -8,14 +8,20 @@
 #include <utility>
 #include <vector>
 #include <cmath>
+#include <iostream>
 #include <sstream>
 #include <iomanip>
 #include "id.h"
 #include "defs.h"
 #include "basic_types.h"
 
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+
 using distance_t = double;
 using dimensions_t = int;
+
+namespace py = pybind11;
 
 //
 // Point
@@ -206,6 +212,29 @@ public:
     inline bool operator!=(Point const& other) const{
         return !(operator==(other));
     }
+
+    inline auto as_ndarray() const {
+        py::list l;
+        for (const distance_t &elem : *this) {
+            l.append(elem);
+        }
+        return py::array_t<distance_t>(l);
+    }
+
+    std::string str() const {
+        std::stringstream ss;
+        for(auto d : *this){
+            ss << d << " ";
+        }
+        return ss.str();
+    }
+
+    std::string repr() const {
+        std::stringstream ss;
+        ss << "Point of " << dimensions() << " dimensions" << std::flush;
+        return ss.str();
+    }
+
 };
 using Points = std::vector<Point>;
 using PointID = ID<Point>;
@@ -452,6 +481,14 @@ struct CInterval
 
     CPoint getEnd() const {
         return end;
+    }
+
+    inline auto as_ndarray() const {
+        py::list l;
+        l.append(getCurveIndex());
+        l.append(getBegin().convert());
+        l.append(getEnd().convert());
+        return py::array_t<distance_t>(l);
     }
 };
 

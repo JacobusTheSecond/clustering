@@ -172,8 +172,15 @@ std::vector<Candidate> CandidateSetPQ::uncompressCandidate(CurveID bIndex, CPoin
 
 void CandidateSetPQ::showCovering(std::vector<Candidate> candidates) {
 #ifdef HASVISUAL
-    auto fsv = SparseFreeSpacesVisualizer(sparsefreespaces);
+    SparseFreeSpacesVisualizer fsv(sparsefreespaces);
     fsv.showCandidates(std::move(candidates));
+#endif
+}
+
+void CandidateSetPQ::showFreespaces() {
+#ifdef HASVISUAL
+    SparseFreeSpacesVisualizer fsv(sparsefreespaces);
+    fsv.show();
 #endif
 }
 
@@ -187,8 +194,8 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
 
     if(dims == 2){
         for(int i=0;i<12;i++){
-            double s = sin(M_PI*2/i);
-            double c = cos(M_PI*2/i);
+            double s = sin(M_PI*i/6);
+            double c = cos(M_PI*i/6);
             directions.emplace_back(c,s);
         }
     }else if(dims == 3){
@@ -333,6 +340,7 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
             sizes[j]++;
         }
     }
+
     for(int i=0;i<curves.size();i++){
         this->operator[](i).reserve(sizes[i]);
     }
@@ -342,7 +350,7 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
         num ++;
         int i = pair.first;
         int j = pair.second;
-        std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].filename << " and " << curves[j].filename << ")\n";
+        std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].get_name() << " and " << curves[j].get_name() << ")\n"<<std::flush;
         //SparseFreespace(Curve& B, Curve& T, distance_t _delta, int threadcount = 1, CurveID BID = -1, CurveID TID = -1);
 
         SparseFreespace sfs(curves[i], curves[j], delta, threadcount, i, j);

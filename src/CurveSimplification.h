@@ -64,7 +64,7 @@ public:
             length +=1;
         }
         Curve simplification;
-        simplification.filename = c.filename;
+        simplification.set_name(c.get_name());
 
         //TODO incorporate rule
         for (int i=0;i<=length;++i) {

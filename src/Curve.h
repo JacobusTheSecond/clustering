@@ -15,6 +15,8 @@ public:
     Curve(const Points& points);
     Curve(std::string,dimensions_t);
     Curve(const Curve& c, std::vector<int> times);
+    Curve(const py::array_t<distance_t> &in, const std::string &name = "unnamed curve");
+
 
     Point eval(CPoint);
 
@@ -65,7 +67,7 @@ public:
     Points::const_iterator begin() const { return points.cbegin(); }
     Points::const_iterator end() const { return points.cend(); }
 
-    std::string filename;
+    //std::string filename;
 
     struct ExtremePoints { Point min, max; };
     ExtremePoints const& getExtremePoints() const;
@@ -91,10 +93,27 @@ public:
         return weights[i];
     }
 
+    inline auto as_ndarray() const {
+        py::list l;
+        for (const Point &elem : *this) {
+            l.append(elem.as_ndarray());
+        }
+        return py::array_t<distance_t>(l);
+    }
+
+    std::string str() const;
+
+    std::string repr() const;
+
+    std::string get_name() const{return name;};
+
+    void set_name(std::string n) {name = n;};
+
 private:
     Points points;
     ExtremePoints extreme_points;
     std::vector<double> weights;
+    std::string name;
     double evalWeight(CPoint t) {
         double ws = weights[t.getPoint()];
         double wt = weights[t.getPoint() + 1];
@@ -105,7 +124,29 @@ private:
 
 
 };
-using Curves = std::vector<Curve>;
+
+class Curves : public std::vector<Curve>{
+public:
+
+    Curve& get(int i){
+        return operator[](i);
+    }
+    void add(Curve& val){
+        push_back(val);
+    }
+
+    int len(){
+        return (*this).size();
+    }
+
+    inline auto as_ndarray() const {
+        py::list l;
+        for (const Curve &elem : *this) {
+            l.append(elem.as_ndarray());
+        }
+        return py::array_t<distance_t>(l);
+    }
+};
 
 
 #endif //CLUSTERING_CURVE_H
