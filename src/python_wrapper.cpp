@@ -49,19 +49,26 @@ PYBIND11_MODULE(klcluster,m){
                     } ))
             ;
 
+
     py::class_<Curves>(m,"Curves")
             .def(py::init<>())
             //.def_property_readonly("m", &Curves::get_m)
-            .def("add", &Curves::add)
+            .def("add", [](Curves& cc, Curve& c){cc.push_back(c);})
             //.def("simplify", &Curves::simplify)
-            .def("__getitem__", &Curves::get, py::return_value_policy::reference)
+            .def("__getitem__", [](Curves& cc, int i){return cc[i];}, py::return_value_policy::reference)
             //.def("__setitem__", &Curves::set)
             //.def("__add__", &Curves::operator+)
-            .def("__len__", &Curves::len)
+            .def("__len__", &Curves::size)
             //.def("__str__", &Curves::str)
             .def("__iter__", [](Curves &v) { return py::make_iterator(v.begin(), v.end()); }, py::keep_alive<0, 1>())
             //.def("__repr__", &Curves::repr)
-            .def_property_readonly("values", &Curves::as_ndarray)
+            .def_property_readonly("values", [](Curves& cc){
+                py::list l;
+                for (const Curve &elem : cc) {
+                    l.append(elem.as_ndarray());
+                }
+                return py::array_t<distance_t>(l);
+            })
             //.def_property_readonly("dimensions", &Curves::dimensions)
             .def(py::pickle(
                     [](const Curves &c) {
@@ -77,7 +84,7 @@ PYBIND11_MODULE(klcluster,m){
                             const auto t = elem.cast<py::tuple>();
                             const auto coords = t[0].cast<py::array_t<distance_t>>();
                             const auto name = t[1].cast<std::string>();
-                            result.push_back(Curve(coords, name));
+                            result.emplace_back(coords, name);
                         }
                         return result;
                     } ))

@@ -7,16 +7,10 @@
 #include "center_clustering_algs.h"
 #include "io.h"
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
+//#include <opencv2/opencv.hpp>
+//#include <opencv2/highgui.hpp>
 #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
-
-int add(int i, int j){return i+j;}
-PYBIND11_MODULE(klcluster,m){
-    m.def("add",&add,"A functio nthat adds two numbers");
-}
 
 //void printUsage()
 //{
@@ -771,7 +765,7 @@ void experiments() {
     Curve c13 = Curve("../data/86_13.txt", 93);
     Curve c14 = Curve("../data/86_14.txt", 93);
     CurveClusterer cc(-1, false);
-    Curves allCurves = {c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14};
+    Curves allCurves={{c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14}};
     std::vector<FrameLabeling> hacaAllLabelings = {haca_01,haca_02,haca_03,haca_04,haca_05,haca_06,haca_07,haca_08,haca_09,haca_10,haca_11,haca_12,haca_13,haca_14};
     std::vector<FrameLabeling> allLabelings = {gt86_01,gt86_02,gt86_03,gt86_04,gt86_05,gt86_06,gt86_07,gt86_08,gt86_09,gt86_10,gt86_11,gt86_12,gt86_13,gt86_14};
     swatch.stop();
@@ -788,9 +782,9 @@ void experiments() {
         for (int i = 0; i < allCurves.size(); i++) {
             swatch.reset();
             swatch.start();
-            Curves curves = {allCurves[i]};
-            std::vector<FrameLabeling> labelings = {allLabelings[i]};
-            cc.initCurves(curves, delta, labelings);
+            Curves curves = allCurves;
+            std::vector<FrameLabeling> labelings = allLabelings;
+            cc.initCurvesWithGT(curves, delta, labelings);
 
             lengths.back().push_back(cc.simplifiedCurves[0].size());
 
@@ -815,13 +809,13 @@ void experiments() {
             auto trivialFilter = [](const Candidate &a) { return true; };
 
             //cover algorithm
-            auto result = cc.greedyCover(complexity, 25, filter);
+            auto result = cc.greedyCover(complexity, 25, trivialFilter);
             swatch.stop();
 
             for (int i = 0; i < std::min(20, (int) result.size()); ++i) {
-                Candidate c = result[i];
-                for (int j = 0; j < c.visualMatching.size(); ++j) {
-                    auto m = c.visualMatching[j];
+                Cluster c = result[i];
+                for (int j = 0; j < c.getMatching().size(); ++j) {
+                    auto m = c.getMatching()[j];
                     io::exportSubcurve(
                             "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(i) + "/interval" +
                             std::to_string(j) + ".txt", cc.simplifiedCurves[m.getCurveIndex()], m.getBegin(), m.getEnd(), 100);
@@ -832,8 +826,8 @@ void experiments() {
             //std::cout << "----------\nElapsed time computing covering: " << std::chrono::duration<double>(swatch.elapsed()).count() << "\n----------\n";
             times.back().push_back(std::chrono::duration<double>(swatch.elapsed()).count());
             results.back().push_back(result.size());
-            ClusteringVisulaizer cv{true};
-            cv.showClusteringStretched(cc.simplifiedCurves, cc.simplifiedGTs, result);
+            //ClusteringVisulaizer cv{true};
+            //cv.showClusteringStretched(cc.simplifiedCurves, cc.simplifiedGTs, result);
         }
     //}
     /*
@@ -874,7 +868,7 @@ void experiments2(){
     Curves curves;
     for(int i=1;i<210/*9*/;i++){
         std::string name = "/Users/styx/data/gdac2/world3d_txt/"+std::to_string(i)+"_drifter.txt";
-        curves.emplace_back(name,3);
+        curves.push_back(Curve(name,3));
         if(curves.back().size() <= 1){
             curves.pop_back();
             continue;
@@ -882,7 +876,7 @@ void experiments2(){
         std::string delimiter = "world3d_txt";
         std::string token1 = name.substr(0, name.find(delimiter));
         std::string token2 = name.substr(name.find(delimiter) + delimiter.length());
-        curves.back().filename = token1 + "simp" + token2;
+        curves.back().set_name( token1 + "simp" + token2);
     }
     auto f = [](Point& p){
         double x = p[0];
@@ -946,7 +940,7 @@ void experiments2(){
                 swatch.start();
                 CurveClusterer cc(-1, false);
                 cc.initCurves(subset,delta);
-                auto filter = [=](const Candidate &a) {
+                auto filter = [=](Candidate &a) {
                     bool withIsTrivial = false;
                     bool withIsDown = false;
                     bool istrivial = complexity == 1;
@@ -957,7 +951,7 @@ void experiments2(){
                     bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + complexity / 4;
                     return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);
                 };
-                auto trivialFilter = [=](const Candidate &c){return true;};
+                auto trivialFilter = [&](Candidate &c){return true;};
                 long long candidateSetSize;
                 auto result = cc.greedyCover(complexity,1,trivialFilter,&candidateSetSize);
                 swatch.stop();
@@ -1014,7 +1008,7 @@ void experiments3(){
         std::string delimiter = "world3d_txt";
         std::string token1 = name.substr(0, name.find(delimiter));
         std::string token2 = name.substr(name.find(delimiter) + delimiter.length());
-        curves.back().filename = token1 + "simp" + token2;
+        curves.back().set_name( token1 + "simp" + token2);
     }
 
     auto f = [](Point& p){
@@ -1062,11 +1056,11 @@ void experiments3(){
 
 
     for (int i = 0; i < std::min(500, (int) result.size()); ++i) {
-        Candidate c = result[i];
+        auto c = result[i];
         io::exportSubcurve("/Users/styx/data/gdac2/result/resultcenters/candidate"+ std::to_string(i)+".txt",
-                           cc.simplifiedCurves[c.getCurveIndex()],c.getBegin(),c.getEnd());
-        for (int j = 0; j < c.visualMatching.size(); ++j) {
-            auto m = c.visualMatching[j];
+                           cc.simplifiedCurves[c.getCenter().getCurveIndex()],c.getCenter().getBegin(),c.getCenter().getEnd());
+        for (int j = 0; j < c.getMatching().size(); ++j) {
+            auto m = c.getMatching()[j];
             CurveID originalID = cc.simpIDtoOriginID[m.getCurveIndex()];
             Curve& originalCurve = curves[originalID];
             auto s = cc.mapSimplificationToBase(m.getCurveIndex(),m.getBegin());
@@ -1094,7 +1088,7 @@ void experiments4(){
         std::string delimiter = "world3d_txt";
         std::string token1 = name.substr(0, name.find(delimiter));
         std::string token2 = name.substr(name.find(delimiter) + delimiter.length());
-        curves.back().filename = token1 + "simp" + token2;
+        curves.back().set_name( token1 + "simp" + token2);
     }
 
     auto f = [](Point& p){
@@ -1144,194 +1138,12 @@ void experiments4(){
     //hierarchische zeit
 
     for (int i = 0; i < std::min(500, (int) result.size()); ++i) {
-        Candidate c = result[i];
+        auto c = result[i];
         //std::cout <<"[" << (c.getEnd().getPoint() - c.getBegin().getPoint()) << "," << c.visualMatching.size() << "],";
         io::exportSubcurve("/Users/styx/data/gdac3/result/resultcentersl10/candidate"+ std::to_string(i)+".txt",
-                           cc.simplifiedCurves[c.getCurveIndex()],c.getBegin(),c.getEnd());
+                           cc.simplifiedCurves[c.getCenter().getCurveIndex()],c.getCenter().getBegin(),c.getCenter().getEnd());
     }
     std::cout << "Done writing!\n";
-}
-
-cv::Point2f visual(cv::Point2f in){
-    return 100*cv::Point2f(in.x,10-in.y);
-}
-cv::Point2f visual(Point in){
-    return 100*cv::Point2f(in.x(),10-in.y());
-}
-
-#include <random>
-
-void intersectionprimitivetest(){
-
-    std::uniform_real_distribution<double> coord_dist(1,9);
-    std::uniform_real_distribution<double> radius_dist(0,2);
-    std::default_random_engine re;
-    re.seed(std::chrono::system_clock::now().time_since_epoch().count());
-
-    for(int i=0;i<10;i++) {
-        cv::namedWindow("winImage", cv::WINDOW_NORMAL);
-        cv::Mat m = cv::Mat(1000, 1000, CV_8UC3, cv::Scalar(255, 255, 255));
-
-
-        Point a(coord_dist(re), coord_dist(re));
-        Point b(coord_dist(re), coord_dist(re));
-        Point c(coord_dist(re), coord_dist(re));
-        Point d(coord_dist(re), coord_dist(re));
-
-        double ra = radius_dist(re);
-        double rb = radius_dist(re);
-        double rc = radius_dist(re);
-        double rd = radius_dist(re);
-        std::cout << "a: " << a.x() << " " << a.y() << " " << ra << std::endl;
-        std::cout << "b: " << b.x() << " " << b.y() << " " << rb << std::endl;
-        std::cout << "c: " << c.x() << " " << c.y() << " " << rc << std::endl;
-        std::cout << "d: " << d.x() << " " << d.y() << " " << rd << std::endl;
-
-        SparseCell sc(a,b,c,d,ra);
-        SparseGridCell<std::unique_ptr<Cell>> sgs(std::make_unique<SparseCell>(sc),0,0);
-        //std::unique_ptr<Cell> fsc = std::make_unique<SparseCell>(sc);
-        //std::unique_ptr<Cell> ssc(std::move(fsc));
-
-        //B obj(1,2);
-        //std::unique_ptr<A> fobj = std::make_unique<B>(obj);
-        //std::unique_ptr<A> sobj(std::move(fobj));
-        //fobj->show();
-
-        Point ab = b - a;
-
-        double cp = ab.dot(c - a) / ab.length_sqr();
-        Point cs = c - (a + ab * cp);
-
-        double dp = ab.dot(d - a) / ab.length_sqr();
-        Point ds = d - (a + ab * dp);
-
-        cs = c - a;
-        ds = d - a;
-        Point cd = ds - cs;
-
-        const distance_t af = cd.length_sqr() - ((rd - rc) * (rd - rc));
-        const distance_t bf = cs.dot(cd) - ((rc + ra) * (rd - rc));
-        const distance_t cf = cs.length_sqr() - ((rc + ra) * (rc + ra));
-        std::cout << af << " " << bf << " " << cf << std::endl;
-
-
-        Interval outer;
-        Interval intersection = MinkowskiIntersectionAlgorithm::edgeEdgeIntersection(a, b, ra, rb, c, d, rc, rd, &outer);
-
-        distance_t mid = -bf / af;
-        distance_t discriminant = (mid * mid) - (cf / af);
-
-        /*
-
-        //double tanalpha = sqrt(ab.length_sqr() - ((ra-rb)*(ra-rb)))/(ra-rb);
-        //double cosalpha = sqrt(ab.length_sqr() - ((ra-rb)*(ra-rb)))/ab.length();
-        //double alphaf = (1/cosalpha) + (((rb-ra)/tanalpha)/ab.length());
-
-        double alphaf_sqr = (ab.length_sqr() + ((ra-rb)*(rb-ra)))*(ab.length_sqr() + ((ra-rb)*(rb-ra)))/((ab.length_sqr() - ((ra-rb)*(ra-rb)))*ab.length_sqr());
-        double betaf = rc + ra + ((rb-ra)*cp);
-        double gammaf = (rd-rc) + ((rb-ra)*(dp-cp));
-
-        double af = (alphaf_sqr*cd.length_sqr())-(gammaf*gammaf);
-        double bf = (alphaf_sqr*cs.dot(cd)) - (gammaf*betaf);
-        double cf = (alphaf_sqr*cs.length_sqr()) - (betaf*betaf);
-
-        double mid = - bf / af;
-        double discriminant = (mid*mid) - (cf / af);
-
-        assert(discriminant >= 0);
-
-        double disc_sqrt = sqrt(discriminant);
-    */
-
-        double t1 = /*mid - sqrt(discriminant);*/outer.begin;
-        double t2 = /*mid + sqrt(discriminant);*/outer.end;
-
-        std::cout << t1 << " " << t2 << std::endl;
-
-
-
-        /*
-         * solve for t:
-         * ||cs -t-> ds|| = (rc -t-> rd) + (ra -( (prc -t-> prd) - ||cs -t-> ds||/tanalpha)-> rb)
-         *
-         * */
-
-        cv::circle(m, visual(a), 4, cv::Scalar(255, 0, 0), -1);
-        cv::circle(m, visual(b), 4, cv::Scalar(255, 0, 0), -1);
-        cv::circle(m, visual(c), 4, cv::Scalar(0, 255, 0), -1);
-        cv::circle(m, visual(d), 4, cv::Scalar(0, 255, 0), -1);
-
-        cv::circle(m, visual(a), 100 * ra, cv::Scalar(255, 0, 0), 2);
-        cv::circle(m, visual(b), 100 * rb, cv::Scalar(255, 0, 0), 2);
-        cv::circle(m, visual(c), 100 * rc, cv::Scalar(0, 255, 0), 2);
-        cv::circle(m, visual(d), 100 * rd, cv::Scalar(0, 255, 0), 2);
-
-        cv::line(m, visual(a), visual(b), cv::Scalar(255, 0, 0), 2);
-        cv::line(m, visual(c), visual(d), cv::Scalar(0, 255, 0), 2);
-
-        //visual stuff:
-        double alpha = acos((ra - rb) / (a - b).length());
-        cv::Mat rot = (cv::Mat_<double>(2, 2) << cos(alpha), -sin(alpha), sin(alpha), cos(alpha));
-        cv::Mat bamat = (cv::Mat_<double>(2, 1) << ab.x() / ab.length(), ab.y() / ab.length());
-        cv::Mat o = rot * bamat;
-        cv::line(m, visual(a + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * ra)),
-                 visual(b + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * rb)), cv::Scalar(255, 0, 0), 2);
-        rot = rot.t();
-        bamat = (cv::Mat_<double>(2, 1) << ab.x() / ab.length(), ab.y() / ab.length());
-        o = rot * bamat;
-        cv::line(m, visual(a + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * ra)),
-                 visual(b + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * rb)), cv::Scalar(255, 0, 0), 2);
-
-        //visual stuff:
-        alpha = acos((rc - rd) / (c - d).length());
-        rot = (cv::Mat_<double>(2, 2) << cos(alpha), -sin(alpha), sin(alpha), cos(alpha));
-        bamat = (cv::Mat_<double>(2, 1) << cd.x() / cd.length(), cd.y() / cd.length());
-        o = rot * bamat;
-        cv::line(m, visual(c + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * rc)),
-                 visual(d + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * rd)), cv::Scalar(0, 255, 0), 2);
-        rot = rot.t();
-        bamat = (cv::Mat_<double>(2, 1) << cd.x() / cd.length(), cd.y() / cd.length());
-        o = rot * bamat;
-        cv::line(m, visual(c + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * rc)),
-                 visual(d + (Point(o.at<double>(0, 0), o.at<double>(1, 0)) * rd)), cv::Scalar(0, 255, 0), 2);
-
-
-        if(!intersection.is_empty()) {
-            cv::circle(m, visual(c + (d - c) * t1), 4, cv::Scalar(0, 0, 255), -1);
-            cv::circle(m, visual(c + (d - c) * t2), 4, cv::Scalar(0, 0, 255), -1);
-            cv::circle(m, visual(c + (d - c) * t1), 100 * (rc + (rd - rc) * t1), cv::Scalar(0, 0, 255), 2);
-            cv::circle(m, visual(c + (d - c) * t2), 100 * (rc + (rd - rc) * t2), cv::Scalar(0, 0, 255), 2);
-            cv::line(m, visual(c + (d - c) * t1), visual(c + (d - c) * t2), cv::Scalar(0, 0, 255), 2);
-        }
-
-        MinkowskiCell cell = MinkowskiCell(a,b,c,d,ra,rb,rc,rd);
-
-        cv::line(m,visual(Point(0,0)),visual(Point(0,1)),cv::Scalar(0,0,0,0),2);
-        cv::line(m,visual(Point(1,1)),visual(Point(0,1)),cv::Scalar(0,0,0,0),2);
-        cv::line(m,visual(Point(1,1)),visual(Point(1,0)),cv::Scalar(0,0,0,0),2);
-        cv::line(m,visual(Point(0,0)),visual(Point(1,0)),cv::Scalar(0,0,0,0),2);
-
-        Point p1 = Point(cell.leftPair.first.x, cell.leftPair.first.y);
-        Point p2 = Point(cell.leftPair.second.x, cell.leftPair.second.y);
-        Point p3 = Point(cell.topPair.first.x, cell.topPair.first.y);
-        Point p4 = Point(cell.topPair.second.x, cell.topPair.second.y);
-        Point p6 = Point(cell.rightPair.first.x, cell.rightPair.first.y);
-        Point p5 = Point(cell.rightPair.second.x, cell.rightPair.second.y);
-        Point p8 = Point(cell.bottomPair.first.x, cell.bottomPair.first.y);
-        Point p7 = Point(cell.bottomPair.second.x, cell.bottomPair.second.y);
-
-        cv::line(m,visual(p1),visual(p2),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p2),visual(p3),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p3),visual(p4),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p4),visual(p5),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p5),visual(p6),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p6),visual(p7),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p7),visual(p8),cv::Scalar(0,0,255),2);
-        cv::line(m,visual(p8),visual(p1),cv::Scalar(0,0,255),2);
-
-        cv::imshow("winImage", m);
-        cv::waitKey(0);
-    }
 }
 
 int main(int argc, char *argv[]) {

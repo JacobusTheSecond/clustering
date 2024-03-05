@@ -12,6 +12,26 @@
 #include <omp.h>
 
 
+class tinyCandidate:CInterval{
+public:
+    std::vector<CInterval> matching;
+
+    using CInterval::CInterval;
+    using CInterval::getCurveIndex;
+    using CInterval::getEnd;
+    using CInterval::getBegin;
+
+    distance_t optimisticCoverLength=0;
+    distance_t semiUpdatedCoverLength=0;
+    distance_t importance=0;
+    int roundOfUpdate = 0;
+
+    void resetCoverLength() {
+        semiUpdatedCoverLength = optimisticCoverLength;
+        roundOfUpdate = 0;
+    }
+
+};
 
 class Candidate:CInterval{
 public:
@@ -69,9 +89,185 @@ public:
 
     //std::vector<std::vector<SparseFreespace>> freespaces;
     SparseFreeSpaces sparsefreespaces;
+    template<typename func>
+    void ultrafastComputeSmall(int l, func filter){
+        for (auto &fss: sparsefreespaces) {
+            for (auto &fs: fss) {
+                fs.identifyStartsAndEnds();
+            }
+        }
+
+        std::vector<CCPoint> upAggregated,downAggregated;
+        for (auto &fss: sparsefreespaces) {
+            for (auto &fs: fss) {
+                for(auto p : fs.upStarts){
+                    upAggregated.emplace_back(fs.BID,p.getPoint(),p.getFraction());
+                }
+                for(auto p : fs.upEnds){
+                    upAggregated.emplace_back(fs.BID,p.getPoint(),p.getFraction());
+                }
+                for(auto p : fs.downStarts){
+                    downAggregated.emplace_back(fs.BID,p.getPoint(),p.getFraction());
+                }
+                for(auto p : fs.downEnds){
+                    downAggregated.emplace_back(fs.BID,p.getPoint(),p.getFraction());
+                }
+                for(int i = 0;i<fs.ySize()-1;i++){
+                    upAggregated.emplace_back(fs.BID,i,0);
+                    upAggregated.emplace_back(fs.BID,i,1);
+                    downAggregated.emplace_back(fs.BID,i,0);
+                    downAggregated.emplace_back(fs.BID,i,1);
+                }
+            }
+        }
+
+        std::sort(upAggregated.begin(), upAggregated.end());
+        upAggregated.erase(std::unique(upAggregated.begin(), upAggregated.end()), upAggregated.end());
+
+        std::sort(downAggregated.begin(), downAggregated.end());
+        downAggregated.erase(std::unique(downAggregated.begin(), downAggregated.end()), downAggregated.end());
+
+        std::cout << upAggregated.size() << " many critical up points identified.\n" << std::flush;
+        std::cout << downAggregated.size() << " many critical down points identified.\n" << std::flush;
+
+        //std::vector<Candidate> cans;
+
+        //UP!
+//#pragma omp parallel for default(none) shared(upAggregated)
+        long long count=0;
+        long long comp=0;
+        long long countbound = 0;
+        for(int i=0;i<upAggregated.size();i++){//auto start : upAggregated){
+            auto start = upAggregated[i];
+            std::vector<CPoint> ends;
+
+            //populate ends
+            for(int offset = 1;i+offset < upAggregated.size();offset *= 2){
+                auto potentialEnd = upAggregated[i+offset];
+                if(potentialEnd.getCurve() == start.getCurve() && potentialEnd.getPoint() <= start.getPoint()+l){
+                    ends.push_back(potentialEnd.getCPoint());
+                }else{
+                    break;
+                }
+            }
+
+            if(ends.empty()){
+                continue;
+            }
+            countbound += ends.size();
+
+            //uncompress
+            auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends);
+
+
+            //Step 5: for every candidate
+            //      filter stage 2?
+            //      compute the actual matching
+            //      compute the weight of that matching
+            for (auto ucC: uncompressedCandidates) {
+                if (!ucC.visualMatching.empty()) {
+                    CInterval cur;
+                    for (auto m: ucC.visualMatching) {
+                        if (cur.is_empty()) {
+                            cur = m;
+                            continue;
+                        }
+                        if (cur.fixed_curve == m.fixed_curve && cur.contains(m.begin)) {
+                            cur.end = m.end;
+                        } else {
+                            ucC.matching.push_back(cur);
+                            ucC.optimisticCoverLength += curves[cur.fixed_curve].subcurve_length(cur.begin, cur.end);
+                            cur = m;
+                        }
+                    }
+                    ucC.matching.push_back(cur);
+                    ucC.optimisticCoverLength += curves[cur.fixed_curve].subcurve_length(cur.begin, cur.end);
+                    ucC.semiUpdatedCoverLength = ucC.optimisticCoverLength;
+                    if (filter(ucC)) {
+                        //cans.push_back(ucC);
+//#pragma omp critical
+                        {
+                            count ++;
+                            comp += ucC.matching.size();
+                            push(ucC);
+                        };
+                    }
+                } else {
+                    assert(false);
+                }
+            }
+        }
+        std::cout << "Generated " << size() << " many up candidates. ("<<count<<"/"<<countbound<<")\n"<<std::flush;
+        std::cout << "comp: " << comp<<" , "<<(double)(comp)/(double)(count)<<"\n"<<std::flush;
+
+        //DOWN
+        for(int i=0;i<downAggregated.size();i++){
+            auto start = downAggregated[i];
+            std::vector<CPoint> ends;
+
+            //populate ends
+            for(int offset = 1;i-offset >= 0;offset *= 2){
+                auto potentialEnd = downAggregated[i-offset];
+                if(potentialEnd.getCurve() == start.getCurve() && potentialEnd.getPoint() == start.getPoint()){
+                    ends.push_back(potentialEnd.getCPoint());
+                }else{
+                    break;
+                }
+            }
+
+            if(ends.empty()){
+                continue;
+            }
+            countbound += ends.size();
+
+            //uncompress
+            auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends);
+
+
+            //Step 5: for every candidate
+            //      filter stage 2?
+            //      compute the actual matching
+            //      compute the weight of that matching
+            for (auto ucC: uncompressedCandidates) {
+                if (!ucC.visualMatching.empty()) {
+                    CInterval cur;
+                    for (auto m: ucC.visualMatching) {
+                        if (cur.is_empty()) {
+                            cur = m;
+                            continue;
+                        }
+                        if (cur.fixed_curve == m.fixed_curve && cur.contains(m.begin)) {
+                            cur.end = m.end;
+                        } else {
+                            ucC.matching.push_back(cur);
+                            ucC.optimisticCoverLength += curves[cur.fixed_curve].subcurve_length(cur.begin, cur.end);
+                            cur = m;
+                        }
+                    }
+                    ucC.matching.push_back(cur);
+                    ucC.optimisticCoverLength += curves[cur.fixed_curve].subcurve_length(cur.begin, cur.end);
+                    ucC.semiUpdatedCoverLength = ucC.optimisticCoverLength;
+                    if (filter(ucC)) {
+                        //cans.push_back(ucC);
+                        count ++;
+                        comp += ucC.matching.size();
+                        push(ucC);
+                    }
+                } else {
+                    assert(false);
+                }
+            }
+        }
+
+        std::cout << "Generated " << size() << " many up and down candidates ("<<count<<"/"<<countbound<<")\n"<<std::flush;
+        std::cout << "comp: " << comp<<" , "<<(double)(comp)/(double)(count)<<"\n"<<std::flush;
+        //std::sort(cans.begin(), cans.end(), [](Candidate &l, Candidate &r) { return l.getBegin() < r.getBegin(); });
+
+    }
 
 
     template<typename func> void ultrafastCompute(int l, func filter) {
+        ultrafastComputeSmall(l,filter);
         //Step 1: prepare freespaces
         for (auto &fss: sparsefreespaces) {
             for (auto &fs: fss) {

@@ -204,7 +204,7 @@ public:
         double const guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
         CandidateSetPQ cs = CandidateSetPQ(simplifiedCurves, guarantee * delta);
         //cs.computeCandidates(l);
-        cs.ultrafastCompute(l, filter);
+        cs.ultrafastComputeSmall(l, filter);
 
         if(size != nullptr){
             *size = 0;
@@ -402,7 +402,7 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
     double const guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
     CandidateSetPQ cs = CandidateSetPQ(curves, guarantee * delta);
     //cs.computeCandidates(l);
-    cs.ultrafastCompute(l, filter);
+    cs.ultrafastComputeSmall(l, filter);
 
 
     //io::exportSubcurve("/Users/styx/data/curveclustering/results/bestcandidate.txt",curves[cs.top().first],cs.top().second.getStart(),cs.top().second.getEnd());

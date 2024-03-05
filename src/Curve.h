@@ -6,10 +6,10 @@
 #define CLUSTERING_CURVE_H
 
 #include "geometry_types.h"
+#include <pybind11/pybind11.h>
 
 
-class Curve
-{
+class Curve{
 public:
     Curve() = default;
     Curve(const Points& points);
@@ -124,19 +124,70 @@ private:
 
 
 };
-
-class Curves : public std::vector<Curve>{
+/*
+class Curves {
 public:
+    std::vector<Curve> res;
 
     Curve& get(int i){
-        return operator[](i);
-    }
-    void add(Curve& val){
-        push_back(val);
+        return res[i];
     }
 
-    int len(){
-        return (*this).size();
+    Curve& operator[](int i){
+        return res[i];
+    }
+
+    Curve& front(){
+        return res.front();
+    }
+
+    Curve& back(){
+        return res.back();
+    }
+
+    void clear(){
+        res.clear();
+    }
+
+    void push_back(Curve c){
+        res.push_back(c);
+    }
+
+    bool empty(){
+        return res.empty();
+    }
+
+    void add(Curve& val){
+        res.push_back(val);
+    }
+
+    int size(){
+        return res.size();
+    }
+
+    inline auto as_ndarray() const {
+        py::list l;
+        for (const Curve &elem : res) {
+            l.append(elem.as_ndarray());
+        }
+        return py::array_t<distance_t>(l);
+    }
+};
+*/
+ using Curves = std::vector<Curve>;
+/*
+class Curves : private std::vector<Curve>{
+public:
+    using Parent = std::vector<Curve>;
+
+    using Parent::operator[];
+    using Parent::Parent;
+    using Parent::size;
+    using Parent::push_back;
+    using Parent::emplace_back;
+
+    void add(Curve c){
+        push_back(c);
     }
 
     inline auto as_ndarray() const {
@@ -147,6 +198,6 @@ public:
         return py::array_t<distance_t>(l);
     }
 };
-
+*/
 
 #endif //CLUSTERING_CURVE_H

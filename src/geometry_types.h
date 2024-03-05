@@ -14,6 +14,7 @@
 #include "id.h"
 #include "defs.h"
 #include "basic_types.h"
+#include <compare>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -405,6 +406,46 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& out, const CPoint& p);
+};
+
+class CCPoint{
+private:
+    int curve;
+    PointID point;
+    distance_t fraction;
+public:
+    CCPoint(int curve_, PointID point_, distance_t fraction_)
+    : curve(curve_), point(point_), fraction(fraction_)
+    {
+        //normalize();
+    }
+
+    int getCurve() const{return curve;}
+    PointID getPoint() const { return point; }
+    distance_t getFraction() const { return fraction; }
+    CPoint getCPoint() const {return CPoint(point,fraction);}
+
+    auto operator<=>(const CCPoint& rhs)const{
+        if(curve != rhs.curve){
+            return curve <=> rhs.curve;
+        }else if (point != rhs.point){
+            return point <=> rhs.point;
+        }else{
+            if(fraction < rhs.fraction){
+                return 0<=>1;
+            }else if(fraction > rhs.fraction){
+                return 1<=>0;
+            }else{
+                return 0<=>0;
+            }
+        }
+    }
+
+    bool operator==(const CCPoint& rhs)const=default;
+
+    CCPoint(const CCPoint& other): curve(other.curve), point(other.point), fraction(other.fraction) {
+
+    }
 };
 
 //TODO: CPair

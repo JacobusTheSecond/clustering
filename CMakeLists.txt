@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(clustering)
 
-#set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -32,6 +32,10 @@ endif()
 
 add_subdirectory(pybind11)
 pybind11_add_module(klcluster src/geometry_types.cpp src/Curve.cpp src/io.cpp src/SparseFreespace.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)
+
+add_executable(overhaul src/main.cpp src/geometry_types.cpp src/Curve.cpp src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/Candidate.cpp src/center_clustering_algs.cpp)
+target_link_libraries(overhaul PUBLIC pybind11::embed)
+#
 
 #target_link_libraries(klcluster ${OpenCV_LIBS})
 		#src/geometry_types.cpp  src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)
