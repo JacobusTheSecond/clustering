@@ -12,5 +12,5 @@ cr = cc.greedyCover(10,1)
 for cluster in cr:
 	print("Center:",cluster.center().values())
 	print("Matching:")
-	print(cluster.matching())
+	print(cluster.values())
 	print("------")

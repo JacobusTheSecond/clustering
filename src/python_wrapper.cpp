@@ -108,12 +108,35 @@ PYBIND11_MODULE(klcluster,m){
     py::class_<ClusteringResult>(m,"ClusteringResult")
             .def_property_readonly("__len__",&ClusteringResult::size)
             .def("__iter__",[](ClusteringResult &c){return py::make_iterator(c.begin(),c.end());},py::keep_alive<0,1>())
-            .def("__getitem__", &ClusteringResult::get, py::return_value_policy::reference)
-            .def("__len__",&ClusteringResult::len);
+            .def("__getitem__", &ClusteringResult::get, py::return_value_policy::reference);
+
+    py::class_<FrameLabeling>(m,"GroundTruth")
+            .def(py::init<>())
+            .def("add",[](FrameLabeling& gt,int label, int frame){gt.emplace_back(label,frame);});
+
+    py::class_<std::vector<FrameLabeling>>(m,"GroundTruths")
+            .def(py::init<>())
+            .def("add",[](std::vector<FrameLabeling>& gts, FrameLabeling& gt){gts.push_back(gt);});
+
+    py::class_<ParamLabeling>(m,"ParamLabeling")
+            .def(py::init<>())
+            .def("__len__",&ParamLabeling::size)
+            .def("labelAt",[](ParamLabeling& pl, int i){return pl[i].first;})
+            .def("paramAt",[](ParamLabeling& pl, int i){return pl[i].second;});
+
+    py::class_<std::vector<ParamLabeling>>(m,"ParamLabelings")
+            .def(py::init<>())
+            .def_property_readonly("__len__",&std::vector<ParamLabeling>::size)
+            .def("__iter__",[](std::vector<ParamLabeling> &c){return py::make_iterator(c.begin(),c.end());},py::keep_alive<0,1>())
+            .def("__getitem__",[](std::vector<ParamLabeling>& pls, int i){return pls[i];});
 
     py::class_<CurveClusterer>(m,"CurveClusterer")
             .def(py::init<>())
             .def("initCurves",&CurveClusterer::initCurves)
+            .def("initCurvesWithGT",&CurveClusterer::initCurvesWithGT)
+            .def("mapToBase",&CurveClusterer::mapSimplificationToBase)
+            .def("getSimplifications",[](CurveClusterer& cc){return cc.simplifiedCurves;})
+            .def("getSimplifiedGTs",[](CurveClusterer& cc){return cc.simplifiedGTs;})
             .def("test",&CurveClusterer::test)
             .def("greedyCover",[](CurveClusterer& cc, int l, int rounds){return cc.greedyCover(l,rounds,trivialFilter);})
             .def("greedyCoverAgressiveFilter",[](CurveClusterer& cc, int l, int rounds){return cc.greedyCover(l,rounds,

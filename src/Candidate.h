@@ -35,6 +35,9 @@ public:
 
 class Candidate:CInterval{
 public:
+    //need explicit copy cosntructor for std::move
+    //Candidate(Candidate& r) = default;
+
     std::vector<CInterval> matching;
     std::vector<CInterval> visualMatching;
 
@@ -75,13 +78,14 @@ private:
     Curves curves;
     double delta;
 
-    std::vector<Candidate> uncompressCandidate(CurveID bIndex, CPoint start, const CPoints& ends);
+    std::vector<Candidate> uncompressCandidate(CurveID bIndex, CPoint start, const CPoints& ends, int threadID=0);
 public:
     using Parent::top;
     using Parent::pop;
     using Parent::push;
     using Parent::empty;
     using Parent::size;
+    using Parent::swap;
     CandidateSetPQ(Curves& c,double d);
 
     void showFreespaces();
@@ -134,9 +138,10 @@ public:
 
         //UP!
 //#pragma omp parallel for default(none) shared(upAggregated)
-        long long count=0;
-        long long comp=0;
-        long long countbound = 0;
+
+        std::vector<Candidate> localSet;
+#pragma omp declare reduction (merge : std::vector<Candidate> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
         for(int i=0;i<upAggregated.size();i++){//auto start : upAggregated){
             auto start = upAggregated[i];
             std::vector<CPoint> ends;
@@ -154,10 +159,9 @@ public:
             if(ends.empty()){
                 continue;
             }
-            countbound += ends.size();
 
             //uncompress
-            auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends);
+            auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends,omp_get_thread_num());
 
 
             //Step 5: for every candidate
@@ -185,22 +189,22 @@ public:
                     ucC.semiUpdatedCoverLength = ucC.optimisticCoverLength;
                     if (filter(ucC)) {
                         //cans.push_back(ucC);
-//#pragma omp critical
-                        {
-                            count ++;
-                            comp += ucC.matching.size();
-                            push(ucC);
-                        };
+                        localSet.push_back(ucC);
                     }
                 } else {
                     assert(false);
                 }
             }
         }
-        std::cout << "Generated " << size() << " many up candidates. ("<<count<<"/"<<countbound<<")\n"<<std::flush;
-        std::cout << "comp: " << comp<<" , "<<(double)(comp)/(double)(count)<<"\n"<<std::flush;
+
+        this->c.insert(this->c.end(),std::make_move_iterator(localSet.begin()),std::make_move_iterator(localSet.end()));
+        std::cout << "Generated " << size() << " many up candidates. \n"<<std::flush;
+        //std::cout << "comp: " << comp<<" , "<<(double)(comp)/(double)(count)<<"\n"<<std::flush;
 
         //DOWN
+        std::vector<Candidate> localSet2;
+
+#pragma omp parallel for default(none) shared(l,filter,downAggregated) reduction(merge: localSet2)
         for(int i=0;i<downAggregated.size();i++){
             auto start = downAggregated[i];
             std::vector<CPoint> ends;
@@ -218,7 +222,6 @@ public:
             if(ends.empty()){
                 continue;
             }
-            countbound += ends.size();
 
             //uncompress
             auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends);
@@ -249,9 +252,7 @@ public:
                     ucC.semiUpdatedCoverLength = ucC.optimisticCoverLength;
                     if (filter(ucC)) {
                         //cans.push_back(ucC);
-                        count ++;
-                        comp += ucC.matching.size();
-                        push(ucC);
+                        localSet2.push_back(ucC);
                     }
                 } else {
                     assert(false);
@@ -259,8 +260,10 @@ public:
             }
         }
 
-        std::cout << "Generated " << size() << " many up and down candidates ("<<count<<"/"<<countbound<<")\n"<<std::flush;
-        std::cout << "comp: " << comp<<" , "<<(double)(comp)/(double)(count)<<"\n"<<std::flush;
+        this->c.insert(this->c.end(),std::make_move_iterator(localSet2.begin()),std::make_move_iterator(localSet2.end()));
+        std::make_heap(this->c.begin(), this->c.end(),cmpPQ);
+
+        std::cout << "Generated " << size() << " many up and down candidates.\n"<<std::flush;
         //std::sort(cans.begin(), cans.end(), [](Candidate &l, Candidate &r) { return l.getBegin() < r.getBegin(); });
 
     }

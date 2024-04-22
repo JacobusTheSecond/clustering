@@ -1,14 +1,41 @@
 import numpy as np
 import klcluster as kl
 cs = kl.Curves()
+
+labelNum = 5
+
+gts = kl.GroundTruths()
+
+curveLen = 30
+
 for i in range(10):
-	cs.add(kl.Curve(np.random.rand(10,3)*100))
+	cs.add(kl.Curve(np.random.rand(curveLen,3)*10))
+	
+	gtBase = np.sort(np.random.choice(range(curveLen),5,False))
+	gtBase += curveLen-gtBase[-1]	
+		
+
+	gt = kl.GroundTruth()
+	for j in gtBase:
+		label = np.random.randint(0,labelNum)
+		gt.add(label,j)
+		#print(label,j)
+	gts.add(gt)
+
+print(len(cs))
 cc = kl.CurveClusterer()
-cc.initCurves(cs,1)
-#cr1 = cc.greedyCover(5,1)
-cr2 = cc.greedyCoverAgressiveFilter(5,1)
+cc.initCurvesWithGT(cs,1,gts)
+
+sgts = cc.getSimplifiedGTs()
+for j in range(10):
+	for i in range(5):
+		print(sgts[j].labelAt(i),sgts[j].paramAt(i).value)
+
+print(cc.getSimplifications())
+cr1 = cc.greedyCover(5,1)
+#cr2 = cc.greedyCoverAgressiveFilter(5,1)
 #print(cr1.__len__(),cr2.__len__())
-for c in cr2:
+for c in cr1:
 	print("Center:",c.center().values())
 	print("Matching:")
 	print(c.values())
