@@ -2,6 +2,7 @@
 // Created by Jacobus Conradi on 18.04.23.
 //
 
+#include <execinfo.h>
 #include "Candidate.h"
 #include "FreespaceVisualizer.h"
 
@@ -111,13 +112,19 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
             fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data->toRight(threadID):Interval(1.0,0.0);
         }
         if((fromBelow.is_empty() && fromLeft.is_empty())){
-            std::cout << "x:" << x << std::endl;
-            std::cout << "y:" << y << std::endl;
-            std::cout << "startheight:" << startheight << std::endl;
-            std::cout << "tIndex" << tIndex << std::endl;
-            std::cout << "--------" << std::endl;
-            std::cout << "initialIteration:" << initialIteration << std::endl;
-            std::cout << cur->x << "," << cur->y << std::endl;
+            std::cout << "BEGIN DUMP:"<<std::endl;
+            std::cout << "------------------"<<std::endl;
+            std::cout << "fromBelow.is_empty():"<< fromBelow.is_empty() << std::endl;
+            std::cout << "fromLeft.is_empty():"<< fromLeft.is_empty() << std::endl;
+            std::cout << "x:" << x<<std::endl;
+            std::cout << "y:"<<y<<std::endl;
+            std::cout << "startheight:"<<startheight<<std::endl;
+            std::cout << "threadID:"<<threadID <<std::endl;
+            std::cout << "------------------"<<std::endl;
+            for(auto c : resetList){
+                c->dump(threadID);
+            }
+            std::cout << "END DUMP"<<std::endl;
             assert(false);
         }
         initialIteration = false;

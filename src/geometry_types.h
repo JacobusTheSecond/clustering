@@ -289,6 +289,12 @@ struct Interval
     }
 };
 
+
+inline std::ostream &operator<<(std::ostream &os, Interval const &m) {
+    return os << "[ " << m.begin << " , " <<m.end << " ]";
+}
+
+
 //
 // CPoint
 //

@@ -765,9 +765,9 @@ void experiments() {
     Curve c13 = Curve("../data/86_13.txt", 93);
     Curve c14 = Curve("../data/86_14.txt", 93);
     CurveClusterer cc(-1, false);
-    Curves allCurves={{c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14}};
+    Curves allCurves={c1};//,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14}};
     std::vector<FrameLabeling> hacaAllLabelings = {haca_01,haca_02,haca_03,haca_04,haca_05,haca_06,haca_07,haca_08,haca_09,haca_10,haca_11,haca_12,haca_13,haca_14};
-    std::vector<FrameLabeling> allLabelings = {gt86_01,gt86_02,gt86_03,gt86_04,gt86_05,gt86_06,gt86_07,gt86_08,gt86_09,gt86_10,gt86_11,gt86_12,gt86_13,gt86_14};
+    std::vector<FrameLabeling> allLabelings = {gt86_01};//,gt86_02,gt86_03,gt86_04,gt86_05,gt86_06,gt86_07,gt86_08,gt86_09,gt86_10,gt86_11,gt86_12,gt86_13,gt86_14};
     swatch.stop();
     std::cout << "----------\nElapsed time loading curves: " << std::chrono::duration<double>(swatch.elapsed()).count() << "\n----------\n";
 

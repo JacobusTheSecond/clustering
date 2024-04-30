@@ -16,6 +16,11 @@ struct CellPoint{
     distance_t y{};
 };
 
+
+inline std::ostream &operator<<(std::ostream &os, CellPoint const &m) {
+    return os << "( " << m.x << " , " << m.y << " )";
+}
+
 class Cell{
 public:
     std::pair<CellPoint,CellPoint> leftPair, rightPair, topPair, bottomPair;
@@ -38,6 +43,20 @@ public:
     virtual bool is_empty()=0;
     Cell(int tc):toAboves(tc),toRights(tc),toLefts(tc),toBottoms(tc){};
     virtual ~Cell(){};
+    void dump(int threadID = 0){
+        std::cout << "left: " << left  << std::endl;
+        std::cout << "top: " << top << std::endl;
+        std::cout << "right: " << right << std::endl;
+        std::cout << "bottom: " << bottom << std::endl;
+
+        std::cout << "leftPair: " << leftPair.first << " , " << leftPair.second << std::endl;
+        std::cout << "topPair: " << topPair.first << " , " << topPair.second << std::endl;
+        std::cout << "rightPair: " << rightPair.first << " , " << rightPair.second << std::endl;
+        std::cout << "bottomPair: " << bottomPair.first << " , " << bottomPair.second << std::endl;
+
+        std::cout << "toAbove:" << toAbove(threadID) << std::endl;
+        std::cout << "toRight:" << toRight(threadID) << std::endl;
+    };
 };
 
 class SparseCell : public Cell{
@@ -107,6 +126,18 @@ public:
     //SparseGridCell<T>* left=nullptr;
     //SparseGridCell<T>* right=nullptr;
     SparseGridCell(T _data, int _x, int _y):data(std::move(_data)),x(_x),y(_y){}
+
+    void dump(int threadID = 0){
+        std::cout << "x:" << x << std::endl;
+        std::cout << "y:" << y << std::endl;
+        std::cout << "upId:" << upId << std::endl;
+        std::cout << "downId:" << downId << std::endl;
+        std::cout << "leftId:" << leftId << std::endl;
+        std::cout << "rightId:" << rightId << std::endl;
+        std::cout << "----data----" << std::endl;
+        data->dump(threadID);
+        std::cout << "------------" << std::endl;
+    };
 };
 
 class SparseFreespace :std::vector<std::vector<SparseGridCell<std::unique_ptr<Cell>>>> {
