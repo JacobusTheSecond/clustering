@@ -110,8 +110,17 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
             nextList.pop_front();
             fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data->toRight(threadID):Interval(1.0,0.0);
         }
+        if((fromBelow.is_empty() && fromLeft.is_empty())){
+            std::cout << "x:" << x << std::endl;
+            std::cout << "y:" << y << std::endl;
+            std::cout << "startheight:" << startheight << std::endl;
+            std::cout << "tIndex" << tIndex << std::endl;
+            std::cout << "--------" << std::endl;
+            std::cout << "initialIteration:" << initialIteration << std::endl;
+            std::cout << cur->x << "," << cur->y << std::endl;
+            assert(false);
+        }
         initialIteration = false;
-        assert(!(fromBelow.is_empty() && fromLeft.is_empty()));
         cur->data->toRight(threadID) = cur->data->right.clip({0.0,fromLeft.end});
 
         if(cur->rightId != -1 && !cur->data->toRight(threadID).is_empty())

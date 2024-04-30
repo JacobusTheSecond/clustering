@@ -87,6 +87,9 @@ private:
 
     std::vector<std::vector<int>> times;
 
+    //correct Map to Base stuff
+    std::vector<std::vector<CPoint>> vertexMaps;
+
 
 public:
 
@@ -147,6 +150,7 @@ public:
         simplifiedCurves.clear();
         times.clear();
         simpIDtoOriginID.clear();
+        vertexMaps.clear();
         int total = 0;
 //#pragma omp parallel for default(none) shared(curves, std::cout, total) firstprivate(cs) schedule(dynamic)
         for (int i = 0; i < curves.size(); ++i) {
@@ -162,6 +166,23 @@ public:
                           << "/" << curves.size() << ")" << std::endl;
                 times.back() = cs.getTimes();
                 assert(times.size() == simplifiedCurves.size());
+
+                //build vertexMapping
+
+                vertexMaps.emplace_back();
+                int sj = 0;
+                for (int ci=0;ci<curve.size();ci++){
+                    if(sj + 1 < times.back().size() && times.back()[sj+1]<=ci){
+                        sj ++;
+                    }
+                    auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*delta/3,simp[sj],simp[sj+1]);
+                    assert(!interval.is_empty());
+                    if(vertexMaps.back().empty()){
+                        vertexMaps.back().push_back({sj,interval.begin});
+                    }else{
+                        vertexMaps.back().push_back(std::max(vertexMaps.back().back(),{sj,interval.begin}));
+                    }
+                }
             };
         }
     }
@@ -181,6 +202,7 @@ public:
         simplifiedCurves.clear();
         simplifiedGTs.clear();
         simpIDtoOriginID.clear();
+        vertexMaps.clear();
         times.clear();
         for (int i = 0; i < curves.size(); ++i) {
             times.emplace_back();
@@ -190,6 +212,24 @@ public:
             simpIDtoOriginID.push_back(i);
             times[i] = cs.getTimes();
             simplifiedGTs[i] = cs.getSimplifiedGTs();
+
+
+            //build vertexMapping
+
+            vertexMaps.emplace_back();
+            int sj = 0;
+            for (int ci=0;ci<curve.size();ci++){
+                if(sj + 1 < times.back().size() && times.back()[sj+1]<ci){
+                    sj ++;
+                }
+                auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*delta/3,simplifiedCurves.back()[sj],simplifiedCurves.back()[sj+1]);
+                assert(!interval.is_empty());
+                if(vertexMaps.back().empty()){
+                    vertexMaps.back().push_back({sj,interval.begin});
+                }else{
+                    vertexMaps.back().push_back(std::max(vertexMaps.back().back(),{sj,interval.begin}));
+                }
+            }
         }
     }
 

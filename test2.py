@@ -1,7 +1,7 @@
 import numpy as np
 import klcluster as kl
 
-trials = [np.genfromtxt("data/86_"+str(i)+".txt",delimiter=" ") for i in range(1,15)]
+trials = [np.genfromtxt("data/86_"+str(i)+".txt",delimiter=" ") for i in range(1,2)]
 cs=kl.Curves()
 for trial in trials:
 	cs.add(kl.Curve(trial))
