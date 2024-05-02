@@ -224,7 +224,7 @@ public:
             }
 
             //uncompress
-            auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends);
+            auto uncompressedCandidates = uncompressCandidate(start.getCurve(),start.getCPoint(),ends,omp_get_thread_num());
 
 
             //Step 5: for every candidate

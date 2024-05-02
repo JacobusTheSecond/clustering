@@ -101,7 +101,7 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
 
     while(initialIteration || !nextList.empty()){
         Interval fromLeft;
-        Interval fromBelow;
+
         SparseGridCell<std::unique_ptr<Cell>>* cur;
         if(initialIteration){
             fromLeft = {0.0,startheight};
@@ -111,14 +111,18 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
             nextList.pop_front();
             fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data->toRight(threadID):Interval(1.0,0.0);
         }
-        if((fromBelow.is_empty() && fromLeft.is_empty())){
+        if((fromLeft.is_empty())){
             std::cout << "BEGIN DUMP:"<<std::endl;
             std::cout << "------------------"<<std::endl;
-            std::cout << "fromBelow.is_empty():"<< fromBelow.is_empty() << std::endl;
             std::cout << "fromLeft.is_empty():"<< fromLeft.is_empty() << std::endl;
             std::cout << "x:" << x<<std::endl;
             std::cout << "y:"<<y<<std::endl;
             std::cout << "startheight:"<<startheight<<std::endl;
+            std::cout << "ends:{";
+            for(auto c :ends){
+                std::cout << c.getPoint() << "," << c.getFraction() << ";  ";
+            }
+            std::cout << "}\n";
             std::cout << "threadID:"<<threadID <<std::endl;
             std::cout << "------------------"<<std::endl;
             for(auto c : resetList){
@@ -134,7 +138,7 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
         {nextList.push_front(sfs.cell(cur->y,cur->rightId)); resetList.push_back(sfs.cell(cur->y,cur->rightId));}
 
         //compute interval of values, that can be updated
-        Interval fromLeftApplicableHeights = fromLeft.is_empty()?Interval(1.0,0.0):Interval(cur->data->bottomPair.first.y,fromLeft.end);
+        Interval fromLeftApplicableHeights = Interval(cur->data->bottomPair.first.y,fromLeft.end);
         for(int i=leastUpdateableStartIndex;i>=0 && ends[i].getFraction()>=fromLeftApplicableHeights.begin;i--){
             //assert(ends[i].getPoint() == cur->y);
             if(ends[i].getFraction() > fromLeft.end){
@@ -142,7 +146,7 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
                 continue;
             }
             if(fromLeftApplicableHeights.contains(ends[i].getFraction())){
-                result[i] = std::max(result[i],{cur->x,cur->data->rightMostAt(ends[i].getFraction()).x});
+                result[i] = {cur->x,cur->data->rightMostAt(ends[i].getFraction()).x};
             }
         }
     }
