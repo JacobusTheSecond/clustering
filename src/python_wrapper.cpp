@@ -112,7 +112,10 @@ PYBIND11_MODULE(klcluster,m){
 
     py::class_<FrameLabeling>(m,"GroundTruth")
             .def(py::init<>())
-            .def("add",[](FrameLabeling& gt,int label, int frame){gt.emplace_back(label,frame);});
+            .def("add",[](FrameLabeling& gt,int label, int frame){gt.emplace_back(label,frame);})
+            .def("__len__", &FrameLabeling::size)
+            .def("__iter__",[](FrameLabeling &gt){return py::make_iterator(gt.begin(),gt.end());},py::keep_alive<0,1>())
+            .def("__getitem__",[](FrameLabeling& gt, int i){return gt[i];});
 
     py::class_<std::vector<FrameLabeling>>(m,"GroundTruths")
             .def(py::init<>())
