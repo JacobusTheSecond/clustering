@@ -119,7 +119,7 @@ public:
         }else{
             auto s = vertexMaps[curveIdx][i-1];
             auto t = vertexMaps[curveIdx][i];
-            assert(t>s);
+            // assert(t>s);
             if(t>s) {
                 return {i - 1, (q.getFraction() - s.getFraction()) / (t.getFraction() - s.getFraction())};
             }else{
