@@ -75,6 +75,7 @@ class CMUSolver:
         # label all clusters
         for cluster in clusters:
             labelcount = {}
+            totalcount = 0
             # compute count for each label
             for matching in cluster:
                 for i in range(int(matching.start.value), int(matching.end.value) + 1):
@@ -85,9 +86,13 @@ class CMUSolver:
                     if not label in labelcount:
                         labelcount[label] = 0
                     labelcount[label] += 1
+                    totalcount += 1
             # pick maximum
             if len(labelcount) > 0:
                 bestLabel = max(labelcount, key=labelcount.get)
+                # if label has no majority, discard cluster
+                if labelcount[bestLabel] * 2 <= totalcount:
+                    bestLabel = -1
             else:
                 bestLabel = -1
             labels.append(bestLabel)
@@ -97,8 +102,10 @@ class CMUSolver:
     def getBaseSementation(self, clusters):
         labels = self.labelClustersBestMatch(clusters)
 
+        # build segmentation
         size = self.curve.complexity
         segmentation = [-1] * size
+        is_matching_startend = [False] * size # store whether curve point is start or end point of a cluster matching
         for clusterIdx, cluster in enumerate(clusters):
             if labels[clusterIdx] == -1:
                 continue
@@ -106,25 +113,30 @@ class CMUSolver:
                 start = int(self.cc.mapToBase(0, matching.start).value)
                 end = int(self.cc.mapToBase(0, matching.end).value)
 
+                is_matching_startend[start] = True
+                is_matching_startend[end] = True
+
                 # print(f"{start} bis {end} : {labels[clusterIdx]}")
 
                 for i in range(start, end+1):
                     if (i < 0 or i >= size):
                         raise Exception("Index out of bounds")
-
                     if segmentation[i] == -1 or segmentation[i] == labels[clusterIdx]:
                         segmentation[i] = labels[clusterIdx]
                     else:
                         segmentation[i] = 0
 
-        return segmentation
+        # turn all unknown (-1) to black (0)
+        for i in range(0, len(segmentation)):
+            if segmentation[i] == -1:
+                segmentation[i] = 0
 
-    def getSegments(self, segmentation):
+        # turn segmentation to segments
         segments = []
         segmentStart = 0
 
         for i in range(1, len(segmentation)):
-            if segmentation[i] != segmentation[i - 1]:
+            if segmentation[i] != segmentation[i - 1] or is_matching_startend[i]:
                 segment = {"size": i - segmentStart, "label": segmentation[i - 1]}
                 segments.append(segment)
                 segmentStart = i
@@ -134,7 +146,7 @@ class CMUSolver:
             segment = {"size": len(segmentation) - segmentStart, "label": segmentation[i - 1]}
             segments.append(segment)
 
-        return segments
+        return segmentation, segments
 
     def getGTSegments(self):
         segments = []
@@ -145,9 +157,7 @@ class CMUSolver:
             segmentStart = self.gt[i][1] + 1
         return segments
     
-    def plotSegmentation(self, segmentation):
-        segments = self.getSegments(segmentation)
-    
+    def plotSegmentation(self, segments):    
         plt.rcParams['toolbar'] = 'None' # Remove tool bar
         fig, ax = plt.subplots(tight_layout=True)
         fig.canvas.manager.set_window_title("Curve segmentation")
@@ -155,8 +165,7 @@ class CMUSolver:
         self.__plotSegmentsToSubplot(ax, segments)
         plt.show()
 
-    def plotSegmentationAndGT(self, segmentation):
-        segments = self.getSegments(segmentation)
+    def plotSegmentationAndGT(self, segments):
         gtSegments = self.getGTSegments()
     
         plt.rcParams['toolbar'] = 'None' # Remove tool bar
@@ -173,9 +182,9 @@ class CMUSolver:
         x = 0
         for s in segments:
             if s["label"] < len(self.colors):
-                ax.barh(0, s["size"], left=x, color=self.colors[s["label"]])
+                ax.barh(0, s["size"], left=x, edgecolor="black", linewidth=1.5, color=self.colors[s["label"]])
             else:
-                ax.barh(0, s["size"], left=x, label=s["label"])
+                ax.barh(0, s["size"], left=x, edgecolor="black", linewidth=1.5, label=s["label"])
 
             x += s["size"]
 
@@ -190,6 +199,6 @@ class CMUSolver:
 solver = CMUSolver("../data/86_1.txt", getGroundTruth(1))
 result = solver.solve()
 
-segmentation = solver.getBaseSementation(result)
+segmentation, segments = solver.getBaseSementation(result)
 
-solver.plotSegmentationAndGT(segmentation)
+solver.plotSegmentationAndGT(segments)
