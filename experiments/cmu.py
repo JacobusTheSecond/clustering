@@ -67,22 +67,24 @@ class CMUSolver:
 
     def solve(self):
         return self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
-
-    # todo: label based on base curve
+    
     def labelClustersBestMatch(self, clusters):
         labels = []
-        gt = self.cc.getSimplifiedGTs()[0]
         # label all clusters
         for cluster in clusters:
             labelcount = {}
             totalcount = 0
             # compute count for each label
             for matching in cluster:
-                for i in range(int(matching.start.value), int(matching.end.value) + 1):
+                matchingstart = int(self.cc.mapToBase(0, matching.start).value)
+                matchingend = int(self.cc.mapToBase(0, matching.end).value)
+                for i in range(matchingstart, matchingend + 1):
                     gtIndex = 0
-                    while int(gt.paramAt(gtIndex).value) < i and gtIndex < len(gt):
+                    while gtIndex < len(self.gt) and self.gt[gtIndex][1] < i:
                         gtIndex += 1
-                    label = gt.labelAt(gtIndex)
+                    if gtIndex >= len(self.gt):
+                        raise Exception("Matching index out of bounds of GT")
+                    label = self.gt[gtIndex][0]
                     if not label in labelcount:
                         labelcount[label] = 0
                     labelcount[label] += 1
