@@ -12,6 +12,7 @@ CMakeFiles
 venv
 .idea/
 build/
+build2/
 .DS_Store
 src/.DS_Store
 CMakeCache.txt

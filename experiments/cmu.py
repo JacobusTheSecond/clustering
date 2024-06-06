@@ -157,6 +157,7 @@ class CMUSolver:
             segment = {"size": self.gt[i][1] - segmentStart, "label": self.gt[i][0]}
             segments.append(segment)
             segmentStart = self.gt[i][1] + 1
+        print(segments)
         return segments
     
     def plotSegmentation(self, segments):    
@@ -169,7 +170,7 @@ class CMUSolver:
 
     def plotSegmentationAndGT(self, segments):
         gtSegments = self.getGTSegments()
-    
+        print(segments)
         plt.rcParams['toolbar'] = 'None' # Remove tool bar
         fig, axs = plt.subplots(2, 1, tight_layout=True)
         fig.canvas.manager.set_window_title("Curve segmentation compared to GT")
@@ -195,12 +196,25 @@ class CMUSolver:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
+    
+    def calculateAccurcacy(self, segmentation):
+        gtSegments = self.getGTSegments()
+        idx = 0
+        errors = 0
+        for gtSegment in gtSegments:
+            for i in range(idx, idx+gtSegment['size']):
+                if segmentation[i] != gtSegment['label']:
+                    errors += 1
+            idx += gtSegment['size']
+        return (idx - errors) / idx
         
         
 
 solver = CMUSolver("../data_cmu/86_1.txt", getGroundTruth(1))
+print(solver.gt)
 result = solver.solve()
 
 segmentation, segments = solver.getBaseSementation(result)
-
+print(segmentation)
 solver.plotSegmentationAndGT(segments)
+print(solver.calculateAccurcacy(segmentation))
