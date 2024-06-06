@@ -198,17 +198,19 @@ class CMUSolver:
         ax.spines['left'].set_visible(False)
     
     def calculateAccurcacy(self, segmentation):
+        M = self.getConfusionMatrix(segmentation)
+        # main diagonal divided my all entries of the confusion matrix
+        return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
+
+    def getConfusionMatrix(self, segmentation):
         gtSegments = self.getGTSegments()
+        M = [[0 for i in range(5)] for j in range(5)]
         idx = 0
-        errors = 0
         for gtSegment in gtSegments:
             for i in range(idx, idx+gtSegment['size']):
-                if segmentation[i] != gtSegment['label']:
-                    errors += 1
+                M[segmentation[i]][gtSegment['label']] +=1
             idx += gtSegment['size']
-        return (idx - errors) / idx
-        
-        
+        return M
 
 solver = CMUSolver("../data_cmu/86_1.txt", getGroundTruth(1))
 print(solver.gt)
