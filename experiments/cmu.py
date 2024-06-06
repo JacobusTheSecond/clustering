@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import json
 import klcluster as kl
 
-GROUND_TRUTH_PATH = "../data/groundtruth86.json"
+GROUND_TRUTH_PATH = "../data_cmu/groundtruth86.json"
 
 
 def getGroundTruth(instanceid):
@@ -198,7 +198,7 @@ class CMUSolver:
         
         
 
-solver = CMUSolver("../data/86_1.txt", getGroundTruth(1))
+solver = CMUSolver("../data_cmu/86_1.txt", getGroundTruth(1))
 result = solver.solve()
 
 segmentation, segments = solver.getBaseSementation(result)

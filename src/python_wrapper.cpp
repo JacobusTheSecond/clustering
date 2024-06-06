@@ -33,7 +33,7 @@ PYBIND11_MODULE(klcluster,m){
             //.def_property("name", &Curve::get_name, &Curve::set_name)
             .def_property_readonly("values", &Curve::as_ndarray)
             //.def_property_readonly("centroid", &Curve::centroid)
-            .def("__getitem__", &Curve::operator[], py::return_value_policy::reference)
+            .def("__getitem__", [](Curve& c, int i){return c[i];}, py::return_value_policy::reference)
             .def("__len__", &Curve::size)
             .def("__str__", &Curve::str)
             .def("__iter__", [](Curve &v) { return py::make_iterator(v.begin(), v.end()); }, py::keep_alive<0, 1>())
@@ -96,6 +96,7 @@ PYBIND11_MODULE(klcluster,m){
     py::class_<CInterval>(m,"CInterval")
             .def_property_readonly("start",&CInterval::getBegin)
             .def_property_readonly("end",&CInterval::getEnd)
+            .def_property_readonly("curve",&CInterval::getCurveIndex)
             .def("values",&CInterval::as_ndarray);
 
     py::class_<Cluster>(m,"Cluster")

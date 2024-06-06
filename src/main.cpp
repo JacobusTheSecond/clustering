@@ -766,7 +766,7 @@ void experiments() {
     Curve c14 = Curve("../data/86_14.txt", 93);
     CurveClusterer cc(-1, false);
     Curves allCurves={c1};//,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14}};
-    std::vector<FrameLabeling> hacaAllLabelings = {haca_01,haca_02,haca_03,haca_04,haca_05,haca_06,haca_07,haca_08,haca_09,haca_10,haca_11,haca_12,haca_13,haca_14};
+    std::vector<FrameLabeling> hacaAllLabelings = {haca_01};
     std::vector<FrameLabeling> allLabelings = {gt86_01};//,gt86_02,gt86_03,gt86_04,gt86_05,gt86_06,gt86_07,gt86_08,gt86_09,gt86_10,gt86_11,gt86_12,gt86_13,gt86_14};
     swatch.stop();
     std::cout << "----------\nElapsed time loading curves: " << std::chrono::duration<double>(swatch.elapsed()).count() << "\n----------\n";
@@ -809,25 +809,25 @@ void experiments() {
             auto trivialFilter = [](const Candidate &a) { return true; };
 
             //cover algorithm
-            auto result = cc.greedyCover(complexity, 25, trivialFilter);
+            auto result = cc.greedyCover(complexity, 1, trivialFilter);
             swatch.stop();
 
-            for (int i = 0; i < std::min(20, (int) result.size()); ++i) {
-                Cluster c = result[i];
-                for (int j = 0; j < c.getMatching().size(); ++j) {
-                    auto m = c.getMatching()[j];
-                    io::exportSubcurve(
-                            "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(i) + "/interval" +
-                            std::to_string(j) + ".txt", cc.simplifiedCurves[m.getCurveIndex()], m.getBegin(), m.getEnd(), 100);
-                }
-            }
+            // for (int i = 0; i < std::min(20, (int) result.size()); ++i) {
+            //     Cluster c = result[i];
+            //     for (int j = 0; j < c.getMatching().size(); ++j) {
+            //         auto m = c.getMatching()[j];
+            //         io::exportSubcurve(
+            //                 "/Users/styx/data/curveclustering/results/cluster/matching" + std::to_string(i) + "/interval" +
+            //                 std::to_string(j) + ".txt", cc.simplifiedCurves[m.getCurveIndex()], m.getBegin(), m.getEnd(), 100);
+            //     }
+            // }
 
             //std::cout << "Solution of size " << result.size() << " computed!\n";
             //std::cout << "----------\nElapsed time computing covering: " << std::chrono::duration<double>(swatch.elapsed()).count() << "\n----------\n";
             times.back().push_back(std::chrono::duration<double>(swatch.elapsed()).count());
             results.back().push_back(result.size());
-            //ClusteringVisulaizer cv{true};
-            //cv.showClusteringStretched(cc.simplifiedCurves, cc.simplifiedGTs, result);
+            //ClusteringVisualizer cv{true};
+            //cv.showClusteringStretched(cc.simplifiedCurves, cc.simplifiedGTs, result.origCandidates);
         }
     //}
     /*
@@ -864,10 +864,44 @@ void experiments() {
      */
 }
 
+void minimalBreakingExample() {
+    Curves curves;
+    for(int i=706;i<=706/*9*/;i++){
+        std::string name = "/Users/pauljuenger/Programs/clustering/data_drifters/world3d_txt/"+std::to_string(i)+"_drifter.txt";
+        curves.push_back(Curve(name,3));
+        if(curves.back().size() <= 1){
+            curves.pop_back();
+            continue;
+        }
+        // std::cout << curves.back().size() << std::endl;
+        std::string delimiter = "world3d_txt/";
+        std::string token1 = name.substr(0, name.find(delimiter));
+        std::string token2 = name.substr(name.find(delimiter) + delimiter.length());
+        curves.back().set_name(token2);
+    }
+
+    float DELTA = 15000;
+    int l = 10;
+    int ROUNDS = 1;
+
+    CurveClusterer cc;
+    cc.initCurves(curves, DELTA);
+    cc.greedyCover(l, ROUNDS, [=](const Candidate &a) {
+                                        bool withIsTrivial = false;
+                                        bool withIsDown = false;
+                                        bool istrivial = l == 1;
+                                        bool isdown = a.getEnd() < a.getBegin();
+                                        bool nontrivial_length =
+                                                cc.simplifiedCurves[a.getCurveIndex()].subcurve_length(a.getBegin(), a.getEnd()) >
+                                                2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getDelta();
+                                        bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + l / 4;
+                                        return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);});
+}
+
 void experiments2(){
     Curves curves;
-    for(int i=1;i<210/*9*/;i++){
-        std::string name = "/Users/styx/data/gdac2/world3d_txt/"+std::to_string(i)+"_drifter.txt";
+    for(int i=1;i<1/*9*/;i++){
+        std::string name = "/Users/pauljuenger/Programs/clustering/data_drifters/world3d_txt/"+std::to_string(i)+"_drifter.txt";
         curves.push_back(Curve(name,3));
         if(curves.back().size() <= 1){
             curves.pop_back();
@@ -1153,8 +1187,10 @@ int main(int argc, char *argv[]) {
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
 
-    experiments();
-    //experiments2();
+    minimalBreakingExample();
+
+    // experiments();
+    // experiments2();
     //experiments3();
     //experiments2();
     //intersectionprimitivetest();
