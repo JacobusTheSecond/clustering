@@ -1,6 +1,6 @@
 import os
 
-from solversKlCluster import KlClusterDriftersSolver
+from drifterSolvers import KlClusterDriftersSolver
 
 klcluster = True
 datafolder = os.path.join(os.path.dirname(__file__), "../data_drifters/world3d_txt")
