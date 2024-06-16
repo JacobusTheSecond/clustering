@@ -1,4 +1,4 @@
-function [segT, segGmm] = runGmm(tag)
+function [segT0, segGmmExp, cnames] = runGmm(tag)
 
 % The value of tag could be set to any integer between 1 and 14
 % which correspods to the trial number of subject 86.
@@ -19,5 +19,9 @@ seg0s = segIni(K, para);
 
 %% gmm
 segGmm = segAlg('gmm', [], K, para, seg0s, segT);
+
+segGmmExp = segNewS(segGmm,wsData.sR, "type", "expand");
+segT0 = wsData.segT0;
+cnames = wsData.cnames;
 
 end

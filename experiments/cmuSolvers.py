@@ -7,6 +7,7 @@ import os
 import json
 from dataclasses import dataclass
 
+import matlab.engine
 import klcluster as kl
 
 @dataclass
@@ -20,7 +21,7 @@ class CMUSolver(ABC):
             raise Exception("CMU trial tag must be between 1 and 14")
         self.DATA_PATH = os.path.join(os.path.dirname(__file__), "../data_cmu/")
         self.tag = tag
-        self.gtSegments = self.__getGTSegments(tag)
+        self.gtSegments, self.labelMapping = self.__getGTSegments(tag)
 
         self.segmentation = None
         self.segments = None
@@ -45,23 +46,28 @@ class CMUSolver(ABC):
     def solve():
         pass
 
-    def plotSegments(self, segments):    
+    def plotSegments(self, segmentsList, methodNames=None):
         plt.rcParams['toolbar'] = 'None' # Remove tool bar
-        fig, ax = plt.subplots(tight_layout=True)
+        fig, axs = plt.subplots(len(segmentsList), 1, tight_layout=True, squeeze=False)
         fig.canvas.manager.set_window_title("Curve segmentation")
-        fig.set_size_inches(10, 1.5)
-        self.__plotSegmentsToSubplot(ax, segments)
+        fig.set_size_inches(10, len(segmentsList) * 1.5)
+        for i in range(0, len(segmentsList)):
+            if methodNames and i < len(methodNames):
+                axs[i][0].set_title(methodNames[i])
+            self.__plotSegmentsToSubplot(axs[i][0], segmentsList[i])
         plt.show()
 
-    def plotSegmentsAndGT(self, segments):    
+    def plotSegmentsAndGT(self, segmentsList, methodNames=None):
         plt.rcParams['toolbar'] = 'None' # Remove tool bar
-        fig, axs = plt.subplots(2, 1, tight_layout=True)
+        fig, axs = plt.subplots(len(segmentsList)+1, 1, tight_layout=True, squeeze=False)
         fig.canvas.manager.set_window_title("Curve segmentation compared to GT")
-        fig.set_size_inches(10, 3)
-        axs[0].set_title("GT")
-        self.__plotSegmentsToSubplot(axs[0], self.gtSegments)
-        axs[1].set_title("Clustering")
-        self.__plotSegmentsToSubplot(axs[1], segments)
+        fig.set_size_inches(10, (len(segmentsList)+1) * 1.5)
+        axs[0][0].set_title("GT")
+        self.__plotSegmentsToSubplot(axs[0][0], self.gtSegments)
+        for i in range(0, len(segmentsList)):
+            if methodNames and i < len(methodNames):
+                axs[i+1][0].set_title(methodNames[i])
+            self.__plotSegmentsToSubplot(axs[i+1][0], segmentsList[i])
         plt.show()
 
     def __plotSegmentsToSubplot(self, ax, segments):
@@ -105,7 +111,7 @@ class CMUSolver(ABC):
                     segmentStart = row[2]
                     # gt.add(0, row[2])
 
-        return segments
+        return segments, labelToIndex
 
 class KlClusterCMUSolver(CMUSolver):
     def __init__(self, tag):
@@ -135,7 +141,7 @@ class KlClusterCMUSolver(CMUSolver):
     def solve(self):
         clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
         self.segments, self.segmentation = self.__getBaseSementation(clusters)
-        return self.segments, self.segmentation
+        return self.segments
 
     def __getBaseSementation(self, clusters):
         labels = self.__labelClustersBestMatch(clusters)
@@ -216,3 +222,45 @@ class KlClusterCMUSolver(CMUSolver):
             labels.append(bestLabel)
 
         return labels
+
+class AcaCMUSolver(CMUSolver):
+    def __init__(self, tag, method):
+        """ method: 'gmm' | 'aca' | 'haca' """
+        super().__init__(tag)
+        self.method = method
+
+    def solve(self):
+        eng = matlab.engine.start_matlab()  # connect_matlab()
+        eng.cd(os.path.join(os.path.dirname(__file__), "../aca/aca"), nargout=0)
+        # eng.make(nargout=0)
+        eng.addPath(nargout=0) # add aca paths like src or lib
+        eng.addpath("..") # add runAca, runGmm, ... to path
+
+        match self.method:
+            case "gmm":
+                gt, seg, labelNames = eng.runGmm(self.tag, nargout=3)
+            case "aca":
+                gt, seg, labelNames = eng.runAca(self.tag, nargout=3)
+            case "haca":
+                gt, seg, labelNames = eng.runHaca(self.tag, nargout=3)
+            case _:
+                raise Exception(f"Unknown method '{self.method}'")
+
+        eng.quit() # stop matlab.engine
+
+        segFrames = np.array(seg["s"]).astype(int)[0] # convert matlab double array to numpy int array
+        segLabels = np.array(seg["G"]).astype(int)
+
+        # build segments
+        segments = []
+        segmentStart = segFrames[0] - 1
+        for i in range(1, len(segFrames)):
+            frame = segFrames[i] - 1
+            labelIndices = np.argwhere(segLabels[:, i-1])
+            if (len(labelIndices) > 1):
+                raise Exception(f"More than one label for matlab segment {i}")
+            label = self.labelMapping[labelNames[labelIndices.item()]] # map matlab label to our labels
+            segments.append(Segment(size=frame - segmentStart, label=label))
+            segmentStart = frame
+
+        return segments
