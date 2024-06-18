@@ -70,6 +70,47 @@ class CMUSolver(ABC):
             self.__plotSegmentsToSubplot(axs[i+1][0], segmentsList[i])
         plt.show()
 
+    def calculateAccurcacy(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        print(M)
+        # main diagonal divided my all entries of the confusion matrix
+        return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
+
+    def calculateClassPrecision(self, segmentation, classLabel, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        # main diagonal divided my all entries of the confusion matrix
+        positiveClassified = sum([M[classLabel][i] for i in range(len(M))])
+        return M[classLabel][classLabel] / positiveClassified if positiveClassified != 0 else 0
+
+    def calculateMacroPrecision(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        return sum([self.calculateClassPrecision(segmentation, label, tag) for label in range(len(M))]) / len(M)
+
+
+    def calculateClassRecall(self, segmentation, classLabel, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        # main diagonal divided my all entries of the confusion matrix
+        GTPositives = sum([M[i][classLabel] for i in range(len(M))])
+        return M[classLabel][classLabel] / GTPositives if GTPositives != 0 else 0
+
+    def calculateMacroRecall(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        return sum([self.calculateClassRecall(segmentation, label, tag) for label in range(len(M))]) / len(M)
+
+    def getConfusionMatrix(self, segmentation, tag):
+        gtSegments = self.__getGTSegments(tag)
+        num_labels = max([gtSegment.label for gtSegment in gtSegments[0]] + [segment.label for segment in segmentation])+1
+        M = [[0 for i in range(num_labels)] for j in range(num_labels)]
+        frameListGT = []
+        frameList = []
+        for gtSegment in gtSegments[0]:
+            frameListGT.extend([gtSegment.label]*gtSegment.size)
+        for segment in segmentation:
+            frameList.extend([segment.label]*segment.size)
+        for frame, frameGT in zip(frameList, frameListGT):
+            M[frame][frameGT] +=1
+        return M
+    
     def __plotSegmentsToSubplot(self, ax, segments):
         x = 0
         for s in segments:
@@ -230,7 +271,10 @@ class AcaCMUSolver(CMUSolver):
         self.method = method
 
     def solve(self):
+        print("start matlab")
         eng = matlab.engine.start_matlab()  # connect_matlab()
+        print("finished")
+
         eng.cd(os.path.join(os.path.dirname(__file__), "../aca/aca"), nargout=0)
         # eng.make(nargout=0)
         eng.addPath(nargout=0) # add aca paths like src or lib
