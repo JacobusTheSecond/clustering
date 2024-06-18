@@ -202,8 +202,30 @@ class CMUSolver:
         # main diagonal divided my all entries of the confusion matrix
         return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
 
+    def calculateClassPrecision(self, segmentation, classLabel):
+        M = self.getConfusionMatrix(segmentation)
+        # main diagonal divided my all entries of the confusion matrix
+        positiveClassified = sum([M[classLabel][i] for i in range(len(M))])
+        return M[classLabel][classLabel] / positiveClassified
+
+    def calculateMacroPrecision(self, segmentation):
+        M = self.getConfusionMatrix(segmentation)
+        return sum([self.calculateClassPrecision(segmentation, label) for label in range(len(M))]) / len(M)
+
+
+    def calculateClassRecall(self, segmentation, classLabel):
+        M = self.getConfusionMatrix(segmentation)
+        # main diagonal divided my all entries of the confusion matrix
+        GTPositives = sum([M[i][classLabel] for i in range(len(M))])
+        return M[classLabel][classLabel] / GTPositives
+
+    def calculateMacroRecall(self, segmentation):
+        M = self.getConfusionMatrix(segmentation)
+        return sum([self.calculateClassRecall(segmentation, label) for label in range(len(M))]) / len(M)
+
     def getConfusionMatrix(self, segmentation):
         gtSegments = self.getGTSegments()
+        num_labels = max([gtSegment['label'] for gtSegment in gtSegments])
         M = [[0 for i in range(5)] for j in range(5)]
         idx = 0
         for gtSegment in gtSegments:
@@ -219,4 +241,4 @@ result = solver.solve()
 segmentation, segments = solver.getBaseSementation(result)
 print(segmentation)
 solver.plotSegmentationAndGT(segments)
-print(solver.calculateAccurcacy(segmentation))
+print(solver.calculateAccurcacy(segmentation), solver.calculateMacroPrecision(segmentation), solver.calculateMacroRecall(segmentation))
