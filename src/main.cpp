@@ -866,7 +866,7 @@ void experiments() {
 
 void minimalBreakingExample() {
     Curves curves;
-    for(int i=706;i<=706/*9*/;i++){
+    for(int i=1;i<=706/*9*/;i++){
         std::string name = "../data_drifters/world3d_txt/"+std::to_string(i)+"_drifter.txt";
         curves.push_back(Curve(name,3));
         if(curves.back().size() <= 1){

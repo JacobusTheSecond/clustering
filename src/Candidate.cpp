@@ -376,7 +376,9 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
         num ++;
         int i = pair.first;
         int j = pair.second;
-        std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].get_name() << " and " << curves[j].get_name() << ")\n"<<std::flush;
+        std::cout << "[" << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << omp_get_thread_num() << ")]"<<std::flush;
+
+        //std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].get_name() << " and " << curves[j].get_name() << ")\n"<<std::flush;
         //SparseFreespace(Curve& B, Curve& T, distance_t _delta, int threadcount = 1, CurveID BID = -1, CurveID TID = -1);
 
         SparseFreespace sfs(curves[i], curves[j], delta, threadcount, i, j);

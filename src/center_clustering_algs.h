@@ -181,7 +181,7 @@ public:
                 vertexMaps.emplace_back();
                 int sj = 0;
                 for (int ci=0;ci<curve.size();ci++){
-                    if(sj + 1 < times.back().size() && times.back()[sj+1]<ci){
+                    if(sj + 2 < times.back().size() && times.back()[sj+1]<ci){
                         sj ++;
                     }
                     auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*delta/3,simp[sj],simp[sj+1]);
@@ -213,6 +213,7 @@ public:
         simpIDtoOriginID.clear();
         vertexMaps.clear();
         times.clear();
+//#pragma omp parallel for default(none) shared(curves, std::cout, GTs) firstprivate(cs) schedule(dynamic)
         for (int i = 0; i < curves.size(); ++i) {
             times.emplace_back();
             Curve curve = curves[i];
