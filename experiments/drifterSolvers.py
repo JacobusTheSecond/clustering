@@ -89,8 +89,8 @@ class DriftersSolver(ABC):
                 if i % 100 == 0:
                     print(f"{i}/{len(curves)}")
                 i += 1
-                if i > 600:
-                    break
+                # if i > 600:
+                #     break
 
             curves = curves2 # switch to second curve set
             color = color2
