@@ -136,8 +136,10 @@ PYBIND11_MODULE(klcluster,m){
 
     py::class_<CurveClusterer>(m,"CurveClusterer")
             .def(py::init<>())
-            .def("initCurves",&CurveClusterer::initCurves)
-            .def("initCurvesWithGT",&CurveClusterer::initCurvesWithGT)
+            .def("initCurves",[](CurveClusterer& cc, Curves& cs, double delta){return cc.initCurves(cs,delta);})
+            .def("initCurvesDiffDelta",[](CurveClusterer& cc, Curves& cs, double simpDelta,double freeDelta){return cc.initCurves(cs,simpDelta,freeDelta);})
+            .def("initCurvesWithGT",[](CurveClusterer& cc, Curves& cs, std::vector<FrameLabeling>& GTs, double delta){return cc.initCurvesWithGT(cs,delta,GTs);})
+            .def("initCurvesWithGTDiffDelta",[](CurveClusterer& cc, Curves& cs, std::vector<FrameLabeling>& GTs, double simpDelta,double freeDelta){return cc.initCurvesWithGT(cs,simpDelta,GTs,freeDelta);})
             .def("mapToBase",&CurveClusterer::mapSimplificationToBase)
             .def("getSimplifications",[](CurveClusterer& cc){return cc.simplifiedCurves;})
             .def("getSimplifiedGTs",[](CurveClusterer& cc){return cc.simplifiedGTs;})
@@ -152,7 +154,7 @@ PYBIND11_MODULE(klcluster,m){
                                                                                                                   bool isdown = a.getEnd() < a.getBegin();
                                                                                                                   bool nontrivial_length =
                                                                                                                           cc.simplifiedCurves[a.getCurveIndex()].subcurve_length(a.getBegin(), a.getEnd()) >
-                                                                                                                          2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getDelta();
+                                                                                                                          2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getSimpDelta();
                                                                                                                   bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + l / 4;
                                                                                                                   return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);});});
 

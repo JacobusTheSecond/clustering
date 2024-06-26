@@ -8,7 +8,7 @@ drifterFiles = [os.path.join(datafolder, file) for file in os.listdir(datafolder
 
 print(drifterFiles[758:759])
 
-solver = KlClusterDriftersSolver(drifterFiles[758:759]) if klcluster else None
-
+solver = KlClusterDriftersSolver(drifterFiles[0:700]) if klcluster else None
 result = solver.solve()
+
 solver.plotResults()
