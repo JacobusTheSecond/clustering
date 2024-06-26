@@ -76,7 +76,8 @@ private:
 
     Curves unsimplifiedCurves;
 
-    double delta;
+    double simplificationDelta;
+    double freespaceDelta;
 
 
     //TODO: make freespaces persistent and updatable
@@ -93,7 +94,8 @@ private:
 
 public:
 
-    double getDelta() const{return delta;};
+    double getSimpDelta() const{return simplificationDelta;};
+    double getFreeDelta() const{return freespaceDelta;};
 
     //TODO: make these accessible in a better way, for filters...
     Curves simplifiedCurves;
@@ -147,112 +149,150 @@ public:
         return curves.size();
     }
 
-    void initCurves(Curves &curves, double _delta) {
-        CurveSimplifier cs(_delta);
+    void initCurves(Curves &curves, double _simpDelta, double _freeDelta=-1) {
+        CurveSimplifier cs(_simpDelta);
         if (subsamplingFrequency >= 0) {
             cs.setSubsampling(subsamplingFrequency);
         } else {
             cs.unsetSubsampling();
         }
         hasGTs = false;
-        delta = _delta;
+        simplificationDelta = _simpDelta;
+        double const guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
+        freespaceDelta = (_freeDelta<0?guarantee*_simpDelta:_freeDelta);
         simplifiedCurves.clear();
         times.clear();
         simpIDtoOriginID.clear();
         vertexMaps.clear();
         int total = 0;
-//#pragma omp parallel for default(none) shared(curves, std::cout, total) firstprivate(cs) schedule(dynamic)
+
+        Curves localSimps;
+        std::vector<std::vector<int>> localTimes;
+        std::vector<int> localIDMap;
+        std::vector<std::vector<CPoint>> localVertexMap;
+
+#pragma omp declare reduction (mergeSimps : Curves : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergeTimes : std::vector<std::vector<int>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergeIDMap : std::vector<int> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergeVMap : std::vector<std::vector<CPoint>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+
+//#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
+#pragma omp parallel for default(none) shared(curves, std::cout, total) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) schedule(dynamic)
         for (int i = 0; i < curves.size(); ++i) {
             Curve curve = curves[i];
             auto simp = cs.simplify(curve);
 //#pragma omp critical
             {
                 total++;
-                times.emplace_back();
-                simplifiedCurves.push_back(simp);
-                simpIDtoOriginID.push_back(i);
-                std::cout << "Simplified " << i << " with length " << simplifiedCurves.back().size() << " (" << total
+                localSimps.push_back(simp);
+                localIDMap.push_back(i);
+                localTimes.push_back(cs.getTimes());
+                std::cout << "Simplified " << i << " with length " << localSimps.back().size() << " (" << total
                           << "/" << curves.size() << ")" << std::endl;
-                times.back() = cs.getTimes();
-                assert(times.size() == simplifiedCurves.size());
 
                 //build vertexMapping
 
-                vertexMaps.emplace_back();
+                localVertexMap.emplace_back();
                 int sj = 0;
                 for (int ci=0;ci<curve.size();ci++){
-                    if(sj + 2 < times.back().size() && times.back()[sj+1]<ci){
+                    if(sj + 2 < localTimes.back().size() && localTimes.back()[sj+1]<ci){
                         sj ++;
                     }
-                    auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*delta/3,simp[sj],simp[sj+1]);
+                    auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*freespaceDelta/3,simp[sj],simp[sj+1]);
                     assert(!interval.is_empty());
-                    if(vertexMaps.back().empty()){
-                        vertexMaps.back().push_back({sj,interval.begin});
+                    if(localVertexMap.back().empty()){
+                        localVertexMap.back().push_back({sj,interval.begin});
                     }else{
-                        vertexMaps.back().push_back(std::max(vertexMaps.back().back(),{sj,interval.begin}));
+                        localVertexMap.back().push_back(std::max(localVertexMap.back().back(),{sj,interval.begin}));
                     }
                 }
             };
         }
-    }
+        simplifiedCurves = localSimps;
+        times = localTimes;
+        simpIDtoOriginID = localIDMap;
+        vertexMaps = localVertexMap;
+        }
 
-    void initCurvesWithGT(Curves &curves, double _delta, std::vector<FrameLabeling> GTs) {
+    void initCurvesWithGT(Curves &curves, double _simpDelta, std::vector<FrameLabeling> GTs, double _freeDelta=-1) {
         assert(curves.size() == GTs.size());
 
         assert(curves.size() == GTs.size());
-        CurveSimplifier cs(_delta);
+        CurveSimplifier cs(_simpDelta);
         if (subsamplingFrequency >= 0) {
             cs.setSubsampling(subsamplingFrequency);
         } else {
             cs.unsetSubsampling();
         }
         hasGTs = true;
-        delta = _delta;
+        simplificationDelta = _simpDelta;
+        double const guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
+        freespaceDelta = (_freeDelta<0?guarantee*_simpDelta:_freeDelta);
         simplifiedCurves.clear();
         simplifiedGTs.clear();
         simpIDtoOriginID.clear();
         vertexMaps.clear();
         times.clear();
+
+
+        Curves localSimps;
+        std::vector<std::vector<int>> localTimes;
+        std::vector<int> localIDMap;
+        std::vector<std::vector<CPoint>> localVertexMap;
+        std::vector<std::vector<std::pair<Label,CPoint>>> localsimpGTs;
+
 //#pragma omp parallel for default(none) shared(curves, std::cout, GTs) firstprivate(cs) schedule(dynamic)
+#pragma omp declare reduction (mergeSimps : Curves : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergeTimes : std::vector<std::vector<int>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergeIDMap : std::vector<int> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergeVMap : std::vector<std::vector<CPoint>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+#pragma omp declare reduction (mergesimGT : std::vector<std::vector<std::pair<Label,CPoint>>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+
+//#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
+#pragma omp parallel for default(none) shared(curves, std::cout,GTs) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) reduction(mergesimGT:localsimpGTs) schedule(dynamic)
+
         for (int i = 0; i < curves.size(); ++i) {
-            times.emplace_back();
             Curve curve = curves[i];
-            simplifiedGTs.emplace_back();
-            simplifiedCurves.push_back(cs.simplify(curve, &(GTs[i])));
-            simpIDtoOriginID.push_back(i);
-            times[i] = cs.getTimes();
-            simplifiedGTs[i] = cs.getSimplifiedGTs();
+            auto simp = cs.simplify(curve,&(GTs[i]));
+            localSimps.push_back(simp);
+            localIDMap.push_back(i);
+            localTimes.push_back(cs.getTimes());
+            localsimpGTs.push_back(cs.getSimplifiedGTs());
 
 
             //build vertexMapping
 
-            vertexMaps.emplace_back();
+            localVertexMap.emplace_back();
             int sj = 0;
             for (int ci=0;ci<curve.size();ci++){
-                if(sj + 1 < times.back().size() && times.back()[sj+1]<ci){
+                if(sj + 1 < localTimes.back().size() && localTimes.back()[sj+1]<ci){
                     sj ++;
                 }
-                auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*delta/3,simplifiedCurves.back()[sj],simplifiedCurves.back()[sj+1]);
+                auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*freespaceDelta/3,simp[sj],simp[sj+1]);
                 assert(!interval.is_empty());
-                if(vertexMaps.back().empty()){
-                    vertexMaps.back().push_back({sj,interval.begin});
+                if(localVertexMap.back().empty()){
+                    localVertexMap.back().push_back({sj,interval.begin});
                 }else{
-                    vertexMaps.back().push_back(std::max(vertexMaps.back().back(),{sj,interval.begin}));
+                    localVertexMap.back().push_back(std::max(localVertexMap.back().back(),{sj,interval.begin}));
                 }
             }
         }
+        simplifiedCurves = localSimps;
+        times = localTimes;
+        simpIDtoOriginID = localIDMap;
+        vertexMaps = localVertexMap;
+        simplifiedGTs = localsimpGTs;
     }
 
     template<typename func>
-    ClusteringResult greedyCover(int l, int rounds, func filter,long long* size = nullptr) {
+    ClusteringResult greedyCover(int l, int rounds, func filter, long long* size = nullptr) {
 
         assert(not simplifiedCurves.empty());
 
         //Curves curves;
         //Curves bestresult;
         std::vector<Candidate> bestResultVisualizer;
-        double const guarantee = 1.0 + 1.0 + 2 * (7.0 / 3.0);
-        CandidateSetPQ cs = CandidateSetPQ(simplifiedCurves, guarantee * delta);
+        CandidateSetPQ cs = CandidateSetPQ(simplifiedCurves, freespaceDelta);
         //cs.computeCandidates(l);
         cs.ultrafastComputeSmall(l, filter);
 

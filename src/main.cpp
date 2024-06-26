@@ -866,7 +866,7 @@ void experiments() {
 
 void minimalBreakingExample() {
     Curves curves;
-    for(int i=1;i<=706/*9*/;i++){
+    for(int i=1;i<=1772/*9*/;i++){
         std::string name = "../data_drifters/world3d_txt/"+std::to_string(i)+"_drifter.txt";
         curves.push_back(Curve(name,3));
         if(curves.back().size() <= 1){
@@ -893,7 +893,7 @@ void minimalBreakingExample() {
                                         bool isdown = a.getEnd() < a.getBegin();
                                         bool nontrivial_length =
                                                 cc.simplifiedCurves[a.getCurveIndex()].subcurve_length(a.getBegin(), a.getEnd()) >
-                                                2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getDelta();
+                                                2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getSimpDelta();
                                         bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + l / 4;
                                         return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);});
 }
