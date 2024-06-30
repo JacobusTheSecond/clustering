@@ -9,16 +9,13 @@ result = {}
 
 ITERATIONS = 10
 
-ERORRS = [11]
-
 if os.path.exists(file_path):
     with open(file_path, "r") as file:
         result = json.load(file)
 
 for x in range(10, 15):
     TAG = x
-    if TAG in ERORRS:
-        continue
+    
     print(TAG, "TAG")
     klClusterSolver = KlClusterCMUSolver(TAG)
     gmmSolver = AcaCMUSolver(TAG, "gmm")

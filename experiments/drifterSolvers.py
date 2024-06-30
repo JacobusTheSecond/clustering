@@ -13,7 +13,8 @@ class DriftersSolver(ABC):
         for filepath in drifterFiles:
             with open(filepath, "r") as f:
                 curveData = np.array(list(csv.reader(f, delimiter=" "))).astype(float)
-                self.datacurves.append(curveData)
+                if len(curveData) > 1:
+                    self.datacurves.append(curveData)
 
     @abstractmethod
     def solve():
@@ -124,12 +125,15 @@ class KlClusterDriftersSolver(DriftersSolver):
         self.COMPLEXITY = 10
         self.ROUNDS = 1
 
+        print(f"Inititalizing {len(self.curves)} curves")
         self.cc = kl.CurveClusterer()
         self.cc.initCurves(self.curves, self.DELTA)
         self.simplifiedCurves = self.cc.getSimplifications()
 
-    def solve(self):
+    def solve(self, onlyRelevantClusters = False):
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
+
+        filterCount = 0
 
         # convert cluster centers to np array
         self.clustercurves = []
@@ -141,11 +145,18 @@ class KlClusterDriftersSolver(DriftersSolver):
             end = int(center.end.value)
             curve = self.simplifiedCurves[center.curve]
 
+            if onlyRelevantClusters:
+                if end-start <= 1 or len(cluster.values()) <= 1:
+                    filterCount += 1
+                    continue
             curvedata = []
             for i in range(start, end+1):
                 if (i < 0 or i >= len(curve)):
                     raise Exception("Index out of bounds")
-                # print(curve[i])
+                # print(curve[i])                
                 curvedata.append(curve[i].values)
 
             self.clustercurves.append(np.array(curvedata))
+
+        if onlyRelevantClusters:
+            print(f"Filtered out {filterCount} center curves")
