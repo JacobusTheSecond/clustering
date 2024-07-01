@@ -122,8 +122,9 @@ public:
             auto s = vertexMaps[curveIdx][i-1];
             auto t = vertexMaps[curveIdx][i];
             // assert(t>s);
+            // std::cout << (t.getFraction() - s.getFraction()) << std::endl;
             if(t>s) {
-                return {i - 1, (q.getFraction() - s.getFraction()) / (t.getFraction() - s.getFraction())};
+                return {i - 1, 0/*(q.getFraction() - s.getFraction()) / (t.getFraction() - s.getFraction())*/};
             }else{
                 return {i-1,0.0};
             }

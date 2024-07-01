@@ -54,7 +54,7 @@ class CMUSolver(ABC):
         for i in range(0, len(segmentsList)):
             if methodNames and i < len(methodNames):
                 axs[i][0].set_title(methodNames[i])
-            self.__plotSegmentsToSubplot(axs[i][0], segmentsList[i])
+            self.plotSegmentsToSubplot(axs[i][0], segmentsList[i])
         plt.show()
 
     def plotSegmentsAndGT(self, segmentsList, methodNames=None):
@@ -63,55 +63,14 @@ class CMUSolver(ABC):
         fig.canvas.manager.set_window_title("Curve segmentation compared to GT")
         fig.set_size_inches(10, (len(segmentsList)+1) * 1.5)
         axs[0][0].set_title("GT")
-        self.__plotSegmentsToSubplot(axs[0][0], self.gtSegments)
+        self.plotSegmentsToSubplot(axs[0][0], self.gtSegments)
         for i in range(0, len(segmentsList)):
             if methodNames and i < len(methodNames):
                 axs[i+1][0].set_title(methodNames[i])
-            self.__plotSegmentsToSubplot(axs[i+1][0], segmentsList[i])
+            self.plotSegmentsToSubplot(axs[i+1][0], segmentsList[i])
         plt.show()
-
-    def calculateAccurcacy(self, segmentation, tag):
-        M = self.getConfusionMatrix(segmentation, tag)
-        print(M)
-        # main diagonal divided my all entries of the confusion matrix
-        return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
-
-    def calculateClassPrecision(self, segmentation, classLabel, tag):
-        M = self.getConfusionMatrix(segmentation, tag)
-        # main diagonal divided my all entries of the confusion matrix
-        positiveClassified = sum([M[classLabel][i] for i in range(len(M))])
-        return M[classLabel][classLabel] / positiveClassified if positiveClassified != 0 else 0
-
-    def calculateMacroPrecision(self, segmentation, tag):
-        M = self.getConfusionMatrix(segmentation, tag)
-        return sum([self.calculateClassPrecision(segmentation, label, tag) for label in range(len(M))]) / len(M)
-
-
-    def calculateClassRecall(self, segmentation, classLabel, tag):
-        M = self.getConfusionMatrix(segmentation, tag)
-        # main diagonal divided my all entries of the confusion matrix
-        GTPositives = sum([M[i][classLabel] for i in range(len(M))])
-        return M[classLabel][classLabel] / GTPositives if GTPositives != 0 else 0
-
-    def calculateMacroRecall(self, segmentation, tag):
-        M = self.getConfusionMatrix(segmentation, tag)
-        return sum([self.calculateClassRecall(segmentation, label, tag) for label in range(len(M))]) / len(M)
-
-    def getConfusionMatrix(self, segmentation, tag):
-        gtSegments = self.__getGTSegments(tag)
-        num_labels = max([gtSegment.label for gtSegment in gtSegments[0]] + [segment.label for segment in segmentation])+1
-        M = [[0 for i in range(num_labels)] for j in range(num_labels)]
-        frameListGT = []
-        frameList = []
-        for gtSegment in gtSegments[0]:
-            frameListGT.extend([gtSegment.label]*gtSegment.size)
-        for segment in segmentation:
-            frameList.extend([segment.label]*segment.size)
-        for frame, frameGT in zip(frameList, frameListGT):
-            M[frame][frameGT] +=1
-        return M
     
-    def __plotSegmentsToSubplot(self, ax, segments):
+    def plotSegmentsToSubplot(self, ax, segments):
         x = 0
         for s in segments:
             if s.label < len(self.colors):
@@ -153,6 +112,47 @@ class CMUSolver(ABC):
                     # gt.add(0, row[2])
 
         return segments, labelToIndex
+    
+    def calculateAccuracy(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        print(M)
+        # main diagonal divided my all entries of the confusion matrix
+        return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
+
+    def calculateClassPrecision(self, segmentation, classLabel, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        # main diagonal divided my all entries of the confusion matrix
+        positiveClassified = sum([M[classLabel][i] for i in range(len(M))])
+        return M[classLabel][classLabel] / positiveClassified if positiveClassified != 0 else 0
+
+    def calculateMacroPrecision(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        return sum([self.calculateClassPrecision(segmentation, label, tag) for label in range(len(M))]) / len(M)
+
+
+    def calculateClassRecall(self, segmentation, classLabel, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        # main diagonal divided my all entries of the confusion matrix
+        GTPositives = sum([M[i][classLabel] for i in range(len(M))])
+        return M[classLabel][classLabel] / GTPositives if GTPositives != 0 else 0
+
+    def calculateMacroRecall(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        return sum([self.calculateClassRecall(segmentation, label, tag) for label in range(len(M))]) / len(M)
+
+    def getConfusionMatrix(self, segmentation, tag):
+        gtSegments = self.__getGTSegments(tag)
+        num_labels = max([gtSegment.label for gtSegment in gtSegments[0]] + [segment.label for segment in segmentation])+1
+        M = [[0 for i in range(num_labels)] for j in range(num_labels)]
+        frameListGT = []
+        frameList = []
+        for gtSegment in gtSegments[0]:
+            frameListGT.extend([gtSegment.label]*gtSegment.size)
+        for segment in segmentation:
+            frameList.extend([segment.label]*segment.size)
+        for frame, frameGT in zip(frameList, frameListGT):
+            M[frame][frameGT] +=1
+        return M
 
 class KlClusterCMUSolver(CMUSolver):
     def __init__(self, tag):
@@ -180,12 +180,13 @@ class KlClusterCMUSolver(CMUSolver):
         self.cc.initCurvesWithGT(curves, self.DELTA, groundTruths)
 
     def solve(self):
-        clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
-        self.segments, self.segmentation = self.__getBaseSementation(clusters)
+        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
+        self.segments, self.segmentation = self.__getBaseSementation(self.clusters)
         return self.segments
 
     def __getBaseSementation(self, clusters):
         labels = self.__labelClustersBestMatch(clusters)
+        self.clusterLabels = labels
 
         # build segmentation
         size = self.curve.complexity
@@ -263,6 +264,46 @@ class KlClusterCMUSolver(CMUSolver):
             labels.append(bestLabel)
 
         return labels
+    
+    def plotSegmentsAndMatching(self):
+        plt.rcParams['toolbar'] = 'None' # Remove tool bar
+        fig, axs = plt.subplots(3, 1, tight_layout=True, squeeze=False)
+        fig.canvas.manager.set_window_title("Curve segmentation compared to GT")
+        fig.set_size_inches(10, 3 * 1.5)
+        axs[1][0].set_title("KlCluster")
+        self.plotSegmentsToSubplot(axs[1][0], self.segments)
+        axs[2][0].set_title("GT")
+        self.plotSegmentsToSubplot(axs[2][0], self.gtSegments)
+        
+        # plot matchings of each cluster
+        ax = axs[0][0]
+        ax.set_title("Cluster matchings")
+        for clusterIdx, cluster in enumerate(self.clusters):
+            label = self.clusterLabels[clusterIdx]
+            if label == -1:
+                label = 0
+            for matching in cluster:
+                matchingstart = int(self.cc.mapToBase(0, matching.start).value)
+                matchingend = int(self.cc.mapToBase(0, matching.end).value)
+                size = matchingend - matchingstart
+
+                if label < len(self.colors):
+                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, color=self.colors[label])
+                else:
+                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, label=label)
+
+
+        xax = ax.axes.get_xaxis()
+        xax.set_visible(False)
+        xax = ax.axes.get_yaxis()
+        xax.set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+
+        plt.show()
+
 
 class AcaCMUSolver(CMUSolver):
     def __init__(self, tag, method):
@@ -308,3 +349,4 @@ class AcaCMUSolver(CMUSolver):
             segmentStart = frame
 
         return segments
+    
