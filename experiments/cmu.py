@@ -2,12 +2,12 @@ from cmuSolvers import KlClusterCMUSolver
 from cmuSolvers import AcaCMUSolver
 from cmuSolvers import TmmCMUSolver
 
-TAG = 1
+TAG = 2
 klClusterSolver = KlClusterCMUSolver(TAG)
 tmmCMUSolver = TmmCMUSolver(TAG)
-# gmmSolver = AcaCMUSolver(TAG, "gmm")
-# acaSolver = AcaCMUSolver(TAG, "aca")
-# hacaSolver = AcaCMUSolver(TAG, "haca")
+gmmSolver = AcaCMUSolver(TAG, "gmm")
+acaSolver = AcaCMUSolver(TAG, "aca")
+hacaSolver = AcaCMUSolver(TAG, "haca")
 
 
 segmentsKlCluster = klClusterSolver.solve()
@@ -16,9 +16,9 @@ segmentsTmm = tmmCMUSolver.solve()
 
 #klClusterSolver.plotSegmentsAndMatching()
 
-# segmentsGmm = gmmSolver.solve()
+segmentsGmm = gmmSolver.solve()
 
-# segmentsAca = acaSolver.solve()
-# segmentsHaca = hacaSolver.solve()
+segmentsAca = acaSolver.solve()
+segmentsHaca = hacaSolver.solve()
 
-klClusterSolver.plotSegmentsAndGT([segmentsKlCluster, segmentsTmm], ["KlCluster", "Tmm"])
+klClusterSolver.plotSegmentsAndGT([segmentsKlCluster, segmentsTmm, segmentsAca, segmentsHaca, segmentsGmm], ["KlCluster", "Tmm", "Aca", "Haca", "Gmm"])

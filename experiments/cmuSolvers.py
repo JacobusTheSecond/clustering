@@ -366,7 +366,7 @@ class TmmCMUSolver(CMUSolver):
         eng.addPath("MotionSegmentation", nargout=0) # add aca paths like src or lib
         #eng.addpath("..") # add runAca, runGmm, ... to path
         eng.cd("MotionSegmentation")
-        comps, sframes, eframes = eng.call_segmentation(1, nargout=3)
+        comps, sframes, eframes = eng.call_segmentation(self.tag, nargout=3)
         eng.quit() # stop matlab.engine
 
         comps = [int(i[0]) for i in comps]
