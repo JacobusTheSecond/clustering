@@ -52,7 +52,7 @@ function [strict_results, tolerant_results] = tw_evaluation( range, options_list
     strict_ext = zeros(range_count, strict_records_count + strict_old_records_count);
     strict_ext(:, 1:strict_records_count) = strict_results;  
     strict_ext(:, (strict_records_count + 1):end) = strict_old_range;
-    tw_accuracyPlot( strict_ext, 'Strict Evaluation', names, record_names_ext, lines(size(strict_ext, 2)) );
+    tw_accuracyPlot( strict_ext, 'Strict Evaluation', names, record_names_ext, lines(size(strict_ext, 2)),frame_counts );
     figure(102);
     tolerant_old_range = tolerant_old(range, :);
     tolerant_records_count = size(tolerant_results, 2);
@@ -60,5 +60,5 @@ function [strict_results, tolerant_results] = tw_evaluation( range, options_list
     tolerant_ext = zeros(range_count, tolerant_records_count + tolerant_old_records_count);
     tolerant_ext(:, 1:tolerant_records_count) = tolerant_results;  
     tolerant_ext(:, (tolerant_records_count + 1):end) = tolerant_old_range;
-    tw_accuracyPlot( tolerant_ext, 'Tolerant Evaluation', names, record_names_ext, lines(size(tolerant_ext, 2)) );
+    tw_accuracyPlot( tolerant_ext, 'Tolerant Evaluation', names, record_names_ext, lines(size(tolerant_ext, 2)), frame_counts);
 end

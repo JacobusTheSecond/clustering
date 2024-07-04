@@ -14,7 +14,7 @@ function [A_all] = tw_accuracyPlot( A, title_name, names, record_names, colors, 
     %A_all(end, :) = sum(A) / size(A, 1);
     
     ax = gca;
-    bar(A_all(:,3:end));
+    bar(A_all(:,1:end));
     set(ax, 'xticklabel', allnames);
     xlabel('Trial');
     ylabel('Accuracy');
@@ -22,7 +22,7 @@ function [A_all] = tw_accuracyPlot( A, title_name, names, record_names, colors, 
     set(ax, 'XGrid', 'off');
     set(ax, 'YGrid', 'on');
     title(title_name);
-    legend(record_names(3:end));
+    legend(record_names(1:end));
     colormap( colors(1:size(A_all, 2), :) );
 end
 

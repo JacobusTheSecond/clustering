@@ -1,7 +1,7 @@
 clear all;
 close all;
 
-base_path = 'D:\mocap\cmu\all_asfamc\subjects\86\';
+base_path = '/Users/styx/Downloads/MotionSegmentationCode/MatlabCodeTMM/CMU_86/';
 skel_file = '86.asf';
 file_prefix = '86_';
 file_suffix = '.amc';

@@ -27,8 +27,8 @@
 typedef size_t mbglIndex;
 typedef mbglIndex mbglDegreeType;
 #else
-typedef int mbglIndex;
-typedef unsigned int mbglDegreeType;
+typedef unsigned long mbglIndex;
+typedef unsigned long mbglDegreeType;
 #endif /* MATLAB_BGL_LARGE_ARRAYS */
 
 #endif /* MATLAB_BGL_TYPES_H */

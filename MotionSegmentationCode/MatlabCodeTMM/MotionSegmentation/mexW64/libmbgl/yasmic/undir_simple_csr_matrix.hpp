@@ -12,7 +12,7 @@
  *  2008-09-26: Initial coding
  */
 
-#include <yasmic/smatrix_traits.hpp>
+#include "smatrix_traits.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 
 namespace yasmic

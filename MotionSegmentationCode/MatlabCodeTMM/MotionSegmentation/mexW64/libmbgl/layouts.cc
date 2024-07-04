@@ -12,13 +12,13 @@
 
 #include "include/matlab_bgl.h"
 
-#include <yasmic/undir_simple_csr_matrix_as_graph.hpp>
-#include <yasmic/simple_csr_matrix_as_graph.hpp>
-#include <yasmic/iterator_utility.hpp>
+#include "yasmic/undir_simple_csr_matrix_as_graph.hpp"
+#include "yasmic/simple_csr_matrix_as_graph.hpp"
+#include "yasmic/iterator_utility.hpp"
 
 #include <boost/graph/kamada_kawai_spring_layout.hpp>
-#include <yasmic/boost_mod/fruchterman_reingold.hpp>
-#include <boost/graph/gursoy_atun_layout.hpp>
+#include "yasmic/boost_mod/fruchterman_reingold.hpp"
+#include <boost/graph/gursoy_atun_layout.hpp"
 #include <boost/graph/circle_layout.hpp>
 #include <boost/graph/random_layout.hpp>
 #include <boost/graph/simple_point.hpp>

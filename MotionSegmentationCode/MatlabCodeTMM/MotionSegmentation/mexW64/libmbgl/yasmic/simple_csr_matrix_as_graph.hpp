@@ -20,7 +20,7 @@
  *    (this bug did not impact any algorithms, as no algorithms called it)
  */
 
-#include <yasmic/simple_csr_matrix.hpp>
+#include "simple_csr_matrix.hpp"
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
 #include <boost/integer.hpp>
@@ -28,7 +28,7 @@
 #include <boost/mpl/if.hpp>
 #include <boost/type_traits/is_unsigned.hpp>
 #include <boost/integer.hpp>
-#include <yasmic/boost_mod/integer_extra.hpp>
+#include "boost_mod/integer_extra.hpp"
 #include <boost/iterator/counting_iterator.hpp>
 
 #define YASMIC_SIMPLE_CSR_TEMPLATE_PARAMS \
