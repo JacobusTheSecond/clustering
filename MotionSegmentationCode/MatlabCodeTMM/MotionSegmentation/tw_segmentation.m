@@ -8,7 +8,7 @@ function [mot, mots, submots, comps, cuts, subcuts, subcuts_main, subcuts_mirror
     options.DEBUG_FIND_MOTION_SEGMENTS = false;
     options.DEBUG_CLUSTER_MOTION_SEGMENTS = false;
     
-    options.executeChangeFrameRate = true;
+    options.executeChangeFrameRate = false;
     options.executeCreateFeatureSet = true;
     options.fmat = [];
     options.fmat_mirror = [];

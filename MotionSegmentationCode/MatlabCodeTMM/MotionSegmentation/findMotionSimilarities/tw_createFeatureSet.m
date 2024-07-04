@@ -18,7 +18,7 @@ function [ fmat, fmat_mirror ] = tw_createFeatureSet( skel, mot, options )
 %        tic;
         motn   = prepareMotForQuery(skel, mot);
         fmat   = tw_extractFeatureSetFromMot(skel, motn, feature_set, frame_offsets);
-        projection_options.VIZPROJECTION = true;
+        projection_options.VIZPROJECTION = false;
         projection_options.k = feature_projection_k;
         [pfmat,meta] = computeProjectionKernelBased(fmat, projection_options);
 

@@ -21,7 +21,7 @@ class CMUSolver(ABC):
             raise Exception("CMU trial tag must be between 1 and 14")
         self.DATA_PATH = os.path.join(os.path.dirname(__file__), "../data_cmu/")
         self.tag = tag
-        self.gtSegments, self.labelMapping = self.__getGTSegments(tag)
+        self.gtSegments, self.labelMapping = self.getGTSegments(tag)
 
         self.segmentation = None
         self.segments = None
@@ -86,7 +86,7 @@ class CMUSolver(ABC):
         ax.spines['right'].set_visible(False)
         ax.spines['left'].set_visible(False)
     
-    def __getGTSegments(self, tag):
+    def getGTSegments(self, tag):
         """get ground truth of cmu instance {instanceid>=1}"""
         labelToIndex = {}
         labelCount = 1
@@ -141,7 +141,7 @@ class CMUSolver(ABC):
         return sum([self.calculateClassRecall(segmentation, label, tag) for label in range(len(M))]) / len(M)
 
     def getConfusionMatrix(self, segmentation, tag):
-        gtSegments = self.__getGTSegments(tag)
+        gtSegments = self.getGTSegments(tag)
         num_labels = max([gtSegment.label for gtSegment in gtSegments[0]] + [segment.label for segment in segmentation])+1
         M = [[0 for i in range(num_labels)] for j in range(num_labels)]
         frameListGT = []
@@ -349,4 +349,69 @@ class AcaCMUSolver(CMUSolver):
             segmentStart = frame
 
         return segments
-    
+
+
+class TmmCMUSolver(CMUSolver):
+    def __init__(self, tag):
+        super().__init__(tag)
+        
+    def solve(self):
+        print("start matlab")
+        
+        eng = matlab.engine.start_matlab()  # connect_matlab()
+        print("finished")
+
+        eng.cd(f'{os.getcwd()}/..//MotionSegmentationCode/MatlabCodeTMM/', nargout=0)
+        # eng.make(nargout=0)
+        eng.addPath("MotionSegmentation", nargout=0) # add aca paths like src or lib
+        #eng.addpath("..") # add runAca, runGmm, ... to path
+        eng.cd("MotionSegmentation")
+        comps, sframes, eframes = eng.call_segmentation(1, nargout=3)
+        eng.quit() # stop matlab.engine
+
+        comps = [int(i[0]) for i in comps]
+        sframes = [int(i[0]) for i in sframes]
+        eframes = [int(i[0]) for i in eframes]
+
+        clusters = [[] for i in range(max(comps))]
+        ## stop matlab.engine
+        for i in range(len(comps)):
+            clusters[comps[i]-1].append((sframes[i], eframes[i]))
+
+        self.gt = self.getGTSegments(self.tag)
+        frameListGT = []
+        for gtSegment in self.gt[0]:
+            frameListGT.extend([gtSegment.label]*gtSegment.size)
+        segments_ = []
+        labels = []
+        for clusterIdx, cluster in enumerate(clusters):
+            labelcount = {}
+            totalcount = 0
+            for subsegment in cluster:
+                start = subsegment[0]
+                end = subsegment[1]
+                
+                for i in range(start-1, end - 1):
+                   
+                    label = frameListGT[i]
+                    if not label in labelcount:
+                        labelcount[label] = 0
+                    labelcount[label] += 1
+                    totalcount += 1
+            # pick maximum
+            if len(labelcount) > 0:
+                bestLabel = max(labelcount, key=labelcount.get)
+                # if label has no majority, discard cluster
+                if labelcount[bestLabel] * 2 <= totalcount:
+                    bestLabel = 0
+            else:
+                bestLabel = 0
+            labels.append(bestLabel)
+            for subsegment in cluster:
+                start = subsegment[0]
+                end = subsegment[1]
+                segments_.append([start, end, bestLabel])
+        segments_.sort()
+        segments = [Segment(size=s[1]-s[0], label=s[2]) for s in segments_]
+        print(segments)
+        return segments

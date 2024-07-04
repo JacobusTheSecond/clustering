@@ -1,21 +1,24 @@
 from cmuSolvers import KlClusterCMUSolver
 from cmuSolvers import AcaCMUSolver
+from cmuSolvers import TmmCMUSolver
 
 TAG = 1
 klClusterSolver = KlClusterCMUSolver(TAG)
+tmmCMUSolver = TmmCMUSolver(TAG)
 # gmmSolver = AcaCMUSolver(TAG, "gmm")
 # acaSolver = AcaCMUSolver(TAG, "aca")
 # hacaSolver = AcaCMUSolver(TAG, "haca")
 
 
 segmentsKlCluster = klClusterSolver.solve()
+segmentsTmm = tmmCMUSolver.solve()
 #print(klClusterSolver.calculateAccuracy(segmentsKlCluster, TAG))
 
-klClusterSolver.plotSegmentsAndMatching()
+#klClusterSolver.plotSegmentsAndMatching()
 
 # segmentsGmm = gmmSolver.solve()
 
 # segmentsAca = acaSolver.solve()
 # segmentsHaca = hacaSolver.solve()
 
-# klClusterSolver.plotSegmentsAndGT([segmentsKlCluster, segmentsGmm, segmentsAca, segmentsHaca], ["KlCluster", "Gmm", "Aca", "Haca"])
+klClusterSolver.plotSegmentsAndGT([segmentsKlCluster, segmentsTmm], ["KlCluster", "Tmm"])
