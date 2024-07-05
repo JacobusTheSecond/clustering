@@ -317,7 +317,7 @@ class AcaCMUSolver(CMUSolver):
         print("finished")
 
         eng.cd(os.path.join(os.path.dirname(__file__), "../aca/aca"), nargout=0)
-        # eng.make(nargout=0)
+        #eng.make(nargout=0)
         eng.addPath(nargout=0) # add aca paths like src or lib
         eng.addpath("..") # add runAca, runGmm, ... to path
 

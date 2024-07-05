@@ -31,10 +31,10 @@ for x in range(10, 15):
     segmentsAca = acaSolver.solve()
     segmentsHaca = hacaSolver.solve()
     acc = {
-        "KlCluster" : klClusterSolver.calculateAccurcacy(segmentsKlCluster, TAG),
-        "gmm" : klClusterSolver.calculateAccurcacy(segmentsGmm, TAG),
-        "aca" : klClusterSolver.calculateAccurcacy(segmentsAca, TAG),
-        "haca" : klClusterSolver.calculateAccurcacy(segmentsHaca, TAG),
+        "KlCluster" : klClusterSolver.calculateAccuracy(segmentsKlCluster, TAG),
+        "gmm" : klClusterSolver.calculateAccuracy(segmentsGmm, TAG),
+        "aca" : klClusterSolver.calculateAccuracy(segmentsAca, TAG),
+        "haca" : klClusterSolver.calculateAccuracy(segmentsHaca, TAG),
     }
     macroPrec = {
         "KlCluster" : klClusterSolver.calculateMacroPrecision(segmentsKlCluster, TAG),
