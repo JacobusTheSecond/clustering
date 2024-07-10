@@ -116,12 +116,12 @@ class CMUSolver(ABC):
     def calculateAccuracy(self, segmentation, tag):
         M = self.getConfusionMatrix(segmentation, tag)
         print(M)
-        # main diagonal divided my all entries of the confusion matrix
+        # main diagonal divided by all entries of the confusion matrix
         return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
 
     def calculateClassPrecision(self, segmentation, classLabel, tag):
         M = self.getConfusionMatrix(segmentation, tag)
-        # main diagonal divided my all entries of the confusion matrix
+        # true positive divided by sum of all predicted positive
         positiveClassified = sum([M[classLabel][i] for i in range(len(M))])
         return M[classLabel][classLabel] / positiveClassified if positiveClassified != 0 else 0
 
@@ -132,7 +132,7 @@ class CMUSolver(ABC):
 
     def calculateClassRecall(self, segmentation, classLabel, tag):
         M = self.getConfusionMatrix(segmentation, tag)
-        # main diagonal divided my all entries of the confusion matrix
+        # true divided by sum of all gt positive
         GTPositives = sum([M[i][classLabel] for i in range(len(M))])
         return M[classLabel][classLabel] / GTPositives if GTPositives != 0 else 0
 
