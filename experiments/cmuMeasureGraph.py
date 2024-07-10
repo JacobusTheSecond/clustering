@@ -7,7 +7,8 @@ file_path = "result.json"
 
 result = {}
 
-measure = "macroF1"
+
+measure = "acc"
 
 measures = {"acc" : "Accuracy",
             "macroPrec" : "Macro-average precision",

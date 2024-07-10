@@ -116,6 +116,7 @@ class CMUSolver(ABC):
     def calculateAccuracy(self, segmentation, tag):
         M = self.getConfusionMatrix(segmentation, tag)
         # main diagonal divided my all entries of the confusion matrix
+
         return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
 
     def calculateAccuracyTrueLabels(self, segmentation, tag):
@@ -325,7 +326,7 @@ class AcaCMUSolver(CMUSolver):
         print("finished")
 
         eng.cd(os.path.join(os.path.dirname(__file__), "../aca/aca"), nargout=0)
-        # eng.make(nargout=0)
+        #eng.make(nargout=0)
         eng.addPath(nargout=0) # add aca paths like src or lib
         eng.addpath("..") # add runAca, runGmm, ... to path
 

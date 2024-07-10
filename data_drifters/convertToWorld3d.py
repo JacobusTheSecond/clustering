@@ -12,6 +12,9 @@ import csv
 import os
 
 data_folder = os.path.dirname(__file__)
+csv_file = "drifter_6hour_qc_0f56_a781_b756.csv"
+
+print("test")
 
 def showDrifters():
     folder = f"{data_folder}/world3d_txt"
@@ -104,7 +107,7 @@ def convertToWorld3d():
     print(f"Removed {counter} existing files from {folder}")
 
     counter = 1
-    with open(f"{data_folder}/drifter_6hour_qc_8951_b49f_cfce.csv") as csvfile:
+    with open(f"{data_folder}/{csv_file}") as csvfile:
         spamreader = csv.reader(csvfile,delimiter=",")
         data = []
         curID = -1
@@ -170,5 +173,6 @@ def convertToWorld3d():
                     hasWrittenYet = True
             print(f"Count: {counter}")
 
+#print("{data_folder}/{csv_file}")
 convertToWorld3d()
 # showDrifters()

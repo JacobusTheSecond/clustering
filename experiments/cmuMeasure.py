@@ -46,6 +46,7 @@ for x in range(10, 15):
         "aca" : klClusterSolver.calculateAccuracyTrueLabels(segmentsAca, TAG),
         "haca" : klClusterSolver.calculateAccuracyTrueLabels(segmentsHaca, TAG),
         "tmm" : klClusterSolver.calculateAccuracyTrueLabels(segmentsTmm, TAG),
+
     }
     macroPrec = {
         "KlCluster" : klClusterSolver.calculateMacroPrecision(segmentsKlCluster, TAG),
