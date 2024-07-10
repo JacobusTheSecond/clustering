@@ -74,9 +74,9 @@ class CMUSolver(ABC):
         x = 0
         for s in segments:
             if s.label < len(self.colors):
-                ax.barh(0, s.size, left=x, edgecolor="black", linewidth=1.5, color=self.colors[s.label])
+                ax.barh(0, s.size, left=x, edgecolor="grey", linewidth=0.5, color=self.colors[s.label])
             else:
-                ax.barh(0, s.size, left=x, edgecolor="black", linewidth=1.5, label=s.label)
+                ax.barh(0, s.size, left=x, edgecolor="grey", linewidth=1.5, label=s.label)
 
             x += s.size
 
@@ -115,13 +115,16 @@ class CMUSolver(ABC):
     
     def calculateAccuracy(self, segmentation, tag):
         M = self.getConfusionMatrix(segmentation, tag)
-        print(M)
         # main diagonal divided my all entries of the confusion matrix
         return sum([M[i][i] for i in range(len(M))]) / sum([M[i][j] for i in range(len(M)) for j in range(len(M))])
 
+    def calculateAccuracyTrueLabels(self, segmentation, tag):
+        M = self.getConfusionMatrix(segmentation, tag)
+        return sum([M[i][i] for i in range(1, len(M))]) / sum([M[i][j] for i in range(0, len(M)) for j in range(1, len(M))])
+
+
     def calculateClassPrecision(self, segmentation, classLabel, tag):
         M = self.getConfusionMatrix(segmentation, tag)
-        # main diagonal divided my all entries of the confusion matrix
         positiveClassified = sum([M[classLabel][i] for i in range(len(M))])
         return M[classLabel][classLabel] / positiveClassified if positiveClassified != 0 else 0
 
@@ -132,13 +135,17 @@ class CMUSolver(ABC):
 
     def calculateClassRecall(self, segmentation, classLabel, tag):
         M = self.getConfusionMatrix(segmentation, tag)
-        # main diagonal divided my all entries of the confusion matrix
         GTPositives = sum([M[i][classLabel] for i in range(len(M))])
-        return M[classLabel][classLabel] / GTPositives if GTPositives != 0 else 0
+        return M[classLabel][classLabel] / GTPositives if GTPositives != 0 else 1
 
     def calculateMacroRecall(self, segmentation, tag):
         M = self.getConfusionMatrix(segmentation, tag)
         return sum([self.calculateClassRecall(segmentation, label, tag) for label in range(len(M))]) / len(M)
+
+    def calculateMacroF1(self, segmentation, tag):
+        prec = self.calculateMacroPrecision(segmentation, tag)
+        recall = self.calculateMacroRecall(segmentation, tag)
+        return (2*prec*recall) / (prec + recall)
 
     def getConfusionMatrix(self, segmentation, tag):
         gtSegments = self.getGTSegments(tag)
@@ -262,6 +269,7 @@ class KlClusterCMUSolver(CMUSolver):
             else:
                 bestLabel = -1
             labels.append(bestLabel)
+        print("Anzahl Labels KlCluster", len(labels))
 
         return labels
     
@@ -370,6 +378,7 @@ class TmmCMUSolver(CMUSolver):
         eng.quit() # stop matlab.engine
 
         comps = [int(i[0]) for i in comps]
+        print(comps)
         sframes = [int(i[0]) for i in sframes]
         eframes = [int(i[0]) for i in eframes]
 
@@ -413,5 +422,5 @@ class TmmCMUSolver(CMUSolver):
                 segments_.append([start, end, bestLabel])
         segments_.sort()
         segments = [Segment(size=s[1]-s[0], label=s[2]) for s in segments_]
-        print(segments)
+        print("Anzahl Labels Tmm", len(labels), len(clusters), len(segments))
         return segments

@@ -1,15 +1,18 @@
 import matplotlib.pyplot as plt
 import json
 import os 
+import numpy as np
 
 file_path = "result.json"
 
 result = {}
 
-measure = "macroPrec"
+measure = "macroF1"
 
 measures = {"acc" : "Accuracy",
             "macroPrec" : "Macro-average precision",
+            "trueAcc" : "Accuracy without unlabeled segments",
+            "macroF1" : "Macro-average F1",
             "macroRec" : "Macro-average recall",}
 
 
@@ -21,7 +24,8 @@ colors = {
     "KlCluster": 'blue',
     "gmm": 'orange',
     "aca": 'green',
-    "haca": 'red'
+    "haca": 'red',
+    "tmm"  : 'pink'
 }
 x = list(range(int(min(result.keys())), max([int(key) for key in result.keys()])+1))
 
@@ -30,16 +34,18 @@ acc_values = {method: [result[str(i)][measure][method] for i in x] for method in
 
 # Define colors for each method
 
+# Converting line plot to bar chart
+plt.figure(figsize=(12, 7))
+bar_width = 0.15  # Width of each bar
+index = np.arange(len(x))
 
-# Plotting
-plt.figure(figsize=(10, 6))
-for method, values in acc_values.items():
-    plt.plot(x, values, label=method, marker='o', color=colors[method])
+for i, (method, values) in enumerate(acc_values.items()):
+    plt.bar(index + i * bar_width, values, bar_width, label=method, color=colors[method])
 
 plt.xlabel('TAG')
-plt.ylabel('Accuracy')
+plt.ylabel(measures[measure])
 plt.title(f'{measures[measure]} Values for Different Methods')
-plt.xticks(x, labels=x)
+plt.xticks(index + bar_width, labels=x)
 plt.legend()
 plt.grid(True)
 plt.show()
