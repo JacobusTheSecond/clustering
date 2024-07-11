@@ -357,41 +357,50 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
              */
         }
     }
-    std::vector<int> sizes(curves.size(),0);
+    int size=0;
+    std::vector<std::vector<int>> intersectionMap(curves.size());
     for(auto pair : intersectionpairs){
         int i = pair.first;
         int j = pair.second;
-        sizes[i]++;
+        size++;
         if(i!=j){
-            sizes[j]++;
+            size++;
+        }
+        intersectionMap[i].push_back(j);
+        if(i!=j){
+            intersectionMap[j].push_back(i);
         }
     }
 
-    for(int i=0;i<curves.size();i++){
-        this->operator[](i).reserve(sizes[i]);
-    }
+    //for(int i=0;i<curves.size();i++){
+    //    this->operator[](i).reserve(sizes[i]);
+    //}
+
+    //new approach
     int num = 0;
-#pragma omp parallel for default(none) shared(intersectionpairs,std::cout,curves,delta,threadcount,num)
-    for(auto pair:intersectionpairs){
-        num ++;
-        int i = pair.first;
-        int j = pair.second;
-        std::cout << "[" << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << omp_get_thread_num() << ")]"<<std::flush;
+#pragma omp parallel for default(none) shared(intersectionMap,std::cout,curves,delta,threadcount,num,size) schedule(dynamic,1)
+    for(int i=0;i<intersectionMap.size();i++){
+        auto js = intersectionMap[i];
+        std::vector<SparseFreespace> localFreespaces;
+        for(auto j:js){
+            num ++;
+            //std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].get_name() << " and " << curves[j].get_name() << ")\n"<<std::flush;
+            //SparseFreespace(Curve& B, Curve& T, distance_t _delta, int threadcount = 1, CurveID BID = -1, CurveID TID = -1);
 
-        //std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].get_name() << " and " << curves[j].get_name() << ")\n"<<std::flush;
-        //SparseFreespace(Curve& B, Curve& T, distance_t _delta, int threadcount = 1, CurveID BID = -1, CurveID TID = -1);
-
-        SparseFreespace sfs(curves[i], curves[j], delta, threadcount, i, j);
 #pragma omp critical
         {
-            this->operator[](i).emplace_back(std::move(sfs));
+            this->operator[](i).emplace_back(curves[i], curves[j], delta, threadcount, i, j);
         };
-        if (i != j) {
-            SparseFreespace sfs2(curves[j], curves[i], delta, threadcount, j, i);
-#pragma omp critical
-            {
-                this->operator[](j).emplace_back(std::move(sfs2));
-            };
         }
+//#pragma omp critical
+//        {
+//            this->operator[](i) = localFreespaces;
+//            for (int index = 0;i<localFreespaces.size();index++) {
+//                this->operator[](i).emplace_back(std::move(localFreespaces[index]));
+//            }
+//        };
+        std::cout << "[(" << omp_get_thread_num() << ") " << i << "/" << intersectionMap.size() << " ]"<<std::flush;
+
+        //this->operator[](i).insert(this->operator[](i).end(),std::move(localFreespaces));
     }
 }
