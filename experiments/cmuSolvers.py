@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import numpy as np
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import csv
 import os
