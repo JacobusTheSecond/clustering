@@ -107,7 +107,8 @@ PYBIND11_MODULE(klcluster,m){
             .def("values",&Cluster::as_ndarray);
 
     py::class_<ClusteringResult>(m,"ClusteringResult")
-            .def_property_readonly("__len__",&ClusteringResult::size)
+            .def("__len__", [](const ClusteringResult& c) { return c.size(); })
+        //     .def_property_readonly("__len__",&ClusteringResult::size)
             .def("__iter__",[](ClusteringResult &c){return py::make_iterator(c.begin(),c.end());},py::keep_alive<0,1>())
             .def("__getitem__", &ClusteringResult::get, py::return_value_policy::reference);
 

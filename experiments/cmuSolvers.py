@@ -6,6 +6,7 @@ import csv
 import os
 import json
 from dataclasses import dataclass
+from collections import Counter
 
 import matlab.engine
 import klcluster as kl
@@ -163,7 +164,7 @@ class CMUSolver(ABC):
         return M
 
 class KlClusterCMUSolver(CMUSolver):
-    def __init__(self, tag):
+    def __init__(self, tag, SIMP_DELTA = 1.25, FREE_DELTA = 1.25, COMPLEXITY = 10):
         super().__init__(tag)
 
         trial = np.genfromtxt(os.path.join(self.DATA_PATH, f"86_{tag}.txt"), delimiter=" ")
@@ -181,11 +182,12 @@ class KlClusterCMUSolver(CMUSolver):
         groundTruths = kl.GroundTruths()
         groundTruths.add(self.gt)
         
-        self.DELTA = 1.25
-        self.COMPLEXITY = 10
+        self.SIMP_DELTA = SIMP_DELTA
+        self.FREE_DELTA = FREE_DELTA
+        self.COMPLEXITY = COMPLEXITY
         self.ROUNDS = 1
         self.cc = kl.CurveClusterer()
-        self.cc.initCurvesWithGT(curves, self.DELTA, groundTruths)
+        self.cc.initCurvesWithGTDiffDelta(curves, self.SIMP_DELTA, self.FREE_DELTA, groundTruths)
 
     def solve(self):
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
@@ -240,7 +242,69 @@ class KlClusterCMUSolver(CMUSolver):
 
         return segments, segmentation
     
+    def __getBaseSementationMajority(self, clusters):
+        labels = self.__labelClustersBestMatch(clusters)
+        self.clusterLabels = labels
+
+        # build segmentation
+        size = self.curve.complexity
+        segmentation = [[] for _ in range(size)]
+        is_matching_startend = [False] * size # store whether curve point is start or end point of a cluster matching
+        for clusterIdx, cluster in enumerate(clusters):
+            if labels[clusterIdx] == -1:
+                continue
+            for matching in cluster:
+                start = int(self.cc.mapToBase(0, matching.start).value)
+                end = int(self.cc.mapToBase(0, matching.end).value)
+
+                is_matching_startend[start] = True
+                is_matching_startend[end] = True
+
+                # print(f"{start} bis {end} : {labels[clusterIdx]}")
+
+                for i in range(start, end+1):
+                    if (i < 0 or i >= size):
+                        raise Exception("Index out of bounds")
+                    segmentation[i].append(labels[clusterIdx])
+
+
+        # compute majority label for each time step
+        for i in range(0, len(segmentation)):
+            if len(segmentation[i]) > 0:
+                c = Counter(segmentation[i])
+                most_common = c.most_common(1)[0]
+                if most_common[1] > len(segmentation[i]) / 2: # check if label has majority
+                    segmentation[i] = most_common[0]
+                else:
+                    segmentation[i] = 0
+            else:
+                segmentation[i] = 0
+
+        # turn segmentation to segments
+        segments = []
+        segmentStart = 0
+
+        for i in range(1, len(segmentation)):
+            if segmentation[i] != segmentation[i - 1] or is_matching_startend[i]:
+                segments.append(Segment(size=i - segmentStart, label=segmentation[i - 1]))
+                segmentStart = i
+
+        # append last segment
+        if len(segmentation) > 0:
+            segments.append(Segment(size=len(segmentation) - segmentStart, label=segmentation[i - 1]))
+
+        return segments, segmentation
+    
     def __labelClustersBestMatch(self, clusters):
+
+        # clusterGroups = []
+        # groupIndexOfCluster = [i for i in range(len(clusters))]
+        
+        # for i in range(0, len(clusters)):
+        #     for j in range(i + 1, len(clusters)):
+        #         # calculate similarity
+        #         overlap = 0
+
         labels = []
         # label all clusters
         for cluster in clusters:
@@ -270,7 +334,6 @@ class KlClusterCMUSolver(CMUSolver):
             else:
                 bestLabel = -1
             labels.append(bestLabel)
-        print("Anzahl Labels KlCluster", len(labels))
 
         return labels
     
@@ -288,7 +351,8 @@ class KlClusterCMUSolver(CMUSolver):
         ax = axs[0][0]
         ax.set_title("Cluster matchings")
         for clusterIdx, cluster in enumerate(self.clusters):
-            label = self.clusterLabels[clusterIdx]
+            labelOrig = self.clusterLabels[clusterIdx]
+            label = labelOrig
             if label == -1:
                 label = 0
             for matching in cluster:
@@ -296,7 +360,9 @@ class KlClusterCMUSolver(CMUSolver):
                 matchingend = int(self.cc.mapToBase(0, matching.end).value)
                 size = matchingend - matchingstart
 
-                if label < len(self.colors):
+                if labelOrig == -1:
+                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, color="gray")
+                elif label < len(self.colors):
                     ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, color=self.colors[label])
                 else:
                     ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, label=label)
