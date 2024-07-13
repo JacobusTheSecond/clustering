@@ -43,47 +43,54 @@ def task(nthreads, threadidx, resultsfilepath, filelock):
     for s_delta in SIMP_DELTAS:
         for f_delta in FREE_DELTAS:
             for l in COMPLEXITIES:
+                counter += 1
                 if s_delta>f_delta:
                     continue
                 if counter % nthreads != threadidx:
-                    counter += 1
                     continue
                 
-                result = {
-                    "nClusters": [],
-                    "acc": [],
-                    "accTrue": [],
-                    "macroPrec": [],
-                    "macroRec": [],
-                    "macroF1": []
-                }
-
-                for TAG in range(1, 15):
-                    print(f"TAG {TAG}")
-                    print(f"{s_delta} {f_delta} {l}")
-                    sys.stdout.flush() # flush stdout of subprocess
-
-                    solver = KlClusterCMUSolver(TAG, SIMP_DELTA=s_delta, FREE_DELTA=f_delta, COMPLEXITY=l)
-                    segments = solver.solve()
-
-                    acc = solver.calculateAccuracy(segments, TAG)
-                    accTrue = solver.calculateAccuracyTrueLabels(segments, TAG)
-                    macroPrec = solver.calculateMacroPrecision(segments, TAG)
-                    macroRec = solver.calculateMacroRecall(segments, TAG)
-                    macroF1 = solver.calculateMacroF1(segments, TAG)
-
-                    nClusters = len(solver.clusters)
-                    
-                    with filelock:
-                        with open(resultsfilepath, "a") as f:
-                            result_json = json.dumps(result, separators=(',', ':'))
-                            result_json.replace("\"", "\"\"")
-                            f.write(f"{TAG},{round(s_delta, 5)},{round(f_delta, 5)},{l},{acc},{accTrue},{macroPrec},{macroRec},{macroF1},{nClusters}\n")
+                # run experiment in separate process to catch assertion errors
+                p = Process(target=runsingleconfiguration, args=(s_delta, f_delta, l, resultsfilepath, filelock))
+                p.start()
+                p.join()
 
                 if counter % 10 == 0:
                     print(f"Thread {threadidx} Progress: {counter/(len(SIMP_DELTAS) * len(FREE_DELTAS) * len(COMPLEXITIES))*100}%")
 
-                counter += 1
+    print(f"Thread {threadidx}/{nthreads} finished")
+
+def runsingleconfiguration(s_delta, f_delta, l, resultsfilepath, filelock):
+    result = {
+        "nClusters": [],
+        "acc": [],
+        "accTrue": [],
+        "macroPrec": [],
+        "macroRec": [],
+        "macroF1": []
+    }
+
+    for TAG in range(1, 15):
+        print(f"TAG {TAG}")
+        print(f"{s_delta} {f_delta} {l}")
+        sys.stdout.flush() # flush stdout of subprocess
+        sys.stderr.flush()
+
+        solver = KlClusterCMUSolver(TAG, SIMP_DELTA=s_delta, FREE_DELTA=f_delta, COMPLEXITY=l)
+        segments = solver.solve()
+
+        acc = solver.calculateAccuracy(segments, TAG)
+        accTrue = solver.calculateAccuracyTrueLabels(segments, TAG)
+        macroPrec = solver.calculateMacroPrecision(segments, TAG)
+        macroRec = solver.calculateMacroRecall(segments, TAG)
+        macroF1 = solver.calculateMacroF1(segments, TAG)
+
+        nClusters = len(solver.clusters)
+        
+        with filelock:
+            with open(resultsfilepath, "a") as f:
+                result_json = json.dumps(result, separators=(',', ':'))
+                result_json.replace("\"", "\"\"")
+                f.write(f"{TAG},{round(s_delta, 5)},{round(f_delta, 5)},{l},{acc},{accTrue},{macroPrec},{macroRec},{macroF1},{nClusters}\n")
 
 if __name__ == '__main__':
     main()
