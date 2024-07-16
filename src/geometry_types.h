@@ -128,7 +128,10 @@ public:
     }
 
     inline distance_t operator*(const Point &p) const {
-        assert(dimensions() == p.dimensions());
+        if(dimensions() != p.dimensions()){
+            std::cout << dimensions() << "," << p.dimensions() << std::endl;
+            assert(dimensions() == p.dimensions());
+        }
         distance_t result = 0;
 //#pragma omp simd reduction(+: result)
         for (dimensions_t i = 0; i < dimensions(); ++i) {

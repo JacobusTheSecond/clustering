@@ -383,7 +383,6 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
         auto js = intersectionMap[i];
         std::vector<SparseFreespace> localFreespaces;
         for(auto j:js){
-            num ++;
             //std::cout <<"Populating " << i << " " << j << " {" << num << "/"<< intersectionpairs.size()<<"} (" << curves[i].get_name() << " and " << curves[j].get_name() << ")\n"<<std::flush;
             //SparseFreespace(Curve& B, Curve& T, distance_t _delta, int threadcount = 1, CurveID BID = -1, CurveID TID = -1);
 
@@ -399,8 +398,8 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
 //                this->operator[](i).emplace_back(std::move(localFreespaces[index]));
 //            }
 //        };
-        std::cout << "[(" << omp_get_thread_num() << ") " << i << "/" << intersectionMap.size() << " ]"<<std::flush;
-
+        std::cout << "[(" << omp_get_thread_num() << ") " << num << "/" << intersectionMap.size() << " ]"<<std::flush;
+        num ++;
         //this->operator[](i).insert(this->operator[](i).end(),std::move(localFreespaces));
     }
 }

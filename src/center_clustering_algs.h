@@ -116,18 +116,32 @@ public:
         auto x = std::lower_bound(vertexMaps[curveIdx].begin(),vertexMaps[curveIdx].end(),q);
         int i =  x - vertexMaps[curveIdx].begin();
 
+        if(i>=vertexMaps[curveIdx].size()){
+            //this should mean that we simply map to the very last vertex
+            return {vertexMaps[curveIdx].size()-2,1.0};
+        }
+
         if(i==0){
             return {0,0.0};
         }else{
             auto s = vertexMaps[curveIdx][i-1];
             auto t = vertexMaps[curveIdx][i];
+
             // assert(t>s);
             // std::cout << (t.getFraction() - s.getFraction()) << std::endl;
-            if(t>s) {
-                return {i - 1, 0/*(q.getFraction() - s.getFraction()) / (t.getFraction() - s.getFraction())*/};
+            if(t.getPoint() == s.getPoint()){
+                //the typical case
+                if(t>s) {
+                    return {i - 1, (q.getFraction() - s.getFraction()) / (t.getFraction() - s.getFraction())};
+                }else{
+                    return {i-1,0.0};
+                }
+            }else if(t.getPoint() == s.getPoint()+1){
+                return {i - 1, (q.getFraction() - s.getFraction()) / (1.0 - s.getFraction())};
             }else{
-                return {i-1,0.0};
+                assert(false);
             }
+
         }
     }
 
@@ -199,7 +213,7 @@ public:
                     if(sj + 2 < localTimes.back().size() && localTimes.back()[sj+1]<ci){
                         sj ++;
                     }
-                    auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*freespaceDelta/3,simp[sj],simp[sj+1]);
+                    auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*simplificationDelta/3,simp[sj],simp[sj+1]);
                     assert(!interval.is_empty());
                     if(localVertexMap.back().empty()){
                         localVertexMap.back().push_back({sj,interval.begin});
@@ -266,10 +280,10 @@ public:
             localVertexMap.emplace_back();
             int sj = 0;
             for (int ci=0;ci<curve.size();ci++){
-                if(sj + 1 < localTimes.back().size() && localTimes.back()[sj+1]<ci){
+                if(sj + 2 < localTimes.back().size() && localTimes.back()[sj+1]<ci){
                     sj ++;
                 }
-                auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*freespaceDelta/3,simp[sj],simp[sj+1]);
+                auto interval = IntersectionAlgorithm::intersection_interval(curve[ci],7*simplificationDelta/3,simp[sj],simp[sj+1]);
                 assert(!interval.is_empty());
                 if(localVertexMap.back().empty()){
                     localVertexMap.back().push_back({sj,interval.begin});

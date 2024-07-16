@@ -898,6 +898,29 @@ void minimalBreakingExample() {
                                         return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);});
 }
 
+void minimalBreakingExample2() {
+    Curves curves;
+    std::string name = "../data_cmu/86_4.txt";
+    curves.push_back(Curve(name,93));
+
+    float DELTA = 1.2;
+    int l = 6;
+    int ROUNDS = 1;
+
+    CurveClusterer cc;
+    cc.initCurves(curves, DELTA);
+    cc.greedyCover(l, ROUNDS, [=](const Candidate &a) {
+        bool withIsTrivial = false;
+        bool withIsDown = false;
+        bool istrivial = l == 1;
+        bool isdown = a.getEnd() < a.getBegin();
+        bool nontrivial_length =
+                cc.simplifiedCurves[a.getCurveIndex()].subcurve_length(a.getBegin(), a.getEnd()) >
+                2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getSimpDelta();
+        bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + l / 4;
+        return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);});
+}
+
 void experiments2(){
     Curves curves;
     for(int i=1;i<1/*9*/;i++){
@@ -1187,7 +1210,7 @@ int main(int argc, char *argv[]) {
     std::cout << "NOT COMPILED WITH OPENCV\n";
 #endif
 
-    minimalBreakingExample();
+    minimalBreakingExample2();
 
     // experiments();
     // experiments2();
