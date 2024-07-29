@@ -9,8 +9,11 @@ gts = kl.GroundTruths()
 curveLen = 30
 
 for i in range(10):
-	cs.add(kl.Curve(np.random.rand(curveLen,3)*10))
-	
+	c = kl.Curve(np.random.rand(curveLen,3)*10)
+	w = c.getWeights()
+	w/=2
+	c.setWeights(w)
+	cs.add(c)
 	gtBase = np.sort(np.random.choice(range(curveLen),5,False))
 	gtBase += curveLen-gtBase[-1]	
 		
@@ -21,6 +24,7 @@ for i in range(10):
 		gt.add(label,j)
 		#print(label,j)
 	gts.add(gt)
+print(cs[0].getWeights())
 
 print(len(cs))
 cc = kl.CurveClusterer()

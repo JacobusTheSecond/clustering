@@ -27,6 +27,38 @@ PYBIND11_MODULE(klcluster,m){
     py::class_<Curve>(m, "Curve")
             .def(py::init<py::array_t<distance_t>>())
             .def(py::init<py::array_t<distance_t>, std::string>())
+            .def("getWeight",&Curve::weight)
+            .def("setWeights",[](Curve& c,const py::array_t<double,py::array::c_style|py::array::forcecast>& w){
+                std::vector<double> localWeights;
+                py::buffer_info buf = w.request();
+
+                std::cout << "setting Weights " << buf.ndim << " " << buf.size << "\n";
+
+                if(buf.ndim != 1){
+                    throw std::runtime_error("Dimensions must be one");
+                }
+                if(buf.size != c.size()){
+                    throw std::runtime_error("Length does not match curve");
+                }
+
+                auto* ptr = static_cast<double *>(buf.ptr);
+
+                for(size_t i=0;i<buf.shape[0];i++){
+                    localWeights.push_back(ptr[i]);
+                    std::cout <<"(" << ptr[i] <<")" << std::flush;
+                }
+
+                c.assignWeights(localWeights);
+            })
+            .def("getWeights",[](Curve& c){
+                auto result = py::array_t<double>(c.size());
+                py::buffer_info buf = result.request();
+                auto* ptr = static_cast<double *>(buf.ptr);
+                for(size_t i = 0;i<buf.shape[0];i++){
+                    ptr[i] = c.weight(i);
+                }
+                return result;
+            })
             .def_property_readonly("dimensions", &Curve::dimensions)
             .def_property_readonly("complexity", &Curve::size)
             //.def("add",[](Curve& c, Point& p, double w=0.5){c.push_back(p,w);})
