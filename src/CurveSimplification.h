@@ -66,6 +66,7 @@ public:
         Curve simplification;
         simplification.set_name(c.get_name());
 
+        std::vector<double> weights;
         //TODO incorporate rule
         for (int i=0;i<=length;++i) {
             simplification.push_back(c[times[i]]);
@@ -73,7 +74,9 @@ public:
             //simplification.prefix_length.push_back(i);
             //simplification.prefix_length.push_back(times[i]);
             simplification.prefix_length.push_back(c.prefix_length[times[i]]);
+            weights.push_back(c.weight(times[i]));
         }
+        simplification.assignWeights(weights);
         if(inputLabelings != nullptr) {
             int gt_counter = 0;
             std::pair<Label, int> &cur = (*inputLabelings)[gt_counter];

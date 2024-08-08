@@ -121,7 +121,7 @@ bool close_linesegments(const Point& p1, const Point& p2, const Point& q1, const
 
 SparseFreespace::SparseFreespace(Curve &B, Curve &T, distance_t delta, int threadcount, CurveID BID, CurveID TID):nx(T.size()-1),ny(B.size()-1),Parent(B.size()-1),BID(BID),TID(TID), delta(delta){
   //  int n = 0;
-#pragma omp parallel for default(none) shared(T,B,delta, threadcount)
+#pragma omp parallel for default(none) shared(T,B,delta, threadcount,std::cout)
     for(int y=0;y<ny;y++){
         for(int x=0;x<nx;x++){
             //generate x-y-cell
@@ -132,6 +132,7 @@ SparseFreespace::SparseFreespace(Curve &B, Curve &T, distance_t delta, int threa
 //            }
                 //SparseCell c = SparseCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],delta, threadcount);
                 MinkowskiCell c = MinkowskiCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],T.weight(x)*delta,T.weight(x+1)*delta,B.weight(y)*delta,B.weight(y+1)*delta, threadcount);
+                //std::cout << T.weight(x)*delta << T.weight(x+1)*delta << B.weight(y)*delta << B.weight(y+1)*delta<<std::endl;
                 //SparseGridCell<std::unique_ptr<Cell>> sgc(std::make_unique<SparseCell>(c),x,y);
                 row(y).emplace_back(std::make_unique<MinkowskiCell>(c), x, y);
             }

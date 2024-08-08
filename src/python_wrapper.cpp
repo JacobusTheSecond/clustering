@@ -85,7 +85,7 @@ PYBIND11_MODULE(klcluster,m){
     py::class_<Curves>(m,"Curves")
             .def(py::init<>())
             //.def_property_readonly("m", &Curves::get_m)
-            .def("add", [](Curves& cc, Curve& c){cc.push_back(c);})
+            .def("add", [](Curves& cc, Curve& c){cc.push_back(c);std::cout <<cc.back().weight(0) <<std::endl;})
             //.def("simplify", &Curves::simplify)
             .def("__getitem__", [](Curves& cc, int i){return cc[i];}, py::return_value_policy::reference)
             //.def("__setitem__", &Curves::set)
