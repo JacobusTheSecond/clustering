@@ -119,9 +119,13 @@ class KlClusterDriftersSolver(DriftersSolver):
 
         self.curves = kl.Curves()
         for i, curvedata in enumerate(self.datacurves):
-            self.curves.add(kl.Curve(curvedata, f"Curve_{i}"))
+            c = kl.Curve(curvedata,f"Curve_{i}")
+            w = c.getWeights()
+            w*=1
+            c.setWeights(w)
+            self.curves.add(c)
 
-        self.DELTA = 15000
+        self.DELTA = 150000
         self.COMPLEXITY = 10
         self.ROUNDS = 1
 

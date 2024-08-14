@@ -7,6 +7,7 @@
 #include "io.h"
 #include "CurveSimplification.h"
 #include "SWatch.h"
+#include "FreespaceVisualizer.h"
 #include <algorithm>
 
 /*
@@ -186,13 +187,21 @@ public:
         std::vector<int> localIDMap;
         std::vector<std::vector<CPoint>> localVertexMap;
 
+        std::vector<int> cur(omp_get_max_threads(),0);
+        std::vector<int> len(omp_get_max_threads(),0);
+
+        for(int i=0;i<omp_get_max_threads();i++){
+            std::cout << "["<<i<<"/"<<omp_get_max_threads()<<"] simplified " << cur[i] << " with length " << len[i] <<".     "<<std::endl;
+        }
+        std::cout << "Progress: " << total << "/" << curves.size()<<std::endl;
+
 #pragma omp declare reduction (mergeSimps : Curves : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 #pragma omp declare reduction (mergeTimes : std::vector<std::vector<int>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 #pragma omp declare reduction (mergeIDMap : std::vector<int> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 #pragma omp declare reduction (mergeVMap : std::vector<std::vector<CPoint>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 
 //#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
-#pragma omp parallel for default(none) shared(curves, std::cout, total) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) schedule(dynamic)
+#pragma omp parallel for default(none) shared(curves, std::cout, total,cur,len) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) schedule(dynamic)
         for (int i = 0; i < curves.size(); ++i) {
             Curve curve = curves[i];
             auto simp = cs.simplify(curve);
@@ -202,8 +211,22 @@ public:
                 localSimps.push_back(simp);
                 localIDMap.push_back(i);
                 localTimes.push_back(cs.getTimes());
-                std::cout << "Simplified " << i << " with length " << localSimps.back().size() << " (" << total
-                          << "/" << curves.size() << ")" << std::endl;
+
+                cur[omp_get_thread_num()]=i;
+                len[omp_get_thread_num()]=localSimps.back().size();
+#pragma omp critical
+                {
+                    if (((total + 1) % 10 == 0) || total == curves.size() ) {
+                        printf("\033[0G\033[%dA",omp_get_max_threads()+1);
+                        for(int j=0;j<omp_get_max_threads();j++){
+                            std::cout << "["<<j<<"/"<<omp_get_max_threads()<<"] simplified " << cur[j] << " with length " << len[j] <<".     " << std::endl;
+                        }
+                        std::cout << "Progress: " << total << "/" << curves.size()<<std::endl;
+                    }
+                }
+                //std::cout << "Simplified " << i << " with length " << localSimps.back().size() << " (" << total
+                //          << "/" << curves.size() << ")" << std::endl;
+
 
                 //build vertexMapping
 
@@ -248,6 +271,7 @@ public:
         simpIDtoOriginID.clear();
         vertexMaps.clear();
         times.clear();
+        int total = 0;
 
 
         Curves localSimps;
@@ -255,6 +279,14 @@ public:
         std::vector<int> localIDMap;
         std::vector<std::vector<CPoint>> localVertexMap;
         std::vector<std::vector<std::pair<Label,CPoint>>> localsimpGTs;
+
+        std::vector<int> cur(omp_get_max_threads(),0);
+        std::vector<int> len(omp_get_max_threads(),0);
+
+        for(int i=0;i<omp_get_max_threads();i++){
+            std::cout << "["<<i<<"/"<<omp_get_max_threads()<<"] simplified " << cur[i] << " with length " << len[i] <<".     " << std::endl;
+        }
+        std::cout << "Progress: " << total << "/" << curves.size()<<std::endl;
 
 //#pragma omp parallel for default(none) shared(curves, std::cout, GTs) firstprivate(cs) schedule(dynamic)
 #pragma omp declare reduction (mergeSimps : Curves : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
@@ -264,15 +296,30 @@ public:
 #pragma omp declare reduction (mergesimGT : std::vector<std::vector<std::pair<Label,CPoint>>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 
 //#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
-#pragma omp parallel for default(none) shared(curves, std::cout,GTs) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) reduction(mergesimGT:localsimpGTs) schedule(dynamic)
+#pragma omp parallel for default(none) shared(curves, std::cout,GTs,cur,len,total) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) reduction(mergesimGT:localsimpGTs) schedule(dynamic)
 
         for (int i = 0; i < curves.size(); ++i) {
+
+            total++;
             Curve curve = curves[i];
             auto simp = cs.simplify(curve,&(GTs[i]));
             localSimps.push_back(simp);
             localIDMap.push_back(i);
             localTimes.push_back(cs.getTimes());
             localsimpGTs.push_back(cs.getSimplifiedGTs());
+
+            cur[omp_get_thread_num()]=i;
+            len[omp_get_thread_num()]=localSimps.back().size();
+#pragma omp critical
+            {
+                if (((total + 1) % 10 == 0) || total == curves.size() ) {
+                    printf("\033[0G\033[%dA",omp_get_max_threads()+1);
+                    for(int j=0;j<omp_get_max_threads();j++){
+                        std::cout << "["<<j<<"/"<<omp_get_max_threads()<<"] simplified " << cur[j] << " with length " << len[j] <<".     " << std::endl;
+                    }
+                    std::cout << "Progress: " << total << "/" << curves.size()<<std::endl;
+                }
+            }
 
 
             //build vertexMapping
@@ -300,7 +347,7 @@ public:
     }
 
     template<typename func>
-    ClusteringResult greedyCover(int l, int rounds, func filter, long long* size = nullptr) {
+    ClusteringResult greedyCover(int l, int rounds, func filter,bool withShow=false, long long* size = nullptr) {
 
         assert(not simplifiedCurves.empty());
 
@@ -308,6 +355,10 @@ public:
         //Curves bestresult;
         std::vector<Candidate> bestResultVisualizer;
         CandidateSetPQ cs = CandidateSetPQ(simplifiedCurves, freespaceDelta);
+        if(withShow){
+            SparseFreeSpacesVisualizer sfsv(cs.sparsefreespaces);
+            sfsv.show();
+        }
         //cs.computeCandidates(l);
         cs.ultrafastComputeSmall(l, filter);
 
@@ -332,25 +383,18 @@ public:
             std::vector<CInterval> covering;
             std::vector<double> suffixLengths;
 
-            std::cout << "Round " << r;
+            std::cout << "Round " << r<<std::endl;
 
             int internal_max = 500001;
             for (int i = 0; i < internal_max; ++i) {
                 bool lastInternalRound = i==internal_max-1;
                 auto ID = 0;
                 auto roundID = i;
-                std::cout << "."<<std::flush;
-                //update top, until the roundID matches
-                while (cs.top().roundOfUpdate != roundID) {
-                    ID++;
-                    Candidate c = cs.top();
-                    cs.pop();
-                    updateCandidate(simplifiedCurves, c, covering, suffixLengths, roundID);
-                    cs.push(c);
-                }
+
+                //first verify that we need to find another center, otherwise output solution
+
                 if (lastInternalRound ||
-                    lengthOfUncovered(simplifiedCurves, result) <= EPSILON ||
-                    cs.top().semiUpdatedCoverLength <= EPSILON) {
+                    lengthOfUncovered(simplifiedCurves, result) <= EPSILON) {
                     //std::cout << "\nTrying to refine... ";
                     int deletecount = 0;
                     for (int igni = result.size() - 1; igni >= 0; --igni) {
@@ -400,6 +444,69 @@ public:
 
                 }
 
+                //update top, until the roundID matches
+                while (cs.top().roundOfUpdate != roundID) {
+                    ID++;
+                    Candidate c = cs.top();
+                    cs.pop();
+                    updateCandidate(simplifiedCurves, c, covering, suffixLengths, roundID);
+                    cs.push(c);
+                }
+
+                //if top index is too light, we also stop
+                if(cs.top().semiUpdatedCoverLength <= EPSILON){
+                    //std::cout << "\nTrying to refine... ";
+                    int deletecount = 0;
+                    for (int igni = result.size() - 1; igni >= 0; --igni) {
+                        //i is the index to be ignored
+                        std::vector<Candidate> temp;
+                        for (int j = 0; j < result.size(); ++j) {
+                            if (igni != j) {
+                                temp.push_back(result[j]);
+                            }
+                        }
+                        double importance = lengthOfUncovered(simplifiedCurves, temp);
+                        if (importance <= EPSILON) {
+                            //std::cout << " ( " << igni << " , " << importance << " )";
+                            result.erase(result.begin() + igni);
+                            deletecount += 1;
+                        } else {
+                            result[igni].importance = importance;
+                        }
+                    }
+                    if (deletecount == 0)
+                        //std::cout << "nothing";
+                        //std::cout << " greedely deleted\n";
+                        for (int igni = result.size() - 1; igni >= 0; --igni) {
+                            //i is the index to be ignored
+                            std::vector<Candidate> temp;
+                            for (int j = 0; j < result.size(); ++j) {
+                                if (igni != j) {
+                                    temp.push_back(result[j]);
+                                }
+                            }
+                            double importance = lengthOfUncovered(simplifiedCurves, temp);
+                            result[igni].importance = importance;
+                        }
+                    //std::sort(result.begin(), result.end(), [](auto& a, auto& b){return a.second.importance > b.second.importance;});
+                    std::cout << "\nSolution of size " << result.size() << " found. ";
+                    if (bestResultVisualizer.empty() || bestResultVisualizer.size() > result.size()) {
+                        if (!bestResultVisualizer.empty()) {
+                            std::cout << "This improves on the current best by "
+                                      << bestResultVisualizer.size() - result.size() << "! ";
+                        }
+                        bestResultVisualizer.clear();
+                        for (const auto &sub: result) {
+                            bestResultVisualizer.push_back(sub);
+                        }
+                    }
+                    break;
+
+                }
+
+                //otherwise add top element to cs
+
+
                 //printFirst50(cs);
 
                 double addedweight;
@@ -438,6 +545,8 @@ public:
                     c.semiUpdatedCoverLength = 0;
                     cs.push(c);
                 }
+
+                std::cout << "\033[0G"<<"Identified center #"<<i<<std::flush;
 
                 //std::cout << " added weight: " << addedweight << ". Updated " << ID << " lengths\n";
 
@@ -521,13 +630,66 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
         std::vector<CInterval> covering;
         std::vector<double> suffixLengths;
 
-        std::cout << "Round " << r;
+        std::cout << "Round " << r<<std::endl;
 
-        for (int i = 0; i < 501; ++i) {
-            bool lastInternalRound = i==500;
+        for (int i = 0; i < 500001; ++i) {
+            bool lastInternalRound = i==500000;
             auto ID = 0;
             auto roundID = i;
-            std::cout << ".";
+
+            if (lastInternalRound || lengthOfUncovered(curves, result) <= EPSILON) {
+                //std::cout << "\nTrying to refine... ";
+                int deletecount = 0;
+                for (int igni = result.size() - 1; igni >= 0; --igni) {
+                    //i is the index to be ignored
+                    std::vector<Candidate> temp;
+                    for (int j = 0; j < result.size(); ++j) {
+                        if (igni != j) {
+                            temp.push_back(result[j]);
+                        }
+                    }
+                    double importance = lengthOfUncovered(curves, temp);
+                    if (importance <= EPSILON) {
+                        //std::cout << " ( " << igni << " , " << importance << " )";
+                        result.erase(result.begin() + igni);
+                        deletecount += 1;
+                    } else {
+                        result[igni].importance = importance;
+                    }
+                }
+                if (deletecount == 0)
+                    //std::cout << "nothing";
+                    //std::cout << " greedely deleted\n";
+                    for (int igni = result.size() - 1; igni >= 0; --igni) {
+                        //i is the index to be ignored
+                        std::vector<Candidate> temp;
+                        for (int j = 0; j < result.size(); ++j) {
+                            if (igni != j) {
+                                temp.push_back(result[j]);
+                            }
+                        }
+                        double importance = lengthOfUncovered(curves, temp);
+                        result[igni].importance = importance;
+                    }
+                //std::sort(result.begin(), result.end(), [](auto& a, auto& b){return a.second.importance > b.second.importance;});
+                std::cout << " Solution of size " << result.size() << " found. ";
+                if (bestresult.empty() || bestresult.size() > result.size()) {
+                    if (!bestresult.empty()) {
+                        std::cout << "This improves on the current best by " << bestresult.size() - result.size()
+                                  << "! ";
+                    }
+                    bestresult.clear();
+                    bestResultVisualizer.clear();
+                    for (const auto &sub: result) {
+                        bestresult.push_back(
+                                curves[sub.getCurveIndex()].constructSubcurve(sub.getBegin(), sub.getEnd()));
+                        bestResultVisualizer.push_back(sub);
+                    }
+                }
+                break;
+
+            }
+
             //update top, until the roundID matches
             while (cs.top().roundOfUpdate != roundID) {
                 ID++;
@@ -540,7 +702,8 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
                 cs.push(c);
                 swatchinsert.stop();
             }
-            if (lastInternalRound || lengthOfUncovered(curves, result) <= EPSILON || cs.top().semiUpdatedCoverLength <= EPSILON) {
+
+            if (cs.top().semiUpdatedCoverLength <= EPSILON) {
                 //std::cout << "\nTrying to refine... ";
                 int deletecount = 0;
                 for (int igni = result.size() - 1; igni >= 0; --igni) {
@@ -631,6 +794,8 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
                 c.semiUpdatedCoverLength = 0;
                 cs.push(c);
             }
+
+            std::cout << "\033[0G"<<"Identified center #"<<i<<std::flush;
 
             //std::cout << " added weight: " << addedweight << ". Updated " << ID << " lengths\n";
 

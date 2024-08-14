@@ -14,7 +14,7 @@ private:
     SparseFreespace& freespace;
 public:
     explicit FreeSpaceVisualizer(SparseFreespace &freespace) : freespace(freespace){}
-    void show(bool withPoints=false);
+    void show(bool withPoints=false){};
     //void show(FreeSpacePoint& a, FreeSpacePoint& b);
     //void show(FreeSpacePoint& a, FreeSpacePoint& b, ParamPoint x1, ParamPoint x2);
     //void showCandidate(Candidate & c, int curveId);
@@ -26,9 +26,9 @@ private:
     std::vector<std::vector<SparseFreespace>> & freespaces;
 public:
     explicit FreeSpacesVisualizer(std::vector<std::vector<SparseFreespace>> & fs) : freespaces(fs){};
-    void show();
+    void show(){};
     //void showCandidates(CandidateSet& candidates, std::vector<std::pair<int,int>> & indices);
-    void showCandidates(std::vector<Candidate> candidates);
+    void showCandidates(std::vector<Candidate> candidates){};
 };
 
 class SparseFreeSpacesVisualizer{
@@ -38,13 +38,13 @@ public:
     explicit SparseFreeSpacesVisualizer(SparseFreeSpaces& fs) : freespaces(fs){};
     void show();
     //void showCandidates(CandidateSet& candidates, std::vector<std::pair<int,int>> & indices);
-    void showCandidates(std::vector<Candidate> candidates);
+    void showCandidates(std::vector<Candidate> candidates){};
 };
 
 class ClusteringVisulaizer{
 public:
     bool withAutocoloring;
-    void showClusteringStretched(Curves c, std::vector<std::vector<std::pair<Label,CPoint>>> groundthruth, std::vector<Candidate> candidates);
+    void showClusteringStretched(Curves c, std::vector<std::vector<std::pair<Label,CPoint>>> groundthruth, std::vector<Candidate> candidates){};
 };
 
 #endif //CLUSTERING_FREESPACEVISUALIZER_H

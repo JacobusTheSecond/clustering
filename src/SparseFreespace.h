@@ -43,7 +43,8 @@ public:
     virtual bool is_empty()=0;
     Cell(int tc):toAboves(tc),toRights(tc),toLefts(tc),toBottoms(tc){};
     virtual ~Cell(){};
-    void dump(int threadID = 0){
+
+    virtual void dump(int threadID = 0){
         std::cout << "left: " << left  << std::endl;
         std::cout << "top: " << top << std::endl;
         std::cout << "right: " << right << std::endl;
@@ -91,6 +92,20 @@ public:
     //SparseCell(Point &a, Point &b, Point &c, Point &d,int threadcount = 1);
     SparseCell(Point &a, Point &b, Point &c, Point &d,distance_t delta, int threadcount = 1);
     bool is_empty(){return isEmpty;};
+    void dump(int threadID = 0){
+        std::cout << "left: " << left  << std::endl;
+        std::cout << "top: " << top << std::endl;
+        std::cout << "right: " << right << std::endl;
+        std::cout << "bottom: " << bottom << std::endl;
+
+        std::cout << "leftPair: " << leftPair.first << " , " << leftPair.second << std::endl;
+        std::cout << "topPair: " << topPair.first << " , " << topPair.second << std::endl;
+        std::cout << "rightPair: " << rightPair.first << " , " << rightPair.second << std::endl;
+        std::cout << "bottomPair: " << bottomPair.first << " , " << bottomPair.second << std::endl;
+
+        std::cout << "toAbove:" << toAbove(threadID) << std::endl;
+        std::cout << "toRight:" << toRight(threadID) << std::endl;
+    };
 };
 
 class MinkowskiCell : public Cell{
@@ -110,6 +125,25 @@ public:
 
     MinkowskiCell(Point &a, Point &b, Point &c, Point &d, distance_t ra, distance_t rb, distance_t rc, distance_t rd, int tc = 1);
     bool is_empty(){return isEmpty;};
+
+    void dump(int threadID = 0){
+        std::cout << "ra: " << ra;
+        std::cout << ", rb: " << rb;
+        std::cout << ", rc: " << rc;
+        std::cout << ", rd: " << rd << std::endl;
+        std::cout << "left: " << left  << std::endl;
+        std::cout << "top: " << top << std::endl;
+        std::cout << "right: " << right << std::endl;
+        std::cout << "bottom: " << bottom << std::endl;
+
+        std::cout << "leftPair: " << leftPair.first << " , " << leftPair.second << std::endl;
+        std::cout << "topPair: " << topPair.first << " , " << topPair.second << std::endl;
+        std::cout << "rightPair: " << rightPair.first << " , " << rightPair.second << std::endl;
+        std::cout << "bottomPair: " << bottomPair.first << " , " << bottomPair.second << std::endl;
+
+        std::cout << "toAbove:" << toAbove(threadID) << std::endl;
+        std::cout << "toRight:" << toRight(threadID) << std::endl;
+    };
 };
 
 template <typename T> class SparseGridCell{

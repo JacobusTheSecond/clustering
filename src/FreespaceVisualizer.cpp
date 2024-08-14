@@ -10,7 +10,7 @@
 using std::cout;
 using std::endl;
 using namespace cv;
-
+/*
 void FreeSpaceVisualizer::show(bool withPoints){
 
     if(freespace.xSize() == 0)
@@ -131,16 +131,16 @@ void FreeSpaceVisualizer::show(bool withPoints){
                 line(img, p7, p8, Scalar(0, 0, 255), 2);
                 line(img, p8, p1, Scalar(0, 0, 255), 2);
 
-/*
-                for (auto p: cell->importantUpYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(0, 255, 0), -1);
-                }
-                for (auto p: cell->importantDownYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(255, 0, 0), -1);
-                }
-                */
+
+                //for (auto p: cell->importantUpYs) {
+                //    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
+                //    circle(img, ip, CR, Scalar(0, 255, 0), -1);
+                //}
+                //for (auto p: cell->importantDownYs) {
+                //    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
+                //    circle(img, ip, CR, Scalar(255, 0, 0), -1);
+                //}
+
             }
         }
 
@@ -185,11 +185,11 @@ void FreeSpaceVisualizer::show(bool withPoints){
 
     cv::waitKey(1);
 }
-
+*/
 int getRealY(int y, int maxY){
     return (maxY - y);
 }
-
+/*
 void FreeSpacesVisualizer::show() {
 //this will be awful
     int CS = 8;
@@ -335,16 +335,7 @@ void FreeSpacesVisualizer::show() {
                         line(img, p7, p8, Scalar(0, 0, 255), 2);
                         line(img, p8, p1, Scalar(0, 0, 255), 2);
 
-/*
-                for (auto p: cell->importantUpYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(0, 255, 0), -1);
-                }
-                for (auto p: cell->importantDownYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(255, 0, 0), -1);
-                }
-                */
+
                     }
                 }
             }
@@ -392,7 +383,8 @@ void FreeSpacesVisualizer::show() {
 
     cv::waitKey(1);
 }
-
+ */
+/*
 void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
     //this will be awful
     int CS = 8;
@@ -536,16 +528,6 @@ void FreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
                         line(img, p7, p8, Scalar(0, 0, 255), 2);
                         line(img, p8, p1, Scalar(0, 0, 255), 2);
 
-/*
-                for (auto p: cell->importantUpYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(0, 255, 0), -1);
-                }
-                for (auto p: cell->importantDownYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(255, 0, 0), -1);
-                }
-                */
                     }
                 }
             }
@@ -895,7 +877,7 @@ ClusteringVisulaizer::showClusteringStretched(Curves c, std::vector<std::vector<
 
     cv::waitKey(1);
 }
-
+*/
 void SparseFreeSpacesVisualizer::show() {
 //this will be awful
     double CS = 32.0;
@@ -903,6 +885,10 @@ void SparseFreeSpacesVisualizer::show() {
         CS /= 2.0;
     }
 
+    for(auto & fs : freespaces){
+        std::cout << fs.size() << std::endl;
+    }
+    std::cout << std::flush;
     int scrolHight = 0;
     int scrolWidth = 0;
 
@@ -1041,17 +1027,6 @@ void SparseFreeSpacesVisualizer::show() {
                         line(img, p6, p7, Scalar(0, 0, 255), 2);
                         line(img, p7, p8, Scalar(0, 0, 255), 2);
                         line(img, p8, p1, Scalar(0, 0, 255), 2);
-
-/*
-                for (auto p: cell->importantUpYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(0, 255, 0), -1);
-                }
-                for (auto p: cell->importantDownYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(255, 0, 0), -1);
-                }
-                */
                     }
                 }
             }
@@ -1098,8 +1073,10 @@ void SparseFreeSpacesVisualizer::show() {
 
     cv::waitKey(1);
 }
-
+/*
 void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidates) {
+    std::cout << "test";
+    return;
 //this will be awful
     double CS = 32.0;
     while(CS/8.0 > 1.0/(double)(freespaces.size())){
@@ -1245,16 +1222,7 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
                         line(img, p7, p8, Scalar(0, 0, 255), 2);
                         line(img, p8, p1, Scalar(0, 0, 255), 2);
 
-/*
-                for (auto p: cell->importantUpYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(0, 255, 0), -1);
-                }
-                for (auto p: cell->importantDownYs) {
-                    Point2d ip = Point2d(p.first.x, -p.first.y) * CS + origin;
-                    circle(img, ip, CR, Scalar(255, 0, 0), -1);
-                }
-                */
+
                     }
                 }
             }
@@ -1323,3 +1291,4 @@ void SparseFreeSpacesVisualizer::showCandidates(std::vector<Candidate> candidate
 
     cv::waitKey(1);
 }
+*/

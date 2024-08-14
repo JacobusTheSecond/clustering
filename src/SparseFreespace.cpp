@@ -125,15 +125,15 @@ SparseFreespace::SparseFreespace(Curve &B, Curve &T, distance_t delta, int threa
     for(int y=0;y<ny;y++){
         for(int x=0;x<nx;x++){
             //generate x-y-cell
-            if(close_linesegments((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],delta)) {
 //#pragma omp critical
 //                {
 //                n += 1;
 //            }
                 //SparseCell c = SparseCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],delta, threadcount);
-                MinkowskiCell c = MinkowskiCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],T.weight(x)*delta,T.weight(x+1)*delta,B.weight(y)*delta,B.weight(y+1)*delta, threadcount);
+            MinkowskiCell c = MinkowskiCell((Point &) T[x],(Point &) T[x + 1],(Point &) B[y],(Point &) B[y + 1],T.weight(x)*delta,T.weight(x+1)*delta,B.weight(y)*delta,B.weight(y+1)*delta, threadcount);
                 //std::cout << T.weight(x)*delta << T.weight(x+1)*delta << B.weight(y)*delta << B.weight(y+1)*delta<<std::endl;
                 //SparseGridCell<std::unique_ptr<Cell>> sgc(std::make_unique<SparseCell>(c),x,y);
+            if(!c.is_empty()){
                 row(y).emplace_back(std::make_unique<MinkowskiCell>(c), x, y);
             }
         }
@@ -507,6 +507,7 @@ MinkowskiCell::MinkowskiCell(Point &a, Point &b, Point &c, Point &d, distance_t 
     if(intersection.is_empty()){
         isEmpty = true;
     }else{
+        isEmpty = false;
         Point ac = c-a;
         Point ab = b-a;
         Point cd = d-c;

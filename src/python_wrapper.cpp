@@ -32,8 +32,6 @@ PYBIND11_MODULE(klcluster,m){
                 std::vector<double> localWeights;
                 py::buffer_info buf = w.request();
 
-                std::cout << "setting Weights " << buf.ndim << " " << buf.size << "\n";
-
                 if(buf.ndim != 1){
                     throw std::runtime_error("Dimensions must be one");
                 }
@@ -44,8 +42,10 @@ PYBIND11_MODULE(klcluster,m){
                 auto* ptr = static_cast<double *>(buf.ptr);
 
                 for(size_t i=0;i<buf.shape[0];i++){
+                    if(ptr[i]<=0 || ptr[i]>0.5){
+                        //throw std::runtime_error("Weights need to be normalized into the interval (0,0.5]. Change delta instead!");
+                    }
                     localWeights.push_back(ptr[i]);
-                    std::cout <<"(" << ptr[i] <<")" << std::flush;
                 }
 
                 c.assignWeights(localWeights);
@@ -85,7 +85,7 @@ PYBIND11_MODULE(klcluster,m){
     py::class_<Curves>(m,"Curves")
             .def(py::init<>())
             //.def_property_readonly("m", &Curves::get_m)
-            .def("add", [](Curves& cc, Curve& c){cc.push_back(c);std::cout <<cc.back().weight(0) <<std::endl;})
+            .def("add", [](Curves& cc, Curve& c){cc.push_back(c);})
             //.def("simplify", &Curves::simplify)
             .def("__getitem__", [](Curves& cc, int i){return cc[i];}, py::return_value_policy::reference)
             //.def("__setitem__", &Curves::set)
@@ -177,7 +177,7 @@ PYBIND11_MODULE(klcluster,m){
             .def("getSimplifications",[](CurveClusterer& cc){return cc.simplifiedCurves;})
             .def("getSimplifiedGTs",[](CurveClusterer& cc){return cc.simplifiedGTs;})
             .def("test",&CurveClusterer::test)
-            .def("greedyCover",[](CurveClusterer& cc, int l, int rounds){return cc.greedyCover(l,rounds,trivialFilter);})
+            .def("greedyCover",[](CurveClusterer& cc, int l, int rounds,bool withShow = false){return cc.greedyCover(l,rounds,trivialFilter,withShow);})
             .def("greedyCoverAgressiveFilter",[](CurveClusterer& cc, int l, int rounds){return cc.greedyCover(l,rounds,
 
                                                                                                               [=](const Candidate &a) {

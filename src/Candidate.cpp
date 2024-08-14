@@ -280,7 +280,7 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
             for(int k=0;k<directions.size();k++){
                 bool separated = true;
                 for(int l=0;l<curves[j].size();l++){
-                    if(curves[j][l]*directions[k]<curves[i][extremalIndices[i][k]]*directions[k]+delta){
+                    if(curves[j][l]*directions[k]<curves[i][extremalIndices[i][k]]*directions[k]+((curves[i].maxWeight() + curves[j].maxWeight())*delta)){
                         separated = false;
                         break;
                     }
@@ -293,7 +293,7 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
             for(int k=0;k<directions.size();k++){
                 bool separated = true;
                 for(int l=0;l<curves[i].size();l++){
-                    if(curves[i][l]*directions[k]<curves[j][extremalIndices[j][k]]*directions[k]+delta){
+                    if(curves[i][l]*directions[k]<curves[j][extremalIndices[j][k]]*directions[k]+((curves[i].maxWeight() + curves[j].maxWeight())*delta)){
                         separated = false;
                         break;
                     }
@@ -362,6 +362,7 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
     for(auto pair : intersectionpairs){
         int i = pair.first;
         int j = pair.second;
+        //std::cout << "("<<i<<","<<j<<")"<<std::endl;
         size++;
         if(i!=j){
             size++;
@@ -377,8 +378,14 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
     //}
 
     //new approach
-    int num = 0;
-#pragma omp parallel for default(none) shared(intersectionMap,std::cout,curves,delta,threadcount,num,size) schedule(dynamic,1)
+    std::vector<int> num(omp_get_max_threads());
+    int total = 0;
+    for(int j=0;j<omp_get_max_threads();j++){
+        std::cout << "["<<j<<"/"<<omp_get_max_threads()<<"] handled free-spaces at index " << num[j] << ".     " << std::endl;
+    }
+    std::cout << "Progress: " << total << "/" << intersectionMap.size()<<std::endl;
+    //int num = 0;
+#pragma omp parallel for default(none) shared(intersectionMap,std::cout,curves,delta,threadcount,num,total,size) schedule(dynamic)
     for(int i=0;i<intersectionMap.size();i++){
         auto js = intersectionMap[i];
         std::vector<SparseFreespace> localFreespaces;
@@ -398,8 +405,18 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
 //                this->operator[](i).emplace_back(std::move(localFreespaces[index]));
 //            }
 //        };
-        std::cout << "[(" << omp_get_thread_num() << ") " << num << "/" << intersectionMap.size() << " ]"<<std::flush;
-        num ++;
+        total++;
+        num[omp_get_thread_num()] = total;
+#pragma omp critical
+        {
+            if (((total + 1) % 10 == 0) || total == intersectionMap.size() ) {
+                printf("\033[0G\033[%dA",omp_get_max_threads()+1);
+                for(int j=0;j<omp_get_max_threads();j++){
+                    std::cout << "["<<j<<"/"<<omp_get_max_threads()<<"] handled free-spaces at index " << num[j] << ".     " << std::endl;
+                }
+                std::cout << "Progress: " << total << "/" << intersectionMap.size()<<std::endl;
+            }
+        }
         //this->operator[](i).insert(this->operator[](i).end(),std::move(localFreespaces));
     }
 }

@@ -48,7 +48,7 @@ void updateCandidate(Curves& curves, Candidate& c, std::vector<CInterval> coveri
             newLength -= (suffixLengths[rIdx] - suffixLengths[lIdx]);
     }
     if(c.semiUpdatedCoverLength + EPSILON < newLength){
-        std::cout << "?" << c.semiUpdatedCoverLength << " -> " << newLength<<std::endl;
+        std::cout << "  ???" << c.semiUpdatedCoverLength << " -> " << newLength <<" with error " << newLength - c.semiUpdatedCoverLength <<"???"<<std::endl;
         //updateCandidate(curves,c,covering,suffixLengths,roundID);
     }
     c.semiUpdatedCoverLength = newLength;

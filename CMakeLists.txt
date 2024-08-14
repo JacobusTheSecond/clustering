@@ -26,16 +26,17 @@ if(OpenMP_CXX_FOUND)
 	link_libraries(OpenMP::OpenMP_CXX)
 endif()
 
-#find_package(OpenCV REQUIRED)
-#include_directories( ${OpenCV_INCLUDE_DIRS} )
+find_package(OpenCV REQUIRED)
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-#set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
+set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
 
 add_subdirectory(pybind11)
-pybind11_add_module(klcluster src/geometry_types.cpp src/Curve.cpp src/io.cpp src/SparseFreespace.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)
+pybind11_add_module(klcluster src/geometry_types.cpp src/Curve.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)
+target_link_libraries(klcluster PUBLIC ${OpenCV_LIBS})
 
-add_executable(overhaul src/main.cpp src/geometry_types.cpp src/Curve.cpp src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/Candidate.cpp src/center_clustering_algs.cpp)
-target_link_libraries(overhaul PUBLIC pybind11::embed)
+add_executable(overhaul src/main.cpp src/geometry_types.cpp src/Curve.cpp src/CurveSimplification.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp)
+target_link_libraries(overhaul PUBLIC pybind11::embed ${OpenCV_LIBS})
 #
 
 #target_link_libraries(klcluster ${OpenCV_LIBS})

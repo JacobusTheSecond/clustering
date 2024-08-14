@@ -80,6 +80,12 @@ public:
     void assignWeights(std::vector<double> ws){
         assert(ws.size() == size());
         weights = ws;
+        maxW = 0;
+        for(auto w : weights){
+            if(w>maxW){
+                maxW = w;
+            }
+        }
     };
 
     template <typename func> void assignWeights(func f){
@@ -87,10 +93,20 @@ public:
         for(auto p : points){
             weights.push_back(f(p));
         }
+        maxW = 0;
+        for(auto w : weights){
+            if(w>maxW){
+                maxW = w;
+            }
+        }
     }
 
     double weight(int i){
         return weights[i];
+    }
+
+    double maxWeight(){
+        return maxW;
     }
 
     inline auto as_ndarray() const {
@@ -110,6 +126,7 @@ public:
     void set_name(std::string n) {name = n;};
 
 private:
+    double maxW;
     Points points;
     ExtremePoints extreme_points;
     std::vector<double> weights;
