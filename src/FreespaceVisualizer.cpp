@@ -901,11 +901,11 @@ void SparseFreeSpacesVisualizer::show() {
         xSize += (col.front().ySize() + 2);
     }
 
-    namedWindow("winImage", WINDOW_NORMAL);
-    namedWindow("controlWin", WINDOW_AUTOSIZE);
+    namedWindow("+/-: zoom, w/a/s/d: move, q: quit", WINDOW_NORMAL);
+    //namedWindow("controlWin", WINDOW_AUTOSIZE);
 
-    createTrackbar("Hscroll", "controlWin", &scrolHight, 1000);
-    createTrackbar("Wscroll", "controlWin", &scrolWidth, 1000);
+    //createTrackbar("Hscroll", "controlWin", &scrolHight, 1000);
+    //createTrackbar("Wscroll", "controlWin", &scrolWidth, 1000);
 
 
     bool redraw = true;
@@ -1037,7 +1037,7 @@ void SparseFreeSpacesVisualizer::show() {
             int truescrolHight = (img.rows - winH)*scrolHight/1000;
             int truescrolWidth = (img.cols - winW)*scrolWidth/1000;
             Mat winImage = img(Rect(truescrolWidth, img.rows - winH - truescrolHight, winW, winH));
-            imshow("winImage", winImage);
+            imshow("+/-: zoom, w/a/s/d: move, q: quit", winImage);
             int input = waitKey(0);
             if (input == 'q')
                 break;

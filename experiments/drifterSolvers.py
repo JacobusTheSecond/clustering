@@ -125,7 +125,7 @@ class KlClusterDriftersSolver(DriftersSolver):
             c.setWeights(w)
             self.curves.add(c)
 
-        self.DELTA = 150000
+        self.DELTA = 15000
         self.COMPLEXITY = 10
         self.ROUNDS = 1
 
@@ -134,7 +134,7 @@ class KlClusterDriftersSolver(DriftersSolver):
         self.cc.initCurves(self.curves, self.DELTA)
         self.simplifiedCurves = self.cc.getSimplifications()
 
-    def solve(self, onlyRelevantClusters = False, withShow = True):
+    def solve(self, onlyRelevantClusters = False, withShow = False):
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
 
         filterCount = 0
