@@ -885,9 +885,6 @@ void SparseFreeSpacesVisualizer::show() {
         CS /= 2.0;
     }
 
-    for(auto & fs : freespaces){
-        std::cout << fs.size() << std::endl;
-    }
     std::cout << std::flush;
     int scrolHight = 0;
     int scrolWidth = 0;
@@ -922,7 +919,7 @@ void SparseFreeSpacesVisualizer::show() {
                 SparseFreespace &freespace = freespaces[yi][xi];
                 int actualX = freespace.TID;
                 int actualY = freespace.BID;
-                std::cout << "drawing " << actualX << " " << actualY << std::endl;
+                //std::cout << "drawing " << actualX << " " << actualY << std::endl;
                 //freespaceorigin
                 int xOrigin = partialXSums[actualX];
                 int yOrigin = partialYSums[actualY];
