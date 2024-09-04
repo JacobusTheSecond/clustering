@@ -3,6 +3,8 @@ import numpy as np
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import csv
+import os
+import math
 
 import klcluster as kl
 
@@ -15,7 +17,12 @@ class DriftersSolver(ABC):
                 curveData = np.array(list(csv.reader(f, delimiter=" "))).astype(float)
                 if len(curveData) > 1:
                     self.datacurves.append(curveData)
-
+        self.rossbyRadii = {}
+        with open(os.path.dirname(os.path.realpath(__file__))+'/../data_drifters/rossrad.dat', 'r') as file:
+            for line in file:
+                line = line.strip().split()
+                self.rossbyRadii[(float(line[0]), float(line[1]))] = float(line[3])
+                #print(line)
     @abstractmethod
     def solve():
         pass
@@ -111,27 +118,45 @@ class DriftersSolver(ABC):
         lat = np.arcsin(z / R) / np.pi * 180
         lon = np.arctan2(y, x) / np.pi * 180
         return np.array([lat, lon])
+    def getRossbyRadius(self, lat, lon):
+        lon = (lon + 360) % 360
+        lat = math.floor(lat) + 0.5
+        lon = math.floor(lon) + 0.5
+        return self.rossbyRadii.get((lat, lon), 1)
     
 
 class KlClusterDriftersSolver(DriftersSolver):
-    def __init__(self, drifterFiles):
+    def __init__(self, drifterFiles, rossbyRadius=False):
         super().__init__(drifterFiles)
 
         self.curves = kl.Curves()
+        
+        
         for i, curvedata in enumerate(self.datacurves):
-            c = kl.Curve(curvedata,f"Curve_{i}")
-            w = c.getWeights()
-            w*=1
-            c.setWeights(w)
-            self.curves.add(c)
+            curve = kl.Curve(curvedata, f"Curve_{i}")
+            weights = curve.getWeights()
+            if rossbyRadius:
+                for j, p in enumerate(curve):
+                    lat, lon = self.worldToLL(p[0], p[1], p[2])
+                    weights[j] = (self.getRossbyRadius(lat, lon)/3)+10
+                    #if weights[j] != 500:
+                    #print(weights[j])
+            curve.setWeights(weights)
+            self.curves.add(curve)
 
-        self.DELTA = 15000
+        self.DELTA = 55000
+        self.freeDELTA = 10000
+        self.simpDELTA = 10000
         self.COMPLEXITY = 10
         self.ROUNDS = 1
 
         print(f"Inititalizing {len(self.curves)} curves")
         self.cc = kl.CurveClusterer()
-        self.cc.initCurves(self.curves, self.DELTA)
+        if rossbyRadius:
+            self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
+        else:
+            self.cc.initCurves(self.curves, self.DELTA)
+        
         self.simplifiedCurves = self.cc.getSimplifications()
 
     def solve(self, onlyRelevantClusters = False, withShow = False):
