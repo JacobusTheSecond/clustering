@@ -7,8 +7,8 @@ from random import random
 import time
 from multiprocessing import Process, Lock
 
-SIMP_DELTAS = np.arange(0.8, 1.8, 0.1)
-FREE_DELTAS = np.arange(0.8, 1.8, 0.1)
+SIMP_DELTAS = np.arange(0.8, 2, 0.05)
+FREE_DELTAS = np.arange(0.8, 2, 0.05)
 COMPLEXITIES = np.arange(4, 20, 1)
 
 def main():

@@ -189,7 +189,7 @@ class KlClusterCMUSolver(CMUSolver):
         self.cc.initCurvesWithGTDiffDelta(curves, self.SIMP_DELTA, self.FREE_DELTA, groundTruths)
 
     def solve(self):
-        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS)
+        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False)
         self.segments, self.segmentation = self.__getBaseSementation(self.clusters)
         return self.segments
 
