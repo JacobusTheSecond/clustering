@@ -188,8 +188,10 @@ class KlClusterCMUSolver(CMUSolver):
         self.cc = kl.CurveClusterer()
         self.cc.initCurvesWithGTDiffDelta(curves, self.SIMP_DELTA, self.FREE_DELTA, groundTruths)
 
-    def solve(self):
+    def solve(self, mergeOverlappingClusters = False):
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False)
+        if mergeOverlappingClusters:
+            print(f"Merged {self.cc.mergeOverlappingClusters(self.clusters, 0.5)} clusters.")
         self.segments, self.segmentation = self.__getBaseSementation(self.clusters)
         return self.segments
 
@@ -360,11 +362,11 @@ class KlClusterCMUSolver(CMUSolver):
                 size = matchingend - matchingstart
 
                 if labelOrig == -1:
-                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, color="gray")
+                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=0.7, color="gray")
                 elif label < len(self.colors):
-                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, color=self.colors[label])
+                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=0.7, color=self.colors[label])
                 else:
-                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=1, label=label)
+                    ax.barh(clusterIdx, size, left=matchingstart, edgecolor="black", linewidth=0.7, label=label)
 
 
         xax = ax.axes.get_xaxis()

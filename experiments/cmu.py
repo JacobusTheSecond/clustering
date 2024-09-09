@@ -2,7 +2,7 @@ from cmuSolvers import KlClusterCMUSolver
 from cmuSolvers import AcaCMUSolver
 from cmuSolvers import TmmCMUSolver
 
-TAG = 2
+TAG = 6
 klClusterSolver = KlClusterCMUSolver(TAG)
 # tmmCMUSolver = TmmCMUSolver(TAG)
 # gmmSolver = AcaCMUSolver(TAG, "gmm")
@@ -10,7 +10,7 @@ klClusterSolver = KlClusterCMUSolver(TAG)
 # hacaSolver = AcaCMUSolver(TAG, "haca")
 
 
-segmentsKlCluster = klClusterSolver.solve()
+segmentsKlCluster = klClusterSolver.solve(mergeOverlappingClusters=True)
 # segmentsTmm = tmmCMUSolver.solve()
 print(klClusterSolver.calculateAccuracy(segmentsKlCluster, TAG))
 

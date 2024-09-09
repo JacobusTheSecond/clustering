@@ -364,6 +364,18 @@ public:
     bool operator!=(size_t other) const {
         return !(point == other);
     }
+    static CPoint max(CPoint p0, CPoint p1) {
+        if (p1 > p0)
+            return p1;
+        else
+            return p0;
+    }
+    static CPoint min(CPoint p0, CPoint p1) {
+        if (p1 < p0)
+            return p1;
+        else
+            return p0;
+    }
     /*
     CPoint operator+(distance_t other) const {
         assert(other <= 1.);
@@ -520,6 +532,15 @@ struct CInterval
         return begin <= t && t <= end;
     }
 
+    static CInterval Union(CInterval& int0, CInterval& int1) {
+        return {CPoint::min(int0.begin, int1.begin), CPoint::max(int0.end, int1.end), int0.getCurveIndex()};
+    }
+
+    bool intersects(CInterval& other) {
+        if (getCurveIndex() != other.getCurveIndex())
+            return false;
+        return begin <= other.end && other.begin <= end;
+    }
 
     CPoint getBegin() const {
         return begin;

@@ -10,6 +10,9 @@ from multiprocessing import Process, Lock
 SIMP_DELTAS = np.arange(0.8, 2, 0.05)
 FREE_DELTAS = np.arange(0.8, 2, 0.05)
 COMPLEXITIES = np.arange(4, 20, 1)
+# SIMP_DELTAS = [1.25]
+# FREE_DELTAS = [1.25]
+# COMPLEXITIES = [10]
 
 def main():
     starttime = time.time()
@@ -76,7 +79,7 @@ def runsingleconfiguration(s_delta, f_delta, l, resultsfilepath, filelock):
         sys.stderr.flush()
 
         solver = KlClusterCMUSolver(TAG, SIMP_DELTA=s_delta, FREE_DELTA=f_delta, COMPLEXITY=l)
-        segments = solver.solve()
+        segments = solver.solve(mergeOverlappingClusters=False)
 
         acc = solver.calculateAccuracy(segments, TAG)
         accTrue = solver.calculateAccuracyTrueLabels(segments, TAG)

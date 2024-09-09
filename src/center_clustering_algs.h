@@ -36,6 +36,26 @@ public:
 
     CInterval const& operator[](PointID i) const { return matching[i]; }
 
+    void merge(Cluster& other) {
+        // merge cluster centers
+        center = CInterval::Union(center, other.center);
+        // merge matchings
+        for (int i = 0; i < other.matching.size(); i++) {
+            // try to insert other.matching[i]
+            bool inserted = false;
+            for (int j = 0; j < matching.size(); j++) {
+                if (matching[j].intersects(other.matching[i])) {
+                    matching[j] = CInterval::Union(matching[j], other.matching[i]);
+                    inserted = true;
+                    break;
+                }
+            }
+            if (!inserted) {
+                matching.push_back(other.matching[i]);
+            }
+        }
+    }
+
 private:
     CInterval center;
     CIntervals matching;
@@ -113,9 +133,8 @@ public:
 
     //TODO: this seems wrong
     CPoint mapSimplificationToBase(int curveIdx, CPoint q) {
-
         auto x = std::lower_bound(vertexMaps[curveIdx].begin(),vertexMaps[curveIdx].end(),q);
-        int i =  x - vertexMaps[curveIdx].begin();
+        int i = x - vertexMaps[curveIdx].begin();
 
         if(i>=vertexMaps[curveIdx].size()){
             //this should mean that we simply map to the very last vertex
@@ -144,6 +163,48 @@ public:
             }
 
         }
+    }
+
+    int mergeOverlappingClusters(ClusteringResult& clusters, double overlapRatio = 0.7) {
+        int sizeBefore = clusters.size();
+        bool changes;
+        do {
+            changes = false;
+            for (int i = 0; i < clusters.size() && !changes; i++) {
+                for (int j = i + 1; j < clusters.size() && !changes; j++) {
+                    if (clusters[i].getCenter().getCurveIndex() != clusters[j].getCenter().getCurveIndex())
+                        continue;
+                    double totalOverlap = 0;
+                    double totalLengthI = 0;
+                    double totalLengthJ = 0;
+                    // calculate total matching overlap
+                    for (const CInterval& matching0 : clusters[i].getMatching()) {
+                        for (const CInterval& matching1 : clusters[j].getMatching()) {
+                            if (matching0.getCurveIndex() != matching1.getCurveIndex())
+                                continue;
+
+                            double start0 = mapSimplificationToBase(matching0.getCurveIndex(), matching0.begin).convert();
+                            double end0 = mapSimplificationToBase(matching0.getCurveIndex(), matching0.end).convert();
+                            double start1 = mapSimplificationToBase(matching1.getCurveIndex(), matching1.begin).convert();
+                            double end1 = mapSimplificationToBase(matching1.getCurveIndex(), matching1.end).convert();
+                            
+                            totalOverlap += std::max(0.0, std::min(end0, end1) - std::max(start0, start1));
+                            totalLengthI += end0 - start0;
+                            totalLengthJ += end1 - start1;
+                        }
+                    }
+                    
+                    // std::cout << totalOverlap << " " << totalLengthI << std::endl;
+                    if (totalOverlap / totalLengthI >= overlapRatio || totalOverlap / totalLengthJ >= overlapRatio) {
+                        clusters[i].merge(clusters[j]);
+                        clusters.erase(clusters.begin() + j);
+                        changes = true;
+                    }
+                }
+            }
+        } while (changes);
+
+        return sizeBefore - clusters.size();
     }
 
     void updateFlags(int samplingRate, bool showFlag) {

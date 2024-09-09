@@ -177,6 +177,7 @@ PYBIND11_MODULE(klcluster,m){
             .def("getSimplifications",[](CurveClusterer& cc){return cc.simplifiedCurves;})
             .def("getSimplifiedGTs",[](CurveClusterer& cc){return cc.simplifiedGTs;})
             .def("test",&CurveClusterer::test)
+            .def("mergeOverlappingClusters",&CurveClusterer::mergeOverlappingClusters)
             .def("greedyCover",[](CurveClusterer& cc, int l, int rounds,bool withShow = false){return cc.greedyCover(l,rounds,trivialFilter,withShow);})
             .def("greedyCoverAgressiveFilter",[](CurveClusterer& cc, int l, int rounds){return cc.greedyCover(l,rounds,
 
