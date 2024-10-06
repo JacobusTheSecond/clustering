@@ -6,6 +6,7 @@ import os
 import json
 from dataclasses import dataclass
 from collections import Counter
+import timeit
 
 import matlab.engine
 import klcluster as kl
@@ -25,6 +26,7 @@ class CMUSolver(ABC):
 
         self.segmentation = None
         self.segments = None
+        self.execution_time = None
 
         self.colors = [
             (0, 0, 0),
@@ -161,6 +163,9 @@ class CMUSolver(ABC):
         for frame, frameGT in zip(frameList, frameListGT):
             M[frame][frameGT] +=1
         return M
+    
+    def getExecutionTime(self):
+        return self.execution_time
 
 class KlClusterCMUSolver(CMUSolver):
     def __init__(self, tag, SIMP_DELTA = 1.25, FREE_DELTA = 1.25, COMPLEXITY = 10):
@@ -188,7 +193,8 @@ class KlClusterCMUSolver(CMUSolver):
         self.cc = kl.CurveClusterer()
         self.cc.initCurvesWithGTDiffDelta(curves, self.SIMP_DELTA, self.FREE_DELTA, groundTruths)
 
-    def solve(self, mergeOverlappingClusters = False):
+    def solve(self, mergeOverlappingClusters = False, timing_rounds=0):
+        self.execution_time = (timeit.timeit(lambda: self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False)
         if mergeOverlappingClusters:
             print(f"Merged {self.cc.mergeOverlappingClusters(self.clusters, 0.5)} clusters.")
@@ -387,7 +393,7 @@ class AcaCMUSolver(CMUSolver):
         super().__init__(tag)
         self.method = method
 
-    def solve(self):
+    def solve(self, timing_rounds=0):
         print("start matlab")
         eng = matlab.engine.start_matlab()  # connect_matlab()
         print("finished")
@@ -400,12 +406,19 @@ class AcaCMUSolver(CMUSolver):
         match self.method:
             case "gmm":
                 gt, seg, labelNames = eng.runGmm(self.tag, nargout=3)
+                self.execution_time = (timeit.timeit(lambda: eng.runGmm(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+
             case "aca":
                 gt, seg, labelNames = eng.runAca(self.tag, nargout=3)
+                self.execution_time = (timeit.timeit(lambda: eng.runAca(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+
             case "haca":
                 gt, seg, labelNames = eng.runHaca(self.tag, nargout=3)
+                self.execution_time = (timeit.timeit(lambda: eng.runHaca(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+
             case _:
                 raise Exception(f"Unknown method '{self.method}'")
+            
 
         eng.quit() # stop matlab.engine
 
@@ -423,7 +436,7 @@ class AcaCMUSolver(CMUSolver):
             label = self.labelMapping[labelNames[labelIndices.item()]] # map matlab label to our labels
             segments.append(Segment(size=frame - segmentStart, label=label))
             segmentStart = frame
-
+        self.clusters = segments
         return segments
 
 
@@ -431,7 +444,7 @@ class TmmCMUSolver(CMUSolver):
     def __init__(self, tag):
         super().__init__(tag)
         
-    def solve(self):
+    def solve(self, timing_rounds=0):
         print("start matlab")
         
         eng = matlab.engine.start_matlab()  # connect_matlab()
@@ -439,9 +452,10 @@ class TmmCMUSolver(CMUSolver):
 
         eng.cd(f'{os.getcwd()}/..//MotionSegmentationCode/MatlabCodeTMM/', nargout=0)
         # eng.make(nargout=0)
-        eng.addPath("MotionSegmentation", nargout=0) # add aca paths like src or lib
-        #eng.addpath("..") # add runAca, runGmm, ... to path
+        eng.addPath("MotionSegmentation", nargout=0) # add tmm paths
+        
         eng.cd("MotionSegmentation")
+        self.execution_time = (timeit.timeit(lambda: eng.call_segmentation(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
         comps, sframes, eframes = eng.call_segmentation(self.tag, nargout=3)
         eng.quit() # stop matlab.engine
 
@@ -450,10 +464,10 @@ class TmmCMUSolver(CMUSolver):
         sframes = [int(i[0]) for i in sframes]
         eframes = [int(i[0]) for i in eframes]
 
-        clusters = [[] for i in range(max(comps))]
+        self.clusters = [[] for i in range(max(comps))]
         ## stop matlab.engine
         for i in range(len(comps)):
-            clusters[comps[i]-1].append((sframes[i], eframes[i]))
+            self.clusters[comps[i]-1].append((sframes[i], eframes[i]))
 
         self.gt = self.getGTSegments(self.tag)
         frameListGT = []
@@ -461,7 +475,7 @@ class TmmCMUSolver(CMUSolver):
             frameListGT.extend([gtSegment.label]*gtSegment.size)
         segments_ = []
         labels = []
-        for clusterIdx, cluster in enumerate(clusters):
+        for clusterIdx, cluster in enumerate(self.clusters):
             labelcount = {}
             totalcount = 0
             for subsegment in cluster:
@@ -490,5 +504,5 @@ class TmmCMUSolver(CMUSolver):
                 segments_.append([start, end, bestLabel])
         segments_.sort()
         segments = [Segment(size=s[1]-s[0], label=s[2]) for s in segments_]
-        print("Anzahl Labels Tmm", len(labels), len(clusters), len(segments))
+        print("Anzahl Labels Tmm", len(labels), len(self.clusters), len(segments))
         return segments
