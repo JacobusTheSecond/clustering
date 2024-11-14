@@ -3,6 +3,7 @@ from cmuSolvers import AcaCMUSolver
 from cmuSolvers import TmmCMUSolver
 import pandas as pd
 import os
+import timeit
 import json
 
 file_path = "result.json"
@@ -25,12 +26,11 @@ else:
 
 
 configurations = [
-                [[TAG for TAG in range(1, 15)], [["Tmm"]], 3],
 
-                [[TAG for TAG in range(1, 15)], [["KlCluster", 4, 0.8, 1.25]], 3],
-                [[TAG for TAG in range(1, 15)], [["KlCluster", 5, 0.8, 1.35]], 3],
-                [[TAG for TAG in range(1, 15)], [["KlCluster", 6, 0.85, 1.4]], 3],
-                [[TAG for TAG in range(1, 15)], [["KlCluster", 7, 0.8, 0.95]], 3],
+                [[TAG for TAG in range(1, 15)], [["KlCluster", 4, 0.8, 1.25]], 5],
+                [[TAG for TAG in range(1, 15)], [["KlCluster", 5, 0.8, 1.35]], 5],
+                [[TAG for TAG in range(1, 15)], [["KlCluster", 6, 0.85, 1.4]], 5],
+                [[TAG for TAG in range(1, 15)], [["KlCluster", 7, 0.8, 0.95]], 5],
                 [[TAG for TAG in range(1, 15)], [["KlCluster", 8, 0.8, 1.4]], 3],
                 [[TAG for TAG in range(1, 15)], [["KlCluster", 9, 0.8, 0.95]], 3],
                 [[TAG for TAG in range(1, 15)], [["KlCluster", 10, 0.8, 1.7]], 3],
@@ -43,7 +43,9 @@ configurations = [
                 [[TAG for TAG in range(1, 15)], [["KlCluster", 17, 0.8, 1.5]], 3],
                 [[TAG for TAG in range(1, 15)], [["KlCluster", 18, 0.8, 1.05]], 3],
                 [[TAG for TAG in range(1, 15)], [["KlCluster", 19, 0.8, 1.1]], 3],
-                [[TAG for TAG in range(1, 15)], [["Aca"], ["Haca"], ["Gmm"]], 3]
+                [[TAG for TAG in range(1, 15)], [["Aca"], ["Haca"], ["Gmm"]], 3],
+                [[TAG for TAG in range(1, 15)], [["Tmm"]], 3]
+
                 ]
 
 
@@ -51,29 +53,34 @@ for instances, methods, num_iterations in configurations:
     for TAG in instances:
             for method in methods:
                 complexity, simpDelta, freeDelta = None, None, None
+                init_time = 0
                 if method[0] == "KlCluster":
                     _, complexity, simpDelta, freeDelta = method
-
+                    print(num_iterations)
+                    init_time = (timeit.timeit(lambda: KlClusterCMUSolver(TAG, simpDelta, freeDelta, complexity), number=num_iterations) / num_iterations) if num_iterations != 0 else 0
+                    
                     solver = KlClusterCMUSolver(TAG, simpDelta, freeDelta, complexity)
-                    segments = solver.solve(num_iterations)
+                    segments = solver.solveAndTime(timing_rounds=num_iterations)
                 if method[0] == "Tmm":
                     solver = TmmCMUSolver(TAG)
-                    segments = solver.solve(num_iterations)
+                    segments = solver.solveAndTime(num_iterations)
                 if method[0] == "Aca":
                     solver = AcaCMUSolver(TAG, "aca")
-                    segments = solver.solve(num_iterations)
+                    segments = solver.solveAndTime(num_iterations)
                 if method[0] == "Haca":
                     solver = AcaCMUSolver(TAG, "haca")
-                    segments = solver.solve(num_iterations)
+                    segments = solver.solveAndTime(num_iterations)
                 if method[0] == "Gmm":
                     solver = AcaCMUSolver(TAG, "gmm")
-                    segments = solver.solve(num_iterations)
+                    segments = solver.solveAndTime(num_iterations)
 
                 new_entry = {
                      "TAG" : TAG, 
                      "Method" : method[0], 
                      "nClusters" : len(solver.clusters), 
-                     "Time" : solver.getExecutionTime(), 
+                     "Time" : solver.getExecutionTime() + init_time if method[0] == "KlCluster" else 0,
+                     "SolvingTime" : solver.getExecutionTime(),
+                     "SimplifyTime" : init_time,
                      "Accuracy" : solver.calculateAccuracy(segments, TAG), 
                      "True Accuracy" : solver.calculateAccuracyTrueLabels(segments, TAG), 
                      "Macro Precision" : solver.calculateMacroPrecision(segments, TAG), 

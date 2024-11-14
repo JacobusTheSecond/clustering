@@ -175,6 +175,7 @@ PYBIND11_MODULE(klcluster,m){
             .def("initCurvesWithGTDiffDelta",[](CurveClusterer& cc, Curves& cs, double simpDelta, double freeDelta, std::vector<FrameLabeling>& GTs){return cc.initCurvesWithGT(cs,simpDelta,GTs,freeDelta);})
             .def("mapToBase",&CurveClusterer::mapSimplificationToBase)
             .def("getSimplifications",[](CurveClusterer& cc){return cc.simplifiedCurves;})
+            .def("getCurves",[](CurveClusterer& cc){return cc.unsimplifiedCurves;})
             .def("getSimplifiedGTs",[](CurveClusterer& cc){return cc.simplifiedGTs;})
             .def("test",&CurveClusterer::test)
             .def("mergeOverlappingClusters",&CurveClusterer::mergeOverlappingClusters)
