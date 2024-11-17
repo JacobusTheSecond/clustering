@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import csv
 import os
@@ -16,7 +17,6 @@ class DriftersSolver(ABC):
         for filepath in drifterFiles:
             with open(filepath, "r") as f:
                 curveData = np.array(list(csv.reader(f, delimiter=" "))).astype(float)
-                print(curveData.shape)
                 if len(curveData) > 1:
                     self.datacurves.append(curveData)
         self.rossbyRadii = {}
@@ -30,7 +30,7 @@ class DriftersSolver(ABC):
         pass
     
     def plotInput(self):
-        self.__plotCurves([self.datacurves])
+        self.__plotCurves([self.datacurves], ["blue"], [0.4])
 
     def plotResults(self):
         if (not self.clustercurves):
@@ -38,7 +38,7 @@ class DriftersSolver(ABC):
         self.__plotCurves([self.clustercurves], ["red"], [0.7])
 
     def plotInputAndResult(self):
-        self.__plotCurves([self.datacurves, self.clustercurves], ["blue", "red"], [0.3, 0.7])
+        self.__plotCurves([self.datacurves, self.clustercurves], ["blue", "red"], [0.4, 0.8])
 
     def plotCurve(self):
         #self.curves_per_cluster.sort(reverse=True, key=lambda x: len(x[0]))
@@ -150,6 +150,153 @@ class DriftersSolver(ABC):
         lon = math.floor(lon) + 0.5
         return self.rossbyRadii.get((lat, lon), 1)
     
+    def drawInputField(self):
+        self.__drawVectorField(self.datacurves, "blue")
+
+    def drawResultField(self):
+        #interpolated_coords = [self.clustercurves[0]]  # Start with the first coordinate
+        threshold = 100000
+        new_curves = []
+        for clustercurve in self.clustercurves:
+            interpolated_curve = []
+            for i in range(1, len(clustercurve)):
+                x1, y1, z1 = clustercurve[i - 1]
+                x2, y2, z2 = clustercurve[i]
+                
+                # Compute the Euclidean distance
+                distance = np.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
+                
+                if distance > threshold:
+                    # Number of points to interpolate
+                    num_points = int(np.ceil(distance / threshold))
+                    for t in np.linspace(0, 1, num_points + 1)[1:]:  # Avoid repeating the start point
+                        interpolated_curve.append((
+                            x1 + t * (x2 - x1),
+                            y1 + t * (y2 - y1),
+                            z1 + t * (z2 - z1)
+                        ))
+                else:
+                    interpolated_curve.append((x2, y2, z2))
+            new_curves.append(interpolated_curve)
+
+        self.__drawVectorField(new_curves, "red")
+
+    def __drawVectorField(self, curves, color):
+        # # Sample trajectory data with only lat/lon points
+        # trajectory_data = [
+        #     [(-74, 40), (-30, 50), (2, 48)],   # NYC to Paris
+        #     [(-0.1, 51.5), (60, 55), (139, 35)],  # London to Tokyo
+        #     [(144.9, -37.8), (120, -10), (80, 0)],  # Melbourne to Southeast Asia
+        # ]
+
+        # Initialize lists to hold points and vectors
+
+        lon, lat, u, v = [], [], [], []
+
+        # Calculate vectors based on differences between consecutive points
+        for path in curves:
+            for i in range(len(path) - 1):
+                # Get start and end points for vector calculation
+                x, y, z = path[i]
+                lat1, lon1 = self.worldToLL(x, y, z)
+                x, y, z = path[i+1]
+
+                lat2, lon2 = self.worldToLL(x, y, z)
+            
+                # Calculate the vector components as differences in lon/lat
+                delta_lon = lon2 - lon1
+                delta_lat = lat2 - lat1
+                #rescale = math.sqrt(delta_lat**2+delta_lon**2)
+                #delta_lat /= rescale
+                #delta_lon /= rescale
+                #print(delta_lat, delta_lon)
+            
+                # Store the midpoint for plotting the vector
+                mid_lon = (lon1 + lon2) / 2
+                mid_lat = (lat1 + lat2) / 2
+            
+                # Append midpoint and vector to lists
+                lon.append(mid_lon)
+                lat.append(mid_lat)
+                u.append(delta_lon)
+                v.append(delta_lat)
+
+        # Convert lists to arrays
+        lon = np.array(lon)
+        lat = np.array(lat)
+        u = np.array(u)
+        v = np.array(v)
+
+        # Define the grid parameters
+        grid_size = 5  # Grid cell size in degrees
+        lon_bins = np.arange(-180, 180, grid_size)
+        lat_bins = np.arange(-90, 90, grid_size)
+        lon_centers = lon_bins[:-1] + grid_size / 2
+        lat_centers = lat_bins[:-1] + grid_size / 2
+
+        # Initialize arrays to hold the averaged vector components
+        u_avg = np.zeros((len(lat_centers), len(lon_centers)))
+        v_avg = np.zeros((len(lat_centers), len(lon_centers)))
+        counts = np.zeros((len(lat_centers), len(lon_centers)))  # Count of vectors in each cell
+
+        # Aggregate vectors in each cell
+        for i in range(len(lon)):
+            lon_idx = np.digitize(lon[i], lon_bins) - 1
+            lat_idx = np.digitize(lat[i], lat_bins) - 1
+        
+            # Only aggregate if indices are within the grid
+            if 0 <= lon_idx < len(lon_centers) and 0 <= lat_idx < len(lat_centers):
+                u_avg[lat_idx, lon_idx] += u[i]
+                v_avg[lat_idx, lon_idx] += v[i]
+                counts[lat_idx, lon_idx] += math.sqrt(u[i]**2+v[i]**2)
+
+        # Average the vectors in each cell
+        u_avg = np.divide(u_avg, counts, where=counts != 0)
+        v_avg = np.divide(v_avg, counts, where=counts != 0)
+        print(u_avg)
+
+        # Mask zero vectors by setting them to NaN (so they won't be plotted)
+        u_avg[counts == 0] = np.nan
+        v_avg[counts == 0] = np.nan
+
+        # Create a map with Cartopy
+        fig, ax = plt.subplots(figsize=(12, 6), subplot_kw={'projection': ccrs.PlateCarree()})
+        ax.set_global()
+        ax.coastlines()
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+        # Add gridlines
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5)
+        gl.top_labels = gl.right_labels = False
+
+        for lon_line in lon_bins:
+            ax.plot([lon_line, lon_line], [lat_bins[0], lat_bins[-1]], transform=ccrs.PlateCarree(), color='gray', linewidth=0.5, linestyle='--')
+        for lat_line in lat_bins:
+            ax.plot([lon_bins[0], lon_bins[-1]], [lat_line, lat_line], transform=ccrs.PlateCarree(), color='gray', linewidth=0.5, linestyle='--')
+
+
+        # Plot the averaged vector field, omitting zero vectors
+        lon_grid, lat_grid = np.meshgrid(lon_centers, lat_centers)
+        quiver = ax.quiver(
+            lon_grid, lat_grid, u_avg, v_avg,
+            transform=ccrs.PlateCarree(), color=color, headaxislength=3, headlength=3, scale=0.2, scale_units='xy', width=0.0012#, scale=20, scale_units='xy', width=0.005
+        )
+        #for path in self.datacurves:
+        #    path_lon = [point[0] for point in path]
+        #    path_lat = [point[1] for point in path]
+        #    ax.plot(path_lon, path_lat, transform=ccrs.PlateCarree(), color='red', linestyle='--', marker='o', markersize=5)
+
+        # Optionally, add a reference arrow for scale
+        ax.quiverkey(quiver, X=0.9, Y=-0.1, U=1, label="1 unit vector", labelpos='E')
+
+        # Set the title
+        plt.title("Averaged Global Vector Field in Grid Cells (Zero Vectors Omitted)")
+
+        # Display the plot
+        plt.show()
+
+    
+
 
 class KlClusterDriftersSolver(DriftersSolver):
     def __init__(self, drifterFiles, rossbyRadius=False):
