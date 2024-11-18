@@ -2,23 +2,27 @@ from cmuSolvers import KlClusterCMUSolver
 from cmuSolvers import AcaCMUSolver
 from cmuSolvers import TmmCMUSolver
 
-TAG = 6
-klClusterSolver = KlClusterCMUSolver(TAG)
-# tmmCMUSolver = TmmCMUSolver(TAG)
-# gmmSolver = AcaCMUSolver(TAG, "gmm")
-# acaSolver = AcaCMUSolver(TAG, "aca")
-# hacaSolver = AcaCMUSolver(TAG, "haca")
+TAG = 1
+klClusterSolver5 = KlClusterCMUSolver(TAG, 0.8, 1.35, 5)
+klClusterSolver10 = KlClusterCMUSolver(TAG, 0.8, 1.7, 10)
+klClusterSolver15 = KlClusterCMUSolver(TAG, 0.8, 1.05, 15)
+tmmCMUSolver = TmmCMUSolver(TAG)
+gmmSolver = AcaCMUSolver(TAG, "gmm")
+acaSolver = AcaCMUSolver(TAG, "aca")
+hacaSolver = AcaCMUSolver(TAG, "haca")
 
 
-segmentsKlCluster = klClusterSolver.solve(mergeOverlappingClusters=True)
-# segmentsTmm = tmmCMUSolver.solve()
-print(klClusterSolver.calculateAccuracy(segmentsKlCluster, TAG))
+segmentsKlCluster5 = klClusterSolver5.solve(mergeOverlappingClusters=False)
+segmentsKlCluster5 = klClusterSolver5.solveAndTime(timing_rounds=3, mergeOverlappingClusters=False)
+#segmentsKlCluster10 = klClusterSolver10.solve(mergeOverlappingClusters=False)
+#segmentsKlCluster15 = klClusterSolver15.solve(mergeOverlappingClusters=False)
+segmentsTmm = tmmCMUSolver.solve()
 
-klClusterSolver.plotSegmentsAndMatching()
+acc = tmmCMUSolver.calculateAccuracy(segmentsTmm, TAG)
 
-# segmentsGmm = gmmSolver.solve()
+print(acc, "acc")
+#segmentsGmm = gmmSolver.solve()
+#segmentsAca = acaSolver.solve()
+#segmentsHaca = hacaSolver.solve()
 
-# segmentsAca = acaSolver.solve()
-# segmentsHaca = hacaSolver.solve()
-
-# klClusterSolver.plotSegmentsAndGT([segmentsKlCluster, segmentsTmm, segmentsAca, segmentsHaca, segmentsGmm], ["KlCluster", "Tmm", "Aca", "Haca", "Gmm"])
+#klClusterSolver5.plotSegmentsAndGT([segmentsKlCluster5, segmentsKlCluster10, segmentsKlCluster15, segmentsTmm, segmentsAca, segmentsHaca, segmentsGmm], ["KlCluster5", "KlCluster10", "KlCluster15", "Tmm", "Aca", "Haca", "Gmm"])

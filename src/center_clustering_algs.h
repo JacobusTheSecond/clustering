@@ -95,7 +95,6 @@ private:
     //visual stuff
     bool showFreespaces;
 
-    Curves unsimplifiedCurves;
 
     double simplificationDelta;
     double freespaceDelta;
@@ -120,6 +119,7 @@ public:
 
     //TODO: make these accessible in a better way, for filters...
     Curves simplifiedCurves;
+    Curves unsimplifiedCurves;
     std::vector<ParamLabeling> simplifiedGTs;
     std::vector<int> simpIDtoOriginID;
 
@@ -244,6 +244,7 @@ public:
         int total = 0;
 
         Curves localSimps;
+
         std::vector<std::vector<int>> localTimes;
         std::vector<int> localIDMap;
         std::vector<std::vector<CPoint>> localVertexMap;
@@ -272,7 +273,6 @@ public:
                 localSimps.push_back(simp);
                 localIDMap.push_back(i);
                 localTimes.push_back(cs.getTimes());
-
                 cur[omp_get_thread_num()]=i;
                 len[omp_get_thread_num()]=localSimps.back().size();
 #pragma omp critical
@@ -308,9 +308,17 @@ public:
             };
         }
         simplifiedCurves = localSimps;
+        unsimplifiedCurves = localSimps;
         times = localTimes;
         simpIDtoOriginID = localIDMap;
         vertexMaps = localVertexMap;
+        Curves curves2(simplifiedCurves.size());
+        for(int i = 0; i < curves.size(); i++) {
+            unsimplifiedCurves[i] = curves[simpIDtoOriginID[i]];
+            //std::cout << simpIDtoOriginID[i] << std::endl;
+        }
+        //simplifiedCurves = curves2;
+
         }
 
     void initCurvesWithGT(Curves &curves, double _simpDelta, std::vector<FrameLabeling> GTs, double _freeDelta=-1) {
@@ -405,6 +413,8 @@ public:
         simpIDtoOriginID = localIDMap;
         vertexMaps = localVertexMap;
         simplifiedGTs = localsimpGTs;
+
+        
     }
 
     template<typename func>
