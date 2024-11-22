@@ -5,12 +5,19 @@ import cartopy.feature as cfeature
 import matplotlib.pyplot as plt
 import csv
 import os
+from frechet import euclidean, FastDiscreteFrechetMatrix
 import math
-
+import similaritymeasures
+from shapely import frechet_distance
+from frechetdist import frdist
+import timeit
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 import klcluster as kl
 
 class DriftersSolver(ABC):
-    def __init__(self, drifterFiles):
+    def __init__(self, drifterFiles, points=10000):
+        points = int(points)
         self.clustercurves = None
         self.curves_per_cluster = []
         self.datacurves = []
@@ -18,13 +25,22 @@ class DriftersSolver(ABC):
             with open(filepath, "r") as f:
                 curveData = np.array(list(csv.reader(f, delimiter=" "))).astype(float)
                 if len(curveData) > 1:
-                    self.datacurves.append(curveData)
+                    if points > len(curveData):
+                        self.datacurves.append(curveData)
+                        #print(len(curveData), curveData)
+                    else:
+                        self.datacurves.append(curveData[0:len(curveData)-points])
+                        break
+                    points -= len(curveData)
+
+                    #print(points)
         self.rossbyRadii = {}
         with open(os.path.dirname(os.path.realpath(__file__))+'/../data_drifters/rossrad.dat', 'r') as file:
             for line in file:
                 line = line.strip().split()
                 self.rossbyRadii[(float(line[0]), float(line[1]))] = float(line[3])
                 #print(line)
+        self.frechet = FastDiscreteFrechetMatrix(euclidean)
     @abstractmethod
     def solve():
         pass
@@ -56,6 +72,7 @@ class DriftersSolver(ABC):
 
     def __plotCurves(self, curve_list, color_list=["blue"], size_list = [0.5], custom_window=None):
         ax = plt.axes(projection=ccrs.PlateCarree())
+        ax.set_global()
         
         if custom_window is None:
             arrow_scale = 1
@@ -253,7 +270,7 @@ class DriftersSolver(ABC):
         # Average the vectors in each cell
         u_avg = np.divide(u_avg, counts, where=counts != 0)
         v_avg = np.divide(v_avg, counts, where=counts != 0)
-        print(u_avg)
+        #print(u_avg)
 
         # Mask zero vectors by setting them to NaN (so they won't be plotted)
         u_avg[counts == 0] = np.nan
@@ -296,14 +313,54 @@ class DriftersSolver(ABC):
         plt.show()
 
     
+    
+    def getOD(self):
+        m = 0
+        od = 0
+        for curves, center in self.curves_per_cluster:
+            #center, curves 
+            interpolated_curve = []
+            
+            for i in range(len(center) - 1):
+                start_point = center[i]
+                end_point = center[i + 1]
+                
+                segment_points = np.linspace(start_point, end_point, 50 + 2)
+                
+                interpolated_curve.append(segment_points)
+            #print(center, interpolated_curve)
+            if len(center) >= 2:
+                center = np.vstack(interpolated_curve)
+            for curve in curves:
+                if len(curve) == 0 or len(center) == 0:
+                    continue
+                od += similaritymeasures.frechet_dist(center, curve)
+                m += 1
+        return od/m
+    
+    def getSSE(self):
+        sse = 0
+        for cluster in self.curves_per_cluster:
+            current_sse = 0
+            print(".", end="")
+            for c1 in cluster[0]:
+                for c2 in cluster[0]:
+                    current_sse += (similaritymeasures.frechet_dist(c1, c2))**2
+            current_sse /= (2*len(cluster[0]) if len(cluster[0]) != 0 else 1)
+            sse += current_sse
+        return sse
 
-
+    def getInitTime(self):
+        return self.init_time
+    
+    def getExecutionTime(self):
+        return self.execution_time
 class KlClusterDriftersSolver(DriftersSolver):
-    def __init__(self, drifterFiles, rossbyRadius=False):
-        super().__init__(drifterFiles)
+    def __init__(self, drifterFiles, points=100000, simpDelta=20_000, freeDelta=200_000, complexity=1, iterations=1, rossbyRadius=False):
+        super().__init__(drifterFiles, points)
 
         self.curves = kl.Curves()
-        
+        self.iterations = iterations
         dc = []
         for curvedata in self.datacurves:
             lat, lon = self.worldToLL(curvedata[0][0], curvedata[0][1], curvedata[0][2])
@@ -326,10 +383,12 @@ class KlClusterDriftersSolver(DriftersSolver):
         self.DELTA = 50000
         # self.freeDELTA = 300000
         # self.simpDELTA = 5000
-        self.freeDELTA = 400000
-        self.simpDELTA = 20000
-        self.COMPLEXITY = 20
+        self.freeDELTA = freeDelta
+        self.simpDELTA = simpDelta
+        self.COMPLEXITY = complexity
         self.ROUNDS = 1
+        self.execution_time = 0
+        self.init_time = 0
 
         print(f"Inititalizing {len(self.curves)} curves")
         self.cc = kl.CurveClusterer()
@@ -337,14 +396,19 @@ class KlClusterDriftersSolver(DriftersSolver):
             self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
         else:
             #self.cc.initCurves(self.curves, self.DELTA)
-            self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
+            self.init_time = (timeit.timeit(lambda: self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA), number=self.iterations) / self.iterations) if self.iterations != 0 else 0
+
+            #self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
 
         
         self.simplifiedCurves = self.cc.getSimplifications()
 
     def solve(self, onlyRelevantClusters = False, withShow = False):
-        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+        #print(self.DELTA, self.curves)
+        self.execution_time = (timeit.timeit(lambda: self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow), number=self.iterations) / self.iterations) if self.iterations != 0 else 0
 
+        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+        print(".")
         filterCount = 0
         self.curves = self.cc.getCurves()
         # for i in range(len(self.curves)):
@@ -353,8 +417,8 @@ class KlClusterDriftersSolver(DriftersSolver):
         # convert cluster centers to np array
         self.clustercurves = []
 
-        for i in range(len(self.curves)):
-            print(self.curves[i][0][0], self.simplifiedCurves[i][0][0])
+        #for i in range(len(self.curves)):
+        #    print(self.curves[i][0][0], self.simplifiedCurves[i][0][0])
 
 
 
@@ -411,3 +475,4 @@ class KlClusterDriftersSolver(DriftersSolver):
         # print(len(self.curves[0]), len(self.simplifiedCurves[0]))
         if onlyRelevantClusters:
             print(f"Filtered out {filterCount} center curves")
+    
