@@ -420,20 +420,19 @@ class AcaCMUSolver(CMUSolver):
         eng.addPath(nargout=0) # add aca paths like src or lib
         eng.addpath("..") # add runAca, runGmm, ... to path
 
-        match self.method:
-            case "gmm":
+        if self.method == "gmm":
                 gt, seg, labelNames = eng.runGmm(self.tag, nargout=3)
                 self.execution_time = (timeit.timeit(lambda: eng.runGmm(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
 
-            case "aca":
+        elif self.method == "aca":
                 gt, seg, labelNames = eng.runAca(self.tag, nargout=3)
                 self.execution_time = (timeit.timeit(lambda: eng.runAca(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
 
-            case "haca":
+        elif self.method == "haca":
                 gt, seg, labelNames = eng.runHaca(self.tag, nargout=3)
                 self.execution_time = (timeit.timeit(lambda: eng.runHaca(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
 
-            case _:
+        else:
                 raise Exception(f"Unknown method '{self.method}'")
             
 
