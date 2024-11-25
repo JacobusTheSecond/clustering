@@ -27,7 +27,8 @@ class CMUSolver(ABC):
         self.frames = sum([int(segment.size) for segment in self.gtSegments])
         self.segmentation = None
         self.segments = None
-        self.execution_time = None
+        self.execution_time = 0
+        self.init_time = 0
 
         self.colors = [
             (0, 0, 0),
@@ -49,9 +50,9 @@ class CMUSolver(ABC):
     def solve():
         pass
 
-    def solveAndTime(self, timing_rounds=0, *args, **kwargs):
-        self.execution_time = (timeit.timeit(lambda: self.solve(*args, **kwargs), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
-        return self.solve()
+    #def solveAndTime(self, timing_rounds=0, *args, **kwargs):
+    #    self.execution_time = (timeit.timeit(lambda: self.solve(*args, **kwargs), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+    #    return self.solve()
 
     def plotSegments(self, segmentsList, methodNames=None):
         plt.rcParams['toolbar'] = 'None' # Remove tool bar
@@ -172,10 +173,14 @@ class CMUSolver(ABC):
     
     def getExecutionTime(self):
         return self.execution_time
+    
+    def getInitTime(self):
+        return self.init_time
 
 class KlClusterCMUSolver(CMUSolver):
-    def __init__(self, tag, SIMP_DELTA = 1.25, FREE_DELTA = 1.25, COMPLEXITY = 10):
+    def __init__(self, tag, SIMP_DELTA = 1.25, FREE_DELTA = 1.25, COMPLEXITY = 10, num_iterations=0):
         super().__init__(tag)
+        self.timing_rounds = num_iterations
 
         trial = np.genfromtxt(os.path.join(self.DATA_PATH, f"86_{tag}.txt"), delimiter=" ")
 
@@ -197,11 +202,14 @@ class KlClusterCMUSolver(CMUSolver):
         self.COMPLEXITY = COMPLEXITY
         self.ROUNDS = 1
         self.cc = kl.CurveClusterer()
+        
+        self.init_time = timeit.timeit(lambda : self.cc.initCurvesWithGTDiffDelta(curves, self.SIMP_DELTA, self.FREE_DELTA, groundTruths), number=self.timing_rounds) / (self.timing_rounds if self.timing_rounds != 0 else 1)
         self.cc.initCurvesWithGTDiffDelta(curves, self.SIMP_DELTA, self.FREE_DELTA, groundTruths)
 
     def solve(self, mergeOverlappingClusters = False):
-        #self.execution_time = (timeit.timeit(lambda: self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+        self.execution_time = (timeit.timeit(lambda: self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
         #print("EXECUTIN TIME", self.execution_time, timing_rounds)
+        #self.cc.greedz
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, False)
         if mergeOverlappingClusters:
             print(f"Merged {self.cc.mergeOverlappingClusters(self.clusters, 0.5)} clusters.")
@@ -396,10 +404,11 @@ class KlClusterCMUSolver(CMUSolver):
 
 
 class AcaCMUSolver(CMUSolver):
-    def __init__(self, tag, method):
+    def __init__(self, tag, method, num_iterations=0):
         """ method: 'gmm' | 'aca' | 'haca' """
         super().__init__(tag)
         self.method = method
+        self.timing_rounds = num_iterations
 
     def solve(self):
         print("start matlab")
@@ -414,15 +423,15 @@ class AcaCMUSolver(CMUSolver):
         match self.method:
             case "gmm":
                 gt, seg, labelNames = eng.runGmm(self.tag, nargout=3)
-                #self.execution_time = (timeit.timeit(lambda: eng.runGmm(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+                self.execution_time = (timeit.timeit(lambda: eng.runGmm(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
 
             case "aca":
                 gt, seg, labelNames = eng.runAca(self.tag, nargout=3)
-                #self.execution_time = (timeit.timeit(lambda: eng.runAca(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+                self.execution_time = (timeit.timeit(lambda: eng.runAca(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
 
             case "haca":
                 gt, seg, labelNames = eng.runHaca(self.tag, nargout=3)
-                #self.execution_time = (timeit.timeit(lambda: eng.runHaca(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+                self.execution_time = (timeit.timeit(lambda: eng.runHaca(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
 
             case _:
                 raise Exception(f"Unknown method '{self.method}'")
@@ -449,8 +458,9 @@ class AcaCMUSolver(CMUSolver):
 
 
 class TmmCMUSolver(CMUSolver):
-    def __init__(self, tag):
+    def __init__(self, tag, num_iterations=0):
         super().__init__(tag)
+        self.timing_rounds = num_iterations
         
     def solve(self):
         print("start matlab")
@@ -463,7 +473,7 @@ class TmmCMUSolver(CMUSolver):
         eng.addPath("MotionSegmentation", nargout=0) # add tmm paths
         
         eng.cd("MotionSegmentation")
-        #self.execution_time = (timeit.timeit(lambda: eng.call_segmentation(self.tag, nargout=3), number=timing_rounds) / timing_rounds) if timing_rounds != 0 else 0
+        self.execution_time = (timeit.timeit(lambda: eng.call_segmentation(self.tag, nargout=3), number=self.timing_rounds) / self.timing_rounds) if self.timing_rounds != 0 else 0
         comps, sframes, eframes = eng.call_segmentation(self.tag, nargout=3)
         eng.quit() # stop matlab.engine
 
