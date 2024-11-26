@@ -8,8 +8,8 @@ import os
 from frechet import euclidean, FastDiscreteFrechetMatrix
 import math
 import similaritymeasures
-from shapely import frechet_distance
-from frechetdist import frdist
+# from shapely import frechet_distance
+# from frechetdist import frdist
 import timeit
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -18,13 +18,21 @@ import klcluster as kl
 class DriftersSolver(ABC):
     def __init__(self, drifterFiles, points=10000):
         points = int(points)
+        self.points = points
         self.clustercurves = None
+        self.relevantClustercurves = None
         self.curves_per_cluster = []
+        self.relevantCurves_per_cluster = []
         self.datacurves = []
+        self.iterations = 1
+        self.execution_time = 0
+        self.init_time = 0
+        
         for filepath in drifterFiles:
             with open(filepath, "r") as f:
                 curveData = np.array(list(csv.reader(f, delimiter=" "))).astype(float)
                 if len(curveData) > 1:
+                    print(points)
                     if points > len(curveData):
                         self.datacurves.append(curveData)
                         #print(len(curveData), curveData)
@@ -34,33 +42,35 @@ class DriftersSolver(ABC):
                     points -= len(curveData)
 
                     #print(points)
-        self.rossbyRadii = {}
-        with open(os.path.dirname(os.path.realpath(__file__))+'/../data_drifters/rossrad.dat', 'r') as file:
-            for line in file:
-                line = line.strip().split()
-                self.rossbyRadii[(float(line[0]), float(line[1]))] = float(line[3])
-                #print(line)
-        self.frechet = FastDiscreteFrechetMatrix(euclidean)
+        # self.rossbyRadii = {}
+        # with open(os.path.dirname(os.path.realpath(__file__))+'/../data_drifters/rossrad.dat', 'r') as file:
+        #     for line in file:
+        #         line = line.strip().split()
+        #         self.rossbyRadii[(float(line[0]), float(line[1]))] = float(line[3])
+        #         #print(line)
+        #self.frechet = FastDiscreteFrechetMatrix(euclidean)
     @abstractmethod
     def solve():
         pass
     
-    def plotInput(self):
+    def plotInput(self, filename="Input"):
         self.__plotCurves([self.datacurves], ["blue"], [0.4])
 
-    def plotResults(self):
+    def plotResults(self, relevant=False,num=-1, filename="Results"):
         if (not self.clustercurves):
             raise Exception("No result found, consider calling solve() before")
-        self.__plotCurves([self.clustercurves], ["red"], [0.7])
+        filename += "Relevant" if relevant else "All"
+        self.__plotCurves([self.relevantClustercurves if relevant else (self.clustercurves if num == -1 else self.clustercurves[0:num])], ["red"], [0.7], filename=filename)
 
-    def plotInputAndResult(self):
-        self.__plotCurves([self.datacurves, self.clustercurves], ["blue", "red"], [0.4, 0.8])
+    def plotInputAndResult(self, relevant=False, filename="InputAndResults"):
+        filename += "Relevant" if relevant else "All"
+        self.__plotCurves([self.datacurves, self.relevantClustercurves if relevant else self.clustercurves], ["blue", "red"], [0.2, 0.5])
 
-    def plotCurve(self):
-        #self.curves_per_cluster.sort(reverse=True, key=lambda x: len(x[0]))
-        for i in range(2):
+    def plotCurve(self, relevant=False, filename="SingleCurve"):
+        curves_per_cluster = self.relevantCurves_per_cluster if relevant else self.curves_per_cluster
+        for i in range(3):
             lat_min, lon_min, lat_max, lon_max = 180, 180, -180, -180
-            for curve in self.curves_per_cluster[i][0]:
+            for curve in curves_per_cluster[i][0]:
                 for c in curve:
                 
                     lat, lon = self.worldToLL(c[0], c[1], c[2])
@@ -68,9 +78,9 @@ class DriftersSolver(ABC):
                     lon_min = min(lon, lon_min)
                     lat_max = max(lat, lat_max)
                     lon_max = max(lon, lon_max)
-            self.__plotCurves([self.datacurves, self.curves_per_cluster[i][0], [self.curves_per_cluster[i][1]]], ["gray", "blue", "red"], [0.2, 0.4, 0.9], [lon_min-2, lon_max+2, lat_min-2, lat_max+2])
+            self.__plotCurves([self.datacurves, curves_per_cluster[i][0], [curves_per_cluster[i][1]]], ["gray", "blue", "red"], [0.2, 0.4, 0.9], [lon_min-2, lon_max+2, lat_min-2, lat_max+2], filename+str(i+1))
 
-    def __plotCurves(self, curve_list, color_list=["blue"], size_list = [0.5], custom_window=None):
+    def __plotCurves(self, curve_list, color_list=["blue"], size_list = [0.5], custom_window=None, filename="Drifters"):
         ax = plt.axes(projection=ccrs.PlateCarree())
         ax.set_global()
         
@@ -145,8 +155,11 @@ class DriftersSolver(ABC):
                 # if i > 600:
                 #     break
 
-
-        plt.show()
+        if self.storeFiles:
+            plt.savefig(f"drifter_results/{int(self.points)}_{self.simpDELTA}_{self.freeDELTA}_{self.COMPLEXITY}_{filename}", dpi=300)
+            plt.clf()
+        else:
+            plt.show()
 
     def llToWorld(self, lat,lon):
         lat, lon = np.deg2rad(lat), np.deg2rad(lon)
@@ -161,20 +174,21 @@ class DriftersSolver(ABC):
         lat = np.arcsin(z / R) / np.pi * 180
         lon = np.arctan2(y, x) / np.pi * 180
         return np.array([lat, lon])
-    def getRossbyRadius(self, lat, lon):
-        lon = (lon + 360) % 360
-        lat = math.floor(lat) + 0.5
-        lon = math.floor(lon) + 0.5
-        return self.rossbyRadii.get((lat, lon), 1)
+    # def getRossbyRadius(self, lat, lon):
+    #     lon = (lon + 360) % 360
+    #     lat = math.floor(lat) + 0.5
+    #     lon = math.floor(lon) + 0.5
+    #     return self.rossbyRadii.get((lat, lon), 1)
     
-    def drawInputField(self):
-        self.__drawVectorField(self.datacurves, "blue")
+    def drawInputField(self, filename="InputField"):
+        self.__drawVectorField(self.datacurves, "blue", filename)
 
-    def drawResultField(self):
+    def drawResultField(self, relevant=False, filename="ResultField"):
         #interpolated_coords = [self.clustercurves[0]]  # Start with the first coordinate
+        clustercurves = self.relevantClustercurves if relevant else self.clustercurves
         threshold = 100000
         new_curves = []
-        for clustercurve in self.clustercurves:
+        for clustercurve in clustercurves:
             interpolated_curve = []
             for i in range(1, len(clustercurve)):
                 x1, y1, z1 = clustercurve[i - 1]
@@ -195,56 +209,36 @@ class DriftersSolver(ABC):
                 else:
                     interpolated_curve.append((x2, y2, z2))
             new_curves.append(interpolated_curve)
+        filename = filename + "Relevant" if relevant else filename+"All"
+        self.__drawVectorField(new_curves, "red", filename)
 
-        self.__drawVectorField(new_curves, "red")
-
-    def __drawVectorField(self, curves, color):
-        # # Sample trajectory data with only lat/lon points
-        # trajectory_data = [
-        #     [(-74, 40), (-30, 50), (2, 48)],   # NYC to Paris
-        #     [(-0.1, 51.5), (60, 55), (139, 35)],  # London to Tokyo
-        #     [(144.9, -37.8), (120, -10), (80, 0)],  # Melbourne to Southeast Asia
-        # ]
-
-        # Initialize lists to hold points and vectors
-
+    def __drawVectorField(self, curves, color, filename=""):
+        
         lon, lat, u, v = [], [], [], []
 
-        # Calculate vectors based on differences between consecutive points
         for path in curves:
             for i in range(len(path) - 1):
-                # Get start and end points for vector calculation
                 x, y, z = path[i]
                 lat1, lon1 = self.worldToLL(x, y, z)
                 x, y, z = path[i+1]
 
                 lat2, lon2 = self.worldToLL(x, y, z)
             
-                # Calculate the vector components as differences in lon/lat
                 delta_lon = lon2 - lon1
                 delta_lat = lat2 - lat1
-                #rescale = math.sqrt(delta_lat**2+delta_lon**2)
-                #delta_lat /= rescale
-                #delta_lon /= rescale
-                #print(delta_lat, delta_lon)
-            
-                # Store the midpoint for plotting the vector
                 mid_lon = (lon1 + lon2) / 2
                 mid_lat = (lat1 + lat2) / 2
             
-                # Append midpoint and vector to lists
                 lon.append(mid_lon)
                 lat.append(mid_lat)
                 u.append(delta_lon)
                 v.append(delta_lat)
 
-        # Convert lists to arrays
         lon = np.array(lon)
         lat = np.array(lat)
         u = np.array(u)
         v = np.array(v)
 
-        # Define the grid parameters
         grid_size = 5  # Grid cell size in degrees
         lon_bins = np.arange(-180, 180, grid_size)
         lat_bins = np.arange(-90, 90, grid_size)
@@ -310,7 +304,11 @@ class DriftersSolver(ABC):
         plt.title("Averaged Global Vector Field in Grid Cells (Zero Vectors Omitted)")
 
         # Display the plot
-        plt.show()
+        if self.storeFiles:
+            plt.savefig(f"drifter_results/{int(self.points)}_{self.simpDELTA}_{self.freeDELTA}_{self.COMPLEXITY}_{filename}", dpi=300)
+            plt.clf()
+        else:
+            plt.show()
 
     
     
@@ -318,6 +316,7 @@ class DriftersSolver(ABC):
         m = 0
         od = 0
         for curves, center in self.curves_per_cluster:
+            print(".", end="")
             #center, curves 
             interpolated_curve = []
             
@@ -325,7 +324,7 @@ class DriftersSolver(ABC):
                 start_point = center[i]
                 end_point = center[i + 1]
                 
-                segment_points = np.linspace(start_point, end_point, 50 + 2)
+                segment_points = np.linspace(start_point, end_point, 5 + 2)
                 
                 interpolated_curve.append(segment_points)
             #print(center, interpolated_curve)
@@ -338,17 +337,17 @@ class DriftersSolver(ABC):
                 m += 1
         return od/m
     
-    def getSSE(self):
-        sse = 0
-        for cluster in self.curves_per_cluster:
-            current_sse = 0
-            print(".", end="")
-            for c1 in cluster[0]:
-                for c2 in cluster[0]:
-                    current_sse += (similaritymeasures.frechet_dist(c1, c2))**2
-            current_sse /= (2*len(cluster[0]) if len(cluster[0]) != 0 else 1)
-            sse += current_sse
-        return sse
+    # def getSSE(self):
+    #     sse = 0
+    #     for cluster in self.curves_per_cluster:
+    #         current_sse = 0
+    #         print(".", end="")
+    #         for c1 in cluster[0]:
+    #             for c2 in cluster[0]:
+    #                 current_sse += (similaritymeasures.frechet_dist(c1, c2))**2
+    #         current_sse /= (2*len(cluster[0]) if len(cluster[0]) != 0 else 1)
+    #         sse += current_sse
+    #     return sse
 
     def getInitTime(self):
         return self.init_time
@@ -356,46 +355,49 @@ class DriftersSolver(ABC):
     def getExecutionTime(self):
         return self.execution_time
 class KlClusterDriftersSolver(DriftersSolver):
-    def __init__(self, drifterFiles, points=100000, simpDelta=20_000, freeDelta=200_000, complexity=1, iterations=1, rossbyRadius=False):
+    def __init__(self, drifterFiles, points=100000, simpDelta=20_000, freeDelta=200_000, complexity=1, iterations=0, storeFiles=False):
         super().__init__(drifterFiles, points)
 
         self.curves = kl.Curves()
+        self.storeFiles = storeFiles
         self.iterations = iterations
         dc = []
         for curvedata in self.datacurves:
             lat, lon = self.worldToLL(curvedata[0][0], curvedata[0][1], curvedata[0][2])
-            #if lat > 0 and lon > 0 and lon < 100:
             dc.append(curvedata)
         self.datacurves = dc
-        for i, curvedata in enumerate(self.datacurves):
-            #print(curvedata)
-            curve = kl.Curve(curvedata, f"Curve_{i}")
-            weights = curve.getWeights()
-            if rossbyRadius:
-                for j, p in enumerate(curve):
-                    lat, lon = self.worldToLL(p[0], p[1], p[2])
-                    weights[j] = (self.getRossbyRadius(lat, lon)/3)+10
-                    #if weights[j] != 500:
-                    #print(weights[j])
-            curve.setWeights(weights)
-            self.curves.add(curve)
 
-        self.DELTA = 50000
+        for i, curvedata in enumerate(self.datacurves):
+        #     #print(curvedata)
+             curve = kl.Curve(curvedata, f"Curve_{i}")
+        #     weights = curve.getWeights()
+        #     if rossbyRadius:
+        #         for j, p in enumerate(curve):
+        #             lat, lon = self.worldToLL(p[0], p[1], p[2])
+        #             weights[j] = (self.getRossbyRadius(lat, lon)/3)+10
+        #             #if weights[j] != 500:
+        #             #print(weights[j])
+        #     curve.setWeights(weights)
+             self.curves.add(curve)
+
+        # self.DELTA = 50000
         # self.freeDELTA = 300000
         # self.simpDELTA = 5000
         self.freeDELTA = freeDelta
         self.simpDELTA = simpDelta
         self.COMPLEXITY = complexity
         self.ROUNDS = 1
-        self.execution_time = 0
-        self.init_time = 0
+        
 
         print(f"Inititalizing {len(self.curves)} curves")
         self.cc = kl.CurveClusterer()
-        if rossbyRadius:
-            self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
-        else:
+        #if rossbyRadius:
+        #    self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
+        #else:
             #self.cc.initCurves(self.curves, self.DELTA)
+        if self.iterations == 0:
+            self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
+        else:    
             self.init_time = (timeit.timeit(lambda: self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA), number=self.iterations) / self.iterations) if self.iterations != 0 else 0
 
             #self.cc.initCurvesDiffDelta(self.curves, self.simpDELTA, self.freeDELTA)
@@ -416,6 +418,7 @@ class KlClusterDriftersSolver(DriftersSolver):
 
         # convert cluster centers to np array
         self.clustercurves = []
+        self.relevantClustercurves = []
 
         #for i in range(len(self.curves)):
         #    print(self.curves[i][0][0], self.simplifiedCurves[i][0][0])
@@ -423,9 +426,10 @@ class KlClusterDriftersSolver(DriftersSolver):
 
 
         self.curves_per_cluster = []
-
+        x = 0
         for cluster in self.clusters:
-            
+            x+= 1
+            print(cluster, len(self.clusters), x)
             curve = []
 
 
@@ -433,46 +437,39 @@ class KlClusterDriftersSolver(DriftersSolver):
             start = int(center.start.value)
             end = int(center.end.value)
             curve = self.simplifiedCurves[center.curve]
-
+            relevant=True
             if onlyRelevantClusters:
                 if end-start <= 1 or len(cluster.values()) <= 1:
                     filterCount += 1
+                    relevant = False
                     continue
             curvedata = []
             for i in range(start, end+1):
                 if (i < 0 or i >= len(curve)):
                     raise Exception("Index out of bounds")
-                # print(curve[i])                
                 curvedata.append(curve[i].values)
+
             all_curves = []
             for c in cluster:
+                
                 start = int(c.start.value)
                 end = int(c.end.value)
                 curve = self.curves[c.curve]
                 curvedata_ = []
-                #print(curve)
-                # for c1 in self.curves:
-                #     print(len(c1))
                 start = int(self.cc.mapToBase(c.curve, c.start).value)
                 end = int(self.cc.mapToBase(c.curve, c.end).value)
-                # print(start, end, len(curve), c.curve)
-                # print(len([r.values for r in curve]))
                 for i in range(start, end+1):
                     if (i < 0 or i >= len(curve)):
                         raise Exception("Index out of bounds")
-                    # print(curve[i])                
                     curvedata_.append(curve[i].values)
-                #all_curves.append(np.array(self.simplifiedCurves[c.curve]))
                 all_curves.append(np.array(curvedata_))#self.simplifiedCurves[c.curve]))
+            if relevant:
+                self.relevantClustercurves.append(np.array(curvedata))
+                self.relevantCurves_per_cluster.append((all_curves, np.array(curvedata)))
             self.clustercurves.append(np.array(curvedata))
-
             self.curves_per_cluster.append((all_curves, np.array(curvedata)))
 
-        self.curves = self.cc.getCurves()
-        # for i in range(len(self.curves)):
-        #     print(self.curves[i][0][0], self.simplifiedCurves[i][0][0], "????")
-        # print(len(self.curves), len(self.simplifiedCurves))
-        # print(len(self.curves[0]), len(self.simplifiedCurves[0]))
+        #self.curves = self.cc.getCurves()
         if onlyRelevantClusters:
             print(f"Filtered out {filterCount} center curves")
     

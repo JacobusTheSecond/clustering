@@ -32,25 +32,25 @@ drifterFiles = [os.path.join(datafolder, file) for file in os.listdir(datafolder
 
 configurations = [
 
-                [3, 30_000, 50_000],
-                [3, 30_000, 100_000],
-                [3, 30_000, 150_000],
-                [3, 30_000, 200_000],
+                [3, 30_000, 80_000],
+                [3, 30_000, 160_000],
+                [3, 30_000, 240_000],
+                [3, 30_000, 320_000],
                 
-                [3, 30_000, 50_000],
-                [3, 60_000, 100_000],
-                [3, 90_000, 150_000],
-                [3, 120_000, 200_000],
+                [3, 30_000, 80_000],
+                [3, 60_000, 160_000],
+                [3, 90_000, 240_000],
+                [3, 120_000, 320_000],
 
-                [3, 30_000, 100_000],
-                [3, 60_000, 100_000],
-                [3, 90_000, 100_000],
-                [3, 120_000, 100_000],
+                [3, 30_000, 160_000],
+                [3, 60_000, 160_000],
+                [3, 90_000, 160_000],
+                [3, 120_000, 160_000],
 
-                [1, 60_000, 100_000],
-                [3, 60_000, 100_000],
-                [5, 60_000, 100_000],
-                [10, 60_000, 100_000],
+                [1, 60_000, 160_000],
+                [3, 60_000, 160_000],
+                [5, 60_000, 160_000],
+                [10, 60_000, 160_000],
                 # [[TAG for TAG in range(1, 15)], [["KlCluster", 5, 0.8, 1.35]], 5],
                 # [[TAG for TAG in range(1, 15)], [["KlCluster", 6, 0.85, 1.4]], 5],
                 # [[TAG for TAG in range(1, 15)], [["KlCluster", 7, 0.8, 0.95]], 5],
@@ -79,15 +79,15 @@ times = [1e4, 2e4, 3e4, 4e4, 5e4, 6e4, 7e4, 8e4, 9e4,
 
 for complexity, simpDELTA, freeDELTA in configurations:
     for allClusters in [0, 1]:    
-        for points in times:
+        for points in [5e5]:#times:
             print(points)
             #solver = KlClusterCMUSolver(TAG, simpDELTA, freeDELTA, complexity)
             #init_time = (timeit.timeit(lambda: KlClusterCMUSolver(TAG, simpDelta, freeDelta, complexity), number=num_iterations) / num_iterations) if num_iterations != 0 else 0
                             
-            solver = KlClusterDriftersSolver(drifterFiles, points ,simpDELTA, freeDELTA, complexity, iterations=ITERATIONS)
+            solver = KlClusterDriftersSolver(drifterFiles, points ,simpDELTA, freeDELTA, complexity, iterations=ITERATIONS, storeFiles=True)
             solver.solve(allClusters)
             
-            
+            print("f")
             new_entry = {"points": int((points//1000)*1000), 
         "complexity" : complexity, 
         "SimpDelta" : simpDELTA, 
@@ -104,9 +104,20 @@ for complexity, simpDELTA, freeDELTA in configurations:
             #if solver.getExecutionTime() + solver.getInitTime():
 
             new_entry_df = pd.DataFrame([new_entry])
+            print(new_entry_df)
 
             df = pd.concat([df, new_entry_df], ignore_index=True)
             df.to_csv(filename, index=False)
-            if solver.getExecutionTime() + solver.getInitTime() > 250:
-                break
+            if solver.getExecutionTime() + solver.getInitTime() > 300:
+                print("1111")
+                solver.plotInput()
+                solver.plotResults(relevant=True)
+                solver.plotResults(relevant=False)
+                solver.plotInputAndResult(relevant=True)
+                solver.plotInputAndResult(relevant=False)
+                solver.plotCurve(relevant=False)
+                solver.plotCurve(relevant=True)
+                solver.drawInputField()
+                solver.drawResultField(relevant=True)
+                solver.drawResultField(relevant=False)
 
