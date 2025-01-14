@@ -1135,7 +1135,7 @@ void experiments3(){
 
 void experiments4(){
     Curves curves;
-    for(int i=1;i<5000;i++){
+    for(int i=1;i<500;i++){
         std::string name = "/Users/styx/data/gdac3/world3d_txt/"+std::to_string(i)+"_drifter.txt";
         curves.emplace_back(name,3);
         if(curves.back().size() <= 1){
@@ -1212,7 +1212,7 @@ int main(int argc, char *argv[]) {
 
     minimalBreakingExample2();
 
-    // experiments();
+    //experiments();
     // experiments2();
     //experiments3();
     //experiments2();

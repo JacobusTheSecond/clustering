@@ -342,6 +342,17 @@ class KlClusterDriftersSolver(DriftersSolver):
         
         self.simplifiedCurves = self.cc.getSimplifications()
 
+    def lowerbound(self,withShow=False):
+        num = self.cc.greedyIndependent(self.COMPLEXITY,withShow)
+        print(f"Size of Greedy Independent: {num}")
+        return num
+
+    def solutionSize(self,withShow = False):
+        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+
+        filterCount = 0
+        return len(self.clusters)
+
     def solve(self, onlyRelevantClusters = False, withShow = False):
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
 

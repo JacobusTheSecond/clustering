@@ -8,7 +8,7 @@ file_path = "result.json"
 result = {}
 
 
-measure = "acc"
+measure = "trueAcc"
 
 measures = {"acc" : "Accuracy",
             "macroPrec" : "Macro-average precision",

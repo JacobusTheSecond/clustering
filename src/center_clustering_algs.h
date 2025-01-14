@@ -81,6 +81,8 @@ updateCandidate(Curves &curves, Candidate &c, std::vector<CInterval> covering, c
 
 double lengthOfUncovered(Curves curves, std::vector<Candidate> candidateSet);
 
+std::pair<int,CPoint> uncoveredPoint(Curves &curves, std::vector<Candidate> &candidateSet,std::pair<int,CPoint> min = {0,{0,0}});
+
 bool cmpLeftLower(CInterval l, CInterval r);
 
 //template<typename func> Curves greedyCover(Curves& curves, double delta, int l, );
@@ -417,6 +419,52 @@ public:
         
     }
 
+    template <typename func>
+    int greedyIndependent(int l, func filter, bool withShow=false){
+        CandidateSetPQ cs = CandidateSetPQ(simplifiedCurves, freespaceDelta);
+        cs.ultrafastComputeSmall(l, filter);
+
+        if (withShow){
+            SparseFreeSpacesVisualizer sfsv(cs.sparsefreespaces);
+            sfsv.show();
+        }
+
+        std::vector<Candidate> candidateset;
+        while (cs.size() != 0){
+            candidateset.push_back(cs.top());
+            cs.pop();
+        }
+
+        std::vector<Candidate> covering;
+        std::vector<std::pair<int,CPoint>> result;
+
+        std::pair<int,CPoint> pcur = {0,{0,0}};
+        while(pcur.first != -1){
+            result.push_back(pcur);
+            std::cout << "Size: " << result.size() << std::endl;
+            int containers = 0;
+            for (int i=candidateset.size();i>= 0;i--){
+                for (auto& cov: candidateset[i].matching){
+                    if ((cov.getCurveIndex() == pcur.first) && (cov.contains({pcur.second.getPoint(),pcur.second.getFraction() - EPSILON}) || cov.contains({pcur.second.getPoint(),pcur.second.getFraction()}) || cov.contains({pcur.second.getPoint(),pcur.second.getFraction() + EPSILON}))){
+                        containers += 1;
+                        covering.push_back(candidateset[i]);
+                        candidateset.erase(candidateset.begin() + i);
+                        break;
+                    }
+                }
+            }
+            std::cout << "current coordinate: {" << pcur.first << " ,{"<<pcur.second.getPoint() << "," << pcur.second.getFraction() << "}} with "<< containers << " containers."<<std::endl;
+            std::pair<int,CPoint> previouspcur = pcur;
+            pcur = uncoveredPoint(simplifiedCurves,covering,previouspcur);
+            if (previouspcur == pcur){
+                pcur = uncoveredPoint(simplifiedCurves,covering,{previouspcur.first + 1,{0,0}});
+            }
+        }
+
+        return result.size();
+
+    }
+
     template<typename func>
     ClusteringResult greedyCover(int l, int rounds, func filter,bool withShow=false, long long* size = nullptr) {
 
@@ -461,6 +509,12 @@ public:
                 bool lastInternalRound = i==internal_max-1;
                 auto ID = 0;
                 auto roundID = i;
+                auto depth = 0;
+
+
+                std::pair<int,CPoint> pcur = uncoveredPoint(simplifiedCurves,result);
+                std::cout << "current coordinate: {" << pcur.first << " ,{"<<pcur.second.getPoint() << "," << pcur.second.getFraction()<<std::endl;
+
 
                 //first verify that we need to find another center, otherwise output solution
 
@@ -521,11 +575,15 @@ public:
                     Candidate c = cs.top();
                     cs.pop();
                     updateCandidate(simplifiedCurves, c, covering, suffixLengths, roundID);
+                    depth += 1;
                     cs.push(c);
                 }
 
                 //if top index is too light, we also stop
                 if(cs.top().semiUpdatedCoverLength <= EPSILON){
+                    for (auto & cov : covering){
+                        std::cout << cov.getCurveIndex() << "   " << cov.getBegin().getPoint() << "," << cov.getBegin().getFraction() << "   " << cov.getEnd().getPoint() << "," << cov.getEnd().getFraction()<<std::endl;
+                    }
                     //std::cout << "\nTrying to refine... ";
                     int deletecount = 0;
                     for (int igni = result.size() - 1; igni >= 0; --igni) {
@@ -617,7 +675,7 @@ public:
                     cs.push(c);
                 }
 
-                std::cout << "\033[0G"<<"Identified center #"<<i<<std::flush;
+                std::cout << "\033[0G"<<"Identified center #"<<i<<" at depth " << depth << "     " <<  std::flush;
 
                 //std::cout << " added weight: " << addedweight << ". Updated " << ID << " lengths\n";
 
@@ -707,6 +765,7 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
             bool lastInternalRound = i==500000;
             auto ID = 0;
             auto roundID = i;
+            int depth = 0;
 
             if (lastInternalRound || lengthOfUncovered(curves, result) <= EPSILON) {
                 //std::cout << "\nTrying to refine... ";
@@ -768,6 +827,7 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
                 cs.pop();
                 swatchupdate.start();
                 updateCandidate(curves, c, covering, suffixLengths, roundID);
+                depth+=1;
                 swatchupdate.stop();
                 swatchinsert.start();
                 cs.push(c);
@@ -866,7 +926,7 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
                 cs.push(c);
             }
 
-            std::cout << "\033[0G"<<"Identified center #"<<i<<std::flush;
+            std::cout << "\033[0G"<<"Identified center #"<<i<<" at depth " << depth << "     " << std::flush;
 
             //std::cout << " added weight: " << addedweight << ". Updated " << ID << " lengths\n";
 

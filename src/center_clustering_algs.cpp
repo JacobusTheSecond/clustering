@@ -117,6 +117,64 @@ double lengthOfUncovered(Curves curves, std::vector<Candidate> candidateSet){
     }
     return uncovered;
 }
+
+std::pair<int, CPoint> uncoveredPoint(Curves &curves, std::vector<Candidate> &candidateSet,std::pair<int,CPoint> min){
+    //step 1: merge
+    std::vector<CInterval> presorted;
+    for(auto c:candidateSet){
+        presorted.insert(presorted.end(),c.matching.begin(),c.matching.end());
+    }
+    std::sort(presorted.begin(), presorted.end(), cmpLeftLower);
+
+
+    double uncovered = 0;
+    std::pair<int, CPoint> pcur = min;
+
+    std::vector<CInterval> covering;
+
+    if(!presorted.empty()) {
+        CInterval cur = presorted[0];
+        for (int covI = 1; covI < presorted.size(); covI++) {
+            CInterval next = presorted[covI];
+            if ((next.getCurveIndex() == cur.getCurveIndex()) && (next.getBegin() < cur.getEnd())) {
+                cur.end = std::max(next.getEnd(), cur.getEnd());
+            } else {
+                covering.push_back(cur);
+                cur = next;
+            }
+        }
+        covering.push_back(cur);
+
+        //now covering is a disjoint set of intervals
+        for (auto cov: covering) {
+            while (pcur.first < cov.getCurveIndex()) {
+                if (curves[pcur.first].subcurve_length(pcur.second,
+                                                                {(int) (curves[pcur.first].size()) - 2, 1.0}) > EPSILON){
+
+                    return pcur;
+                }
+                pcur = {pcur.first + 1, {0, 0}};
+            }
+            if (cov.getCurveIndex() == pcur.first) {
+                if (std::max(0.0,curves[cov.getCurveIndex()].subcurve_length(pcur.second, cov.getBegin())) > EPSILON){
+                    return pcur;
+                }
+                pcur = {pcur.first, cov.end};
+                if((CPoint){(int)(curves[pcur.first].size()-2),1.0} <= pcur.second ){
+                    pcur = {pcur.first + 1, {0, 0}};
+                }
+            }
+        }
+    }
+    while(pcur.first < curves.size()){
+        if (curves[pcur.first].subcurve_length(pcur.second,{(int)(curves[pcur.first].size())-2,1.0}) > EPSILON){
+            return pcur;
+        }
+        pcur = {pcur.first+1,{0,0}};
+    }
+    return {-1,{0,0}};
+    //return uncovered;
+}
 /*
 Curves greedyCoverAlreadySimplified(Curves& curves, double delta, int l, int max_rounds, bool show){
     std::vector<Candidate> bestResultVisualizer = greedyCoverUnsanitizedOutput(curves,delta,l,max_rounds,show,[=](const Candidate& a){return a.getEnd().getPoint() >a.getBegin().getPoint() + l/4;});
