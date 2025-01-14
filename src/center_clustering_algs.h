@@ -437,13 +437,14 @@ public:
 
         std::vector<Candidate> covering;
         std::vector<std::pair<int,CPoint>> result;
-
+        int invalid = 0;
         std::pair<int,CPoint> pcur = {0,{0,0}};
         while(pcur.first != -1){
             result.push_back(pcur);
             std::cout << "Size: " << result.size() << std::endl;
             int containers = 0;
-            for (int i=candidateset.size();i>= 0;i--){
+            for (int i=candidateset.size()-1;i>= 0;i--){
+                //std::cout << i << std::endl;
                 for (auto& cov: candidateset[i].matching){
                     if ((cov.getCurveIndex() == pcur.first) && (cov.contains({pcur.second.getPoint(),pcur.second.getFraction() - EPSILON}) || cov.contains({pcur.second.getPoint(),pcur.second.getFraction()}) || cov.contains({pcur.second.getPoint(),pcur.second.getFraction() + EPSILON}))){
                         containers += 1;
@@ -457,11 +458,12 @@ public:
             std::pair<int,CPoint> previouspcur = pcur;
             pcur = uncoveredPoint(simplifiedCurves,covering,previouspcur);
             if (previouspcur == pcur){
+                invalid += 1;
                 pcur = uncoveredPoint(simplifiedCurves,covering,{previouspcur.first + 1,{0,0}});
             }
         }
 
-        return result.size();
+        return result.size()-invalid;
 
     }
 

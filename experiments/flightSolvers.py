@@ -206,8 +206,8 @@ class KlClusterFlightSolver(FlightSolver):
         self.DELTA = 50000
         # self.freeDELTA = 300000
         # self.simpDELTA = 5000
-        self.freeDELTA = 80_000
-        self.simpDELTA = 80_000
+        self.freeDELTA = 20_000
+        self.simpDELTA = 20_000
         self.COMPLEXITY = 5
         self.ROUNDS = 1
 
@@ -217,6 +217,17 @@ class KlClusterFlightSolver(FlightSolver):
 
         
         self.simplifiedCurves = self.cc.getSimplifications()
+
+    def lowerbound(self,withShow=False):
+        num = self.cc.greedyIndependent(self.COMPLEXITY,withShow)
+        print(f"Size of Greedy Independent: {num}")
+        return num
+
+    def solutionSize(self,withShow = False):
+        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+
+        filterCount = 0
+        return len(self.clusters)
 
     def solve(self, onlyRelevantClusters = False, withShow = False):
         self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
