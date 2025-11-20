@@ -34,7 +34,7 @@ CPoints propagateUpAndIntersect(SparseFreespace& sfs, int y, int x, distance_t s
         SparseGridCell<std::unique_ptr<Cell>>* cur;
         if(initialIteration){
             fromLeft = {startheight,1.0};
-            fromBelow = {1.0,0.0};
+            fromBelow = {startcell->data->leftMostAt(startheight).x,1.0};
             cur = startcell;
         }else{
             cur = nextList.front();
@@ -42,10 +42,16 @@ CPoints propagateUpAndIntersect(SparseFreespace& sfs, int y, int x, distance_t s
             fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data->toRight(threadID):Interval(1.0,0.0);
             fromBelow = (cur->downId!= -1)?sfs.cell(cur->y-1,cur->downId)->data->toAbove(threadID):Interval(1.0,0.0);
         }
-        initialIteration = false;
+
+        //update toRight and toAbove for later iterations
         assert(!(fromBelow.is_empty() && fromLeft.is_empty()));
-        cur->data->toRight(threadID) = (fromBelow.is_empty())?cur->data->right.clip({fromLeft.begin,1.0}):cur->data->right;
-        cur->data->toAbove(threadID) = (fromLeft.is_empty())?cur->data->top.clip({fromBelow.begin,1.0}):cur->data->top;
+        if (initialIteration) {
+            cur->data->toRight(threadID) = cur->data->right.intersect({fromLeft.begin,1.0});
+            cur->data->toAbove(threadID) = cur->data->top.intersect({fromBelow.begin,1.0});
+        }else {
+            cur->data->toRight(threadID) = (fromBelow.is_empty())?cur->data->right.intersect({fromLeft.begin,1.0}):cur->data->right;
+            cur->data->toAbove(threadID) = (fromLeft.is_empty())?cur->data->top.intersect({fromBelow.begin,1.0}):cur->data->top;
+        }
 
         if(cur->upId != -1 && !cur->data->toAbove(threadID).is_empty() && cur->y < ends.back().getPoint()){
             nextList.push_back(sfs.cell(cur->y+1,cur->upId));
@@ -58,25 +64,54 @@ CPoints propagateUpAndIntersect(SparseFreespace& sfs, int y, int x, distance_t s
             resetList.push_back(sfs.cell(cur->y,cur->rightId));
         }
 
-        //compute interval of values, that can be updated
-        Interval fromBelowApplicableHeights = fromBelow.is_empty()?Interval(1.0,0.0):
-                (cur->data->topPair.second.x>=fromBelow.begin?
-                    Interval(0.0,cur->data->topPair.second.y): //either the topmost point lies to the right, and is thus reacahble
-                    Interval(0.0,cur->data->topMostAt(fromBelow.begin).y)); //or the topmost point lies to the left, and thus the left boundary realizes the topmost point
-        Interval fromLeftApplicableHeights = fromLeft.is_empty()?Interval(1.0,0.0):Interval(fromLeft.begin,cur->data->topPair.first.y);
-        //the bounding interval containing both
-        Interval boundingvalues = fromBelowApplicableHeights.is_empty()?fromLeftApplicableHeights:(fromLeftApplicableHeights.is_empty()?Interval(1.0,0.0):Interval(0.0,fromLeftApplicableHeights.end));
-        CPoint cutoff = {cur->y,boundingvalues.end};
-        for(int i=leastUpdateableStartIndex;i<ends.size() && ends[i]<=cutoff;i++){
-            if(ends[i].getPoint() < cur->y){
-                leastUpdateableStartIndex+=1;
+
+        if (initialIteration) {
+            Interval applicableHeights;
+            if (fromBelow.begin <= cur->data->topPair.second.x) {
+                applicableHeights = Interval(fromLeft.begin,cur->data->topPair.second.y);
+            }else {
+                applicableHeights = Interval(fromLeft.begin,cur->data->topMostAt(fromBelow.begin).y);
+            }
+            CPoint cutoff = {cur->y,applicableHeights.end};
+            for(int i=leastUpdateableStartIndex;i<ends.size() && ends[i]<=cutoff;i++){
+                if(ends[i].getPoint() < cur->y){
+                    leastUpdateableStartIndex+=1;
+                    continue;
+                }
+                assert(ends[i].getPoint() == cur->y);
+                if(applicableHeights.contains(ends[i].getFraction())){
+                    assert(CPoint(cur->x,cur->data->rightMostAt(ends[i].getFraction()).x)>=CPoint(cur->x,startcell->data->leftMostAt(startheight).x));
+                    result[i] = std::max(result[i],{cur->x,cur->data->rightMostAt(ends[i].getFraction()).x});
+                }
+            }
+        }else {
+
+            //compute interval of values, that can be updated
+            Interval fromBelowApplicableHeights = fromBelow.is_empty()?Interval(1.0,0.0):
+                    (cur->data->topPair.second.x>=fromBelow.begin?
+                        Interval(0.0,cur->data->topPair.second.y): //either the topmost point lies to the right, and is thus reacahble
+                        Interval(0.0,cur->data->topMostAt(fromBelow.begin).y)); //or the topmost point lies to the left, and thus the left boundary realizes the topmost point
+            Interval fromLeftApplicableHeights = fromLeft.is_empty()?Interval(1.0,0.0):Interval(fromLeft.begin,cur->data->topPair.first.y);
+            //the bounding interval containing both
+            if (fromBelowApplicableHeights.is_empty() and fromLeftApplicableHeights.is_empty()) {
                 continue;
             }
-            assert(ends[i].getPoint() == cur->y);
-            if(fromLeftApplicableHeights.contains(ends[i].getFraction()) || fromBelowApplicableHeights.contains(ends[i].getFraction())){
-                result[i] = std::max(result[i],{cur->x,cur->data->rightMostAt(ends[i].getFraction()).x});
+            CPoint cutoff = {cur->y,std::max(fromBelowApplicableHeights.end,fromLeftApplicableHeights.end)};
+            for(int i=leastUpdateableStartIndex;i<ends.size() && ends[i]<=cutoff;i++){
+                if(ends[i].getPoint() < cur->y){
+                    leastUpdateableStartIndex+=1;
+                    continue;
+                }
+                assert(ends[i].getPoint() == cur->y);
+                if(fromLeftApplicableHeights.contains(ends[i].getFraction()) || fromBelowApplicableHeights.contains(ends[i].getFraction())){
+                    assert(CPoint(cur->x,cur->data->rightMostAt(ends[i].getFraction()).x)>=CPoint(startcell->x,startcell->data->leftMostAt(startheight).x));
+                    result[i] = std::max(result[i],{cur->x,cur->data->rightMostAt(ends[i].getFraction()).x});
+                }
             }
         }
+
+
+        initialIteration = false;
     }
     for(auto cell : resetList){
         cell->data->toRight(threadID) = Interval();
@@ -94,22 +129,25 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
 
     assert(std::all_of(ends.begin(),ends.end(),[&startcell](CPoint c){return c.getPoint() == startcell->y;}));
 
-    int leastUpdateableStartIndex = ((int)ends.size())-1;
+    int leastUpdateableStartIndex = 0;
     CPoints result(ends.size(),{0,-1});
 
     bool initialIteration = true;
 
     while(initialIteration || !nextList.empty()){
         Interval fromLeft;
+        Interval fromAbove;
 
         SparseGridCell<std::unique_ptr<Cell>>* cur;
         if(initialIteration){
             fromLeft = {0.0,startheight};
+            fromAbove = {startcell->data->leftMostAt(startheight).x,1.0};
             cur = startcell;
         }else{
             cur = nextList.front();
             nextList.pop_front();
             fromLeft = (cur->leftId!= -1)?sfs.cell(cur->y,cur->leftId)->data->toRight(threadID):Interval(1.0,0.0);
+            fromAbove = Interval(1.0,0.0);
         }
         if((fromLeft.is_empty())){
             std::cout << "BEGIN DUMP:"<<std::endl;
@@ -132,21 +170,24 @@ CPoints propagateDownAndIntersect(SparseFreespace& sfs, int y, int x, distance_t
             assert(false);
         }
         initialIteration = false;
-        cur->data->toRight(threadID) = cur->data->right.clip({0.0,fromLeft.end});
+        cur->data->toRight(threadID) = cur->data->right.intersect({0.0,fromLeft.end});
 
         if(cur->rightId != -1 && !cur->data->toRight(threadID).is_empty())
         {nextList.push_front(sfs.cell(cur->y,cur->rightId)); resetList.push_back(sfs.cell(cur->y,cur->rightId));}
 
         //compute interval of values, that can be updated
         Interval fromLeftApplicableHeights = Interval(cur->data->bottomPair.first.y,fromLeft.end);
-        for(int i=leastUpdateableStartIndex;i>=0 && ends[i].getFraction()>=fromLeftApplicableHeights.begin;i--){
+        for(int i=leastUpdateableStartIndex;i<ends.size() && ends[i]>=fromLeftApplicableHeights.begin;i++){
             //assert(ends[i].getPoint() == cur->y);
             if(ends[i].getFraction() > fromLeft.end){
-                leastUpdateableStartIndex-=1;
+                leastUpdateableStartIndex++;
                 continue;
             }
             if(fromLeftApplicableHeights.contains(ends[i].getFraction())){
-                result[i] = {cur->x,cur->data->rightMostAt(ends[i].getFraction()).x};
+                double xCoord = cur->data->rightMostAt(ends[i].getFraction()).x;
+                if (fromAbove.is_empty() || xCoord >= fromAbove.begin) {
+                result[i] = {cur->x,xCoord};
+                }
             }
         }
     }
@@ -179,6 +220,10 @@ std::vector<Candidate> CandidateSetPQ::uncompressCandidate(CurveID bIndex, CPoin
                 for(int i=0;i< limits.size();i++){
                     auto limit = limits[i];
                     if(limit != CPoint(0,-1.0)){
+                        CPoint limitstart(cell->x,cell->data->leftMostAt(start.getFraction()).x);
+                        if(limitstart > limit) {
+                            auto limits2 = (ends[0]<start)?propagateDownAndIntersect(fs,start.getPoint(),xIdx,start.getFraction(),ends,tId,threadID):propagateUpAndIntersect(fs,start.getPoint(),xIdx,start.getFraction(),ends,tId,threadID);
+                        }
                         result[i].visualMatching.push_back({{cell->x,cell->data->leftMostAt(start.getFraction()).x},limit,tId});
                     }
                 }

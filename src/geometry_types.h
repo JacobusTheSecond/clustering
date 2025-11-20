@@ -280,11 +280,14 @@ struct Interval
     }
 
     //intersects two intervals
-    Interval clip(Interval t) const{
-        if(is_empty()){
-            return {begin,end};
-        }
-        return {clip(t.begin),clip(t.end)};
+    //Interval clip(Interval t) const{
+    //    if(is_empty()){
+    //        return {begin,end};
+    //    }
+    //    return {clip(t.begin),clip(t.end)};
+    //}
+    Interval intersect(Interval t) const {
+        return Interval(std::max(begin,t.begin),std::min(end,t.end));
     }
 
     bool contains(distance_t t) const{

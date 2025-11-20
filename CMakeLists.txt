@@ -3,15 +3,14 @@ project(clustering)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 #set(CMAKE_CXX_FLAGS_DEBUG "-O3")
 
-set(ENV{OMP_NUM_THREADS} -1)
+set(ENV{OMP_NUM_THREADS} 1)
 
 
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address,undefined")
+set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address,undefined")
 
 
 #openMP stuff
@@ -29,7 +28,7 @@ endif()
 find_package(OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-set(CMAKE_CXX_FLAGS "-D\"HASVISUAL\"")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D\"HASVISUAL\"")
 
 add_subdirectory(pybind11)
 pybind11_add_module(klcluster src/geometry_types.cpp src/Curve.cpp src/io.cpp src/SparseFreespace.cpp src/FreespaceVisualizer.cpp src/Candidate.cpp src/center_clustering_algs.cpp src/python_wrapper.cpp)

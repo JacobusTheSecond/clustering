@@ -429,10 +429,9 @@ public:
             sfsv.show();
         }
 
-        std::vector<Candidate> candidateset;
-        while (cs.size() != 0){
-            candidateset.push_back(cs.top());
-            cs.pop();
+        std::vector<Candidate*> candidateset;
+        for (auto & c : cs.getUnsafeCandidates()) {
+            candidateset.push_back(&c);
         }
 
         std::vector<Candidate> covering;
@@ -445,10 +444,10 @@ public:
             int containers = 0;
             for (int i=candidateset.size()-1;i>= 0;i--){
                 //std::cout << i << std::endl;
-                for (auto& cov: candidateset[i].matching){
+                for (auto& cov: candidateset[i]->matching){
                     if ((cov.getCurveIndex() == pcur.first) && (cov.contains({pcur.second.getPoint(),pcur.second.getFraction() - EPSILON}) || cov.contains({pcur.second.getPoint(),pcur.second.getFraction()}) || cov.contains({pcur.second.getPoint(),pcur.second.getFraction() + EPSILON}))){
                         containers += 1;
-                        covering.push_back(candidateset[i]);
+                        covering.push_back(*candidateset[i]);
                         candidateset.erase(candidateset.begin() + i);
                         break;
                     }
@@ -470,6 +469,10 @@ public:
     template<typename func>
     ClusteringResult greedyCover(int l, int rounds, func filter,bool withShow=false, long long* size = nullptr) {
 
+        for (auto v : vertexMaps[1]) {
+            std::cout << v.getPoint() << v.getFraction() << std::endl;
+        }
+
         assert(not simplifiedCurves.empty());
 
         //Curves curves;
@@ -486,7 +489,7 @@ public:
         if(size != nullptr){
             *size = 0;
             while(not cs.empty()){
-                *size += cs.top().matching.size();
+                *size += cs.top()->matching.size();
                 cs.pop();
             }
             //*size = (int)(cs.size());
@@ -572,17 +575,18 @@ public:
                 }
 
                 //update top, until the roundID matches
-                while (cs.top().roundOfUpdate != roundID) {
+                while (!cs.empty() and cs.top()->roundOfUpdate != roundID) {
                     ID++;
-                    Candidate c = cs.top();
+                    Candidate& c = *cs.top();
                     cs.pop();
                     updateCandidate(simplifiedCurves, c, covering, suffixLengths, roundID);
                     depth += 1;
-                    cs.push(c);
+                    if (c.semiUpdatedCoverLength > EPSILON)
+                        cs.push(&c);
                 }
 
                 //if top index is too light, we also stop
-                if(cs.top().semiUpdatedCoverLength <= EPSILON){
+                if(cs.empty() or cs.top()->semiUpdatedCoverLength <= EPSILON){
                     for (auto & cov : covering){
                         std::cout << cov.getCurveIndex() << "   " << cov.getBegin().getPoint() << "," << cov.getBegin().getFraction() << "   " << cov.getEnd().getPoint() << "," << cov.getEnd().getFraction()<<std::endl;
                     }
@@ -652,29 +656,21 @@ public:
                 if (i == 0) {
                     std::vector<Candidate> temp;
                     for (int j = 0; j < r; ++j) {
-                        temp.push_back(cs.top());
+                        temp.push_back(*cs.top());
                         cs.pop();
                     }
-                    Candidate c = cs.top();
+                    Candidate c = *cs.top();
                     result.push_back(c);
 
                     cs.pop();
-                    addedweight = c.semiUpdatedCoverLength;
-                    c.semiUpdatedCoverLength = 0;
-                    cs.push(c);
-                    for (const auto &ctemp: temp)
-                        cs.push(ctemp);
                 } else {
-                    Candidate c = cs.top();
+                    Candidate c = *cs.top();
                     result.push_back(c);
 
                     //io::exportSubcurve("/Users/styx/data/curveclustering/results/bestcandidate.txt",curves[0],cs.top().getStart(),cs.top().second.getEnd());
                     //cs.showCovering(result);
 
                     cs.pop();
-                    addedweight = c.semiUpdatedCoverLength;
-                    c.semiUpdatedCoverLength = 0;
-                    cs.push(c);
                 }
 
                 std::cout << "\033[0G"<<"Identified center #"<<i<<" at depth " << depth << "     " <<  std::flush;
@@ -715,10 +711,12 @@ public:
             //std::cout << " " << std::chrono::duration_cast<std::chrono::milliseconds>(swatchinsert.elapsed()).count() << std::endl;
             //std::cout << " " << std::chrono::duration_cast<std::chrono::milliseconds>(swatchupdate.elapsed()).count() << std::endl;
             //std::cout << "Cleaning up for next round ... ";
-            if(!lastRound)
-                cs.resetWeights();
-            //std::cout << "Done";
+            if(!lastRound){
+                std::cout << "Cleaning up for next round ... " << std::endl;
+                cs.reset();
+	    }
         }
+	std::cout << "Done";
         if (withSort) {
             std::sort(bestResultVisualizer.begin(), bestResultVisualizer.end(),
                       [](const Candidate &a, const Candidate &b) {
@@ -727,16 +725,18 @@ public:
                                   (a.matching[0].getBegin() < b.matching[0].getBegin()));
                       });
         }
+	std::cout << " and sorted";
         if (showFreespaces) {
 #ifdef HASVISUAL
             cs.showCovering(bestResultVisualizer);
 #endif
         }
         ClusteringResult cr(bestResultVisualizer);
+        std::cout << "."<<std::endl;
         return cr;
     }
 };
-
+/*
 template<typename func>
 std::vector<Candidate>
 greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds, bool show, func filter) {
@@ -981,4 +981,4 @@ greedyCoverUnsanitizedOutput(Curves &curves, double delta, int l, int max_rounds
 #endif
     }
     return bestResultVisualizer;
-}
+}*/

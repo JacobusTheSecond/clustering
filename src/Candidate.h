@@ -71,10 +71,11 @@ public:
 //typedef std::vector<std::vector<SparseFreespace>> SparseSparseFreeSpaces;
 
 
-static auto cmpPQ = [](const Candidate& left, const Candidate& right) { return (left.semiUpdatedCoverLength) < (right.semiUpdatedCoverLength); };
-class CandidateSetPQ : std::priority_queue<Candidate,std::vector<Candidate>,decltype(cmpPQ)>{
+static auto cmpPQ = [](const Candidate* const left, const Candidate* const right) { return (left->semiUpdatedCoverLength) < (right->semiUpdatedCoverLength); };
+class CandidateSetPQ : std::priority_queue<Candidate*,std::vector<Candidate*>,decltype(cmpPQ)>{
 private:
-    using Parent = std::priority_queue<Candidate,std::vector<Candidate>,decltype(cmpPQ)>;
+    std::vector<Candidate> pool;
+    using Parent = std::priority_queue<Candidate*,std::vector<Candidate*>,decltype(cmpPQ)>;
     Curves curves;
     double delta;
 
@@ -141,7 +142,7 @@ public:
 
         std::vector<Candidate> localSet;
 #pragma omp declare reduction (merge : std::vector<Candidate> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
-#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
+#pragma omp parallel for default(none) shared(l,filter,upAggregated,std::cout) reduction(merge: localSet)
         for(int i=0;i<upAggregated.size();i++){//auto start : upAggregated){
             auto start = upAggregated[i];
             std::vector<CPoint> ends;
@@ -168,9 +169,11 @@ public:
             //      filter stage 2?
             //      compute the actual matching
             //      compute the weight of that matching
-            for (auto ucC: uncompressedCandidates) {
+                        for (auto ucC: uncompressedCandidates) {
                 if (!ucC.visualMatching.empty()) {
                     CInterval cur;
+                    CPoint curS = ucC.visualMatching[0].begin;
+                    CPoint curT = ucC.visualMatching[0].end;
                     for (auto m: ucC.visualMatching) {
                         if (cur.is_empty()) {
                             cur = m;
@@ -192,19 +195,18 @@ public:
                         localSet.push_back(ucC);
                     }
                 } else {
-                    assert(false);
+                    //assert(false);
                 }
             }
         }
 
-        this->c.insert(this->c.end(),std::make_move_iterator(localSet.begin()),std::make_move_iterator(localSet.end()));
-        std::cout << "Generated " << size() << " many up candidates. \n"<<std::flush;
+        pool.insert(pool.end(),std::make_move_iterator(localSet.begin()),std::make_move_iterator(localSet.end()));
+        std::cout << "Generated " << pool.size() << " many up candidates. \n"<<std::flush;
         //std::cout << "comp: " << comp<<" , "<<(double)(comp)/(double)(count)<<"\n"<<std::flush;
 
         //DOWN
         std::vector<Candidate> localSet2;
-
-#pragma omp parallel for default(none) shared(l,filter,downAggregated) reduction(merge: localSet2)
+#pragma omp parallel for default(none) shared(l,filter,downAggregated,std::cout) reduction(merge: localSet2)
         for(int i=0;i<downAggregated.size();i++){
             auto start = downAggregated[i];
             std::vector<CPoint> ends;
@@ -234,6 +236,8 @@ public:
             for (auto ucC: uncompressedCandidates) {
                 if (!ucC.visualMatching.empty()) {
                     CInterval cur;
+                    CPoint curS = ucC.visualMatching[0].begin;
+                    CPoint curT = ucC.visualMatching[0].end;
                     for (auto m: ucC.visualMatching) {
                         if (cur.is_empty()) {
                             cur = m;
@@ -255,20 +259,33 @@ public:
                         localSet2.push_back(ucC);
                     }
                 } else {
-                    assert(false);
+                    //assert(false);
                 }
             }
         }
 
-        this->c.insert(this->c.end(),std::make_move_iterator(localSet2.begin()),std::make_move_iterator(localSet2.end()));
+        pool.insert(pool.end(),std::make_move_iterator(localSet2.begin()),std::make_move_iterator(localSet2.end()));
+        pool.shrink_to_fit();
+        this->c.reserve((pool.size()));
+        for (auto &c : pool) {
+            this->c.push_back(&c);
+        }
         std::make_heap(this->c.begin(), this->c.end(),cmpPQ);
 
-        std::cout << "Generated " << size() << " many up and down candidates.\n"<<std::flush;
+        std::cout << "Generated " << pool.size() << " many up and down candidates.\n"<<std::flush;
         //std::sort(cans.begin(), cans.end(), [](Candidate &l, Candidate &r) { return l.getBegin() < r.getBegin(); });
 
     }
 
+    const std::vector<Candidate>& getCandidates() {
+        return pool;
+    }
 
+    std::vector<Candidate>& getUnsafeCandidates() {
+        return pool;
+    }
+
+/*
     template<typename func> void ultrafastCompute(int l, func filter) {
         ultrafastComputeSmall(l,filter);
         //Step 1: prepare freespaces
@@ -439,17 +456,16 @@ public:
                   << " many compressed Candidates.\n";
         std::sort(cans.begin(), cans.end(), [](Candidate &l, Candidate &r) { return l.getBegin() < r.getBegin(); });
     }
-
-    void resetWeights() {
-        std::vector<Candidate> temp;
-        while(!empty()) {
-            temp.push_back(top());
-            pop();
-        }
-        for(auto& c : temp){
+*/
+    void reset() {
+        for (auto & c : pool) {
             c.resetCoverLength();
-            push(c);
         }
+        this->c.clear();
+        for (auto &c : pool) {
+            this->c.push_back(&c);
+        }
+        std::make_heap(this->c.begin(), this->c.end(),cmpPQ);
     }
 
     void showCovering(std::vector<Candidate> candidates);

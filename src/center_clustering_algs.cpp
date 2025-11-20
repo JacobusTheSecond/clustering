@@ -44,8 +44,13 @@ void updateCandidate(Curves& curves, Candidate& c, std::vector<CInterval> coveri
             //rIdx --;
         }
         //now rIdx points to the last inerval that lies strictly to the left of t
-        if(rIdx > lIdx)
+        if(rIdx > lIdx) {
             newLength -= (suffixLengths[rIdx] - suffixLengths[lIdx]);
+        }
+    }
+    if (newLength < -EPSILON) {
+        std::cout << " ????? "<<std::endl;
+
     }
     if(c.semiUpdatedCoverLength + EPSILON < newLength){
         std::cout << "  ???" << c.semiUpdatedCoverLength << " -> " << newLength <<" with error " << newLength - c.semiUpdatedCoverLength <<"???"<<std::endl;
@@ -56,15 +61,15 @@ void updateCandidate(Curves& curves, Candidate& c, std::vector<CInterval> coveri
 }
 
 void printFirst50(CandidateSetPQ& cs){
-    std::vector<Candidate> temp;
+    std::vector<Candidate*> temp;
     for(int i=0;i<5;++i){
-        Candidate c = cs.top();
+        Candidate c = *cs.top();
+        temp.push_back(cs.top());
         cs.pop();
-        temp.push_back(c);
         std::cout << "(" << c.roundOfUpdate << ";" << c.semiUpdatedCoverLength << ") ";
     }
     std::cout << "\n";
-    for(Candidate c : temp)
+    for(Candidate* c : temp)
         cs.push(c);
 }
 

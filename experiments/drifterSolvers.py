@@ -299,14 +299,15 @@ class DriftersSolver(ABC):
 
 
 class KlClusterDriftersSolver(DriftersSolver):
-    def __init__(self, drifterFiles, rossbyRadius=False):
+    def __init__(self, drifterFiles, freedelta = 400000, simpdelta = 20000, complexity = 20, withaggressive=False, rossbyRadius=False):
         super().__init__(drifterFiles)
 
         self.curves = kl.Curves()
+        self.withAggressive = withaggressive
         
         dc = []
         for curvedata in self.datacurves:
-            lat, lon = self.worldToLL(curvedata[0][0], curvedata[0][1], curvedata[0][2])
+            #lat, lon = self.worldToLL(curvedata[0][0], curvedata[0][1], curvedata[0][2])
             #if lat > 0 and lon > 0 and lon < 100:
             dc.append(curvedata)
         self.datacurves = dc
@@ -323,12 +324,12 @@ class KlClusterDriftersSolver(DriftersSolver):
             curve.setWeights(weights)
             self.curves.add(curve)
 
-        self.DELTA = 50000
+        #self.DELTA = 50000
         # self.freeDELTA = 300000
         # self.simpDELTA = 5000
-        self.freeDELTA = 400000
-        self.simpDELTA = 20000
-        self.COMPLEXITY = 20
+        self.freeDELTA = freedelta
+        self.simpDELTA = simpdelta
+        self.COMPLEXITY = complexity
         self.ROUNDS = 1
 
         print(f"Inititalizing {len(self.curves)} curves")
@@ -348,13 +349,21 @@ class KlClusterDriftersSolver(DriftersSolver):
         return num
 
     def solutionSize(self,withShow = False):
-        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+        if self.withAggressive:
+            self.clusters = self.cc.greedyCoverAgressiveFilter(self.COMPLEXITY, self.ROUNDS)
+        else:
+            self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
 
         filterCount = 0
         return len(self.clusters)
 
     def solve(self, onlyRelevantClusters = False, withShow = False):
-        self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+        if self.withAggressive:
+            self.clusters = self.cc.greedyCoverAgressiveFilter(self.COMPLEXITY,self.ROUNDS)
+        else:
+            self.clusters = self.cc.greedyCover(self.COMPLEXITY, self.ROUNDS, withShow)
+
+        print("Done clustering!")
 
         filterCount = 0
         self.curves = self.cc.getCurves()

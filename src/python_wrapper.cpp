@@ -184,15 +184,16 @@ PYBIND11_MODULE(klcluster,m){
             .def("greedyCoverAgressiveFilter",[](CurveClusterer& cc, int l, int rounds){return cc.greedyCover(l,rounds,
 
                                                                                                               [=](const Candidate &a) {
-                                                                                                                  bool withIsTrivial = false;
-                                                                                                                  bool withIsDown = false;
+                                                                                                                  bool withIsTrivial = true;
+                                                                                                                  bool withIsDown = true;
                                                                                                                   bool istrivial = l == 1;
                                                                                                                   bool isdown = a.getEnd() < a.getBegin();
                                                                                                                   bool nontrivial_length =
                                                                                                                           cc.simplifiedCurves[a.getCurveIndex()].subcurve_length(a.getBegin(), a.getEnd()) >
                                                                                                                           2 * (1.0 + 1.0 + 2 * (7.0 / 3.0)) * cc.getSimpDelta();
                                                                                                                   bool nontrivial_complexity = a.getEnd().getPoint() > a.getBegin().getPoint() + l / 4;
-                                                                                                                  return (withIsTrivial && istrivial) || (withIsDown && isdown) || (nontrivial_length && nontrivial_complexity);});});
+                                                                                                                  bool nontrivial_covering = a.visualMatching.size() > 1;
+                                                                                                                  return (withIsTrivial && istrivial) || (withIsDown && isdown) || nontrivial_length || nontrivial_complexity || nontrivial_covering;});});
 
 
 }
