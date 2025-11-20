@@ -159,7 +159,19 @@ public:
                     return {i-1,0.0};
                 }
             }else if(t.getPoint() == s.getPoint()+1){
-                return {i - 1, (q.getFraction() - s.getFraction()) / (1.0 - s.getFraction())};
+                if (t.getPoint() == q.getPoint()) {
+                    if (t.getFraction() < EPSILON) {
+                        return {i,0};
+                    }else {
+                        return {i, (q.getFraction() - 0.0) / (t.getFraction() - 0.0)};
+                    }
+                }else {
+                    if (s.getFraction()>1.0-EPSILON) {
+                        return {i-1,1.0};
+                    }else {
+                        return {i - 1, (q.getFraction() - s.getFraction()) / (1.0 - s.getFraction())};
+                    }
+                }
             }else{
                 assert(false);
             }
@@ -264,12 +276,12 @@ public:
 #pragma omp declare reduction (mergeIDMap : std::vector<int> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 #pragma omp declare reduction (mergeVMap : std::vector<std::vector<CPoint>> : omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
 
-//#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
+////#pragma omp parallel for default(none) shared(l,filter,upAggregated) reduction(merge: localSet)
 #pragma omp parallel for default(none) shared(curves, std::cout, total,cur,len) firstprivate(cs) reduction(mergeSimps: localSimps) reduction(mergeTimes: localTimes) reduction(mergeIDMap: localIDMap) reduction(mergeVMap: localVertexMap) schedule(dynamic)
         for (int i = 0; i < curves.size(); ++i) {
             Curve curve = curves[i];
             auto simp = cs.simplify(curve);
-//#pragma omp critical
+////#pragma omp critical
             {
                 total++;
                 localSimps.push_back(simp);
@@ -319,6 +331,7 @@ public:
             unsimplifiedCurves[i] = curves[simpIDtoOriginID[i]];
             //std::cout << simpIDtoOriginID[i] << std::endl;
         }
+        std::cout << "number of curves: " << simplifiedCurves.size() << std::endl;
         //simplifiedCurves = curves2;
 
         }
@@ -469,9 +482,11 @@ public:
     template<typename func>
     ClusteringResult greedyCover(int l, int rounds, func filter,bool withShow=false, long long* size = nullptr) {
 
-        for (auto v : vertexMaps[1]) {
-            std::cout << v.getPoint() << v.getFraction() << std::endl;
-        }
+        //std::cout << "complexity: " << simplifiedCurves[9].size() << std::endl;
+        //std::cout << "vertexMapEntry: " << vertexMaps.size() << std::endl;
+        //for (auto v : vertexMaps[9]) {
+        //    std::cout << v.getPoint() << v.getFraction() << std::endl;
+        //}
 
         assert(not simplifiedCurves.empty());
 

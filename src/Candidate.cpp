@@ -430,6 +430,7 @@ SparseFreeSpaces::SparseFreeSpaces(Curves &curves, double delta, int threadcount
     }
     std::cout << "Progress: " << total << "/" << intersectionMap.size()<<std::endl;
     //int num = 0;
+
 #pragma omp parallel for default(none) shared(intersectionMap,std::cout,curves,delta,threadcount,num,total,size) schedule(dynamic)
     for(int i=0;i<intersectionMap.size();i++){
         auto js = intersectionMap[i];
