@@ -50,6 +50,7 @@ PYBIND11_MODULE(klcluster,m){
 
                 c.assignWeights(localWeights);
             })
+            .def("getSubcurveLength",[](Curve &c,int i, double iF,int j, double jF){return c.subcurve_length(CPoint(i,iF),CPoint(j,jF));})
             .def("getWeights",[](Curve& c){
                 auto result = py::array_t<double>(c.size());
                 py::buffer_info buf = result.request();
