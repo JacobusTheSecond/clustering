@@ -605,6 +605,7 @@ public:
                     for (auto & cov : covering){
                         std::cout << cov.getCurveIndex() << "   " << cov.getBegin().getPoint() << "," << cov.getBegin().getFraction() << "   " << cov.getEnd().getPoint() << "," << cov.getEnd().getFraction()<<std::endl;
                     }
+		    /*
                     //std::cout << "\nTrying to refine... ";
                     int deletecount = 0;
                     for (int igni = result.size() - 1; igni >= 0; --igni) {
@@ -638,6 +639,7 @@ public:
                             double importance = lengthOfUncovered(simplifiedCurves, temp);
                             result[igni].importance = importance;
                         }
+			*/
                     //std::sort(result.begin(), result.end(), [](auto& a, auto& b){return a.second.importance > b.second.importance;});
                     std::cout << "\nSolution of size " << result.size() << " found. ";
                     if (bestResultVisualizer.empty() || bestResultVisualizer.size() > result.size()) {
