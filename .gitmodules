@@ -9,3 +9,6 @@
 [submodule "aca/aca"]
 	path = aca/aca
 	url = https://github.com/zhfe99/aca.git
+[submodule "discrete-subtrajectory-clustering-test-suite"]
+	path = discrete-subtrajectory-clustering-test-suite
+	url = https://github.com/dacin21/discrete-subtrajectory-clustering-test-suite.git

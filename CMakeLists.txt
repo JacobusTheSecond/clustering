@@ -25,6 +25,8 @@ if(OpenMP_CXX_FOUND)
 	link_libraries(OpenMP::OpenMP_CXX)
 endif()
 
+set(ENV{OMP_NUM_THREADS} 1)
+
 find_package(OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
