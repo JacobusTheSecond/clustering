@@ -2,8 +2,8 @@ Metadata-Version: 2.4
 Name: klcluster
 Version: 0.0.2
 Summary: A test project using pybind11 and CMake
-Author: Anonymous
-Author-email: anonymous@email.com
+Author: Jacobus Conradi
+Author-email: jaco@di.ku.dk
 Requires-Python: >=3.7
 Provides-Extra: test
 Requires-Dist: pytest>=6.0; extra == "test"
