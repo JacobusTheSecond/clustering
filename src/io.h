@@ -1,6 +1,3 @@
-//
-// Created by Jacobus Conradi on 17.04.23.
-//
 
 #ifndef CLUSTERING_IO_H
 #define CLUSTERING_IO_H

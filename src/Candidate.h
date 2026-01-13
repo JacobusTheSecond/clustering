@@ -1,6 +1,3 @@
-//
-// Created by Jacobus Conradi on 18.04.23.
-//
 
 #ifndef CLUSTERING_CANDIDATE_H
 #define CLUSTERING_CANDIDATE_H

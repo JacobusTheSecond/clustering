@@ -1,6 +1,3 @@
-//
-// Created by Jacobus Conradi on 17.04.23.
-//
 
 #ifndef CLUSTERING_CURVESIMPLIFICATION_H
 #define CLUSTERING_CURVESIMPLIFICATION_H
@@ -13,7 +10,7 @@ private:
     distance_t delta;
     int samplingRate = std::numeric_limits<int>::max();
     int curveLengthRule = 0;
-    std::vector<int> times;
+    std::vector<int> times;num_threads
     ParamLabeling outputLabelings;
     static bool
 

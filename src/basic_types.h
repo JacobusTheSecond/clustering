@@ -1,7 +1,3 @@
-//
-// Created by Jacobus Conradi on 17.04.23.
-//
-
 #ifndef CLUSTERING_BASIC_TYPES_H
 #define CLUSTERING_BASIC_TYPES_H
 
