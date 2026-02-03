@@ -1,6 +1,3 @@
-//
-// Created by Jacobus Conradi on 18.04.23.
-//
 
 #include <execinfo.h>
 #include "Candidate.h"

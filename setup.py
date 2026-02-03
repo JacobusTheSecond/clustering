@@ -128,8 +128,8 @@ class CMakeBuild(build_ext):
 setup(
     name="klcluster",
     version="0.0.2",
-    author="Jacobus Conradi",
-    author_email="jacobus.conradi@gmx.de",
+    author="Anonymous Author",
+    author_email="",
     description="A test project using pybind11 and CMake",
     long_description="",
     ext_modules=[CMakeExtension("klcluster")],
