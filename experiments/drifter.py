@@ -7,7 +7,7 @@ import refiner2
 import refiner3
 
 klcluster = True
-datafolder = "data_drifters/world3d_txt"
+datafolder = "data_drifters/world2d_split_txt"
 drifterFiles = [os.path.join(datafolder, file) for file in os.listdir(datafolder) if file.endswith(".txt")][:2011]
 
 resultdict = {}
