@@ -1,6 +1,7 @@
 import os
 import multiprocessing
 import psutil
+import json
 
 import refiner
 import refiner2
@@ -102,3 +103,6 @@ if __name__ == "__main__":
         cDict[c] = resultdict
     print("=============")
     print(cDict)
+
+    with open("unid_result.json", "w") as result_file:
+        json.dump(cDict, result_file)
