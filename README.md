@@ -38,4 +38,4 @@ python experiments/drifters.py
 ```
 
 #### Scaling behaviour experiment
-Switch to `drifterMeasurements' branch
+Switch to `drifterMeasurements` branch
