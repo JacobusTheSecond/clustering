@@ -8,3 +8,8 @@
 Install via `pip install .`
 
 Main reference: https://arxiv.org/abs/2308.14865
+
+#### Scaling behaviour experiment
+```
+python experiments/drifterMeasure.py
+```
