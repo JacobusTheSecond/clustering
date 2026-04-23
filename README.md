@@ -9,7 +9,7 @@ Install via `pip install .`
 
 Main reference: https://arxiv.org/abs/2308.14865
 
-### Paper experiments
+#### Running test-suite experiments
 ```
 git submodule update --init --recursive
 cd discrete-subtrajectory-clustering-test-suite
@@ -18,7 +18,7 @@ python main.py run socg_table_athens_centers
 python main.py plot socg_table_athens_centers
 ```
 
-##### Subtrajectory Clustering
+##### Subtrajectory Clustering on test-suite data
 ```
 python experiments/athens.py
 python experiments/drifter.py
@@ -32,7 +32,10 @@ python experiments/unidTable2.py
 python experiments/cmu.py
 ```
 
-##### c-packed scaling
+##### Lower Bounds via greedy independent set
 ```
 python experiments/drifters.py
 ```
+
+#### Scaling behaviour experiment
+Switch to `drifterMeasurements' branch
