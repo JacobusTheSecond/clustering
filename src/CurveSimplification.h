@@ -10,7 +10,7 @@ private:
     distance_t delta;
     int samplingRate = std::numeric_limits<int>::max();
     int curveLengthRule = 0;
-    std::vector<int> times;num_threads
+    std::vector<int> times;
     ParamLabeling outputLabelings;
     static bool
 
