@@ -8,8 +8,8 @@ import refiner2
 import refiner3
 
 klcluster = True
-datafolder = "/home/jacobus/data/unid"
-drifterFiles = [os.path.join(datafolder, file) for file in os.listdir(datafolder) if file.endswith(".txt")]
+datafolder = "data_unid"
+drifterFiles = [os.path.join(datafolder, file) for file in sorted(os.listdir(datafolder)) if file.endswith(".txt")]
 
 resultdict = {}
 
